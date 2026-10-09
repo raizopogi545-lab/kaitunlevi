@@ -2733,8 +2733,57 @@ _G.RJR_StartBoatDeadMonitor = function()
         _G.RJR_BoatDeadMonitorRunning = false
     end)
 end
+
+-- ============================================================
+-- FIXED: RecoverPositionLock now actually frees non-seated stuck
+-- characters. Adds ForceUnstuck (cancel tween, restore collision,
+-- break seat weld, teleport up, clear velocity, change state) and
+-- changes "Freed" detection to require real position movement.
+-- ============================================================
 do
 local RecoverLock = { running = false, tries = 0, since = 0 }
+
+-- NEW: real unstick — cancels tweens, restores collision, breaks welds,
+-- teleports up, kills velocity, resets humanoid state.
+local function ForceUnstuck()
+    local char, hrp, hum = GetCharacterParts()
+    if not char or not hrp or not hum then return end
+    ClearHover()
+    if CurrentTween then
+        pcall(function() CurrentTween:Cancel() end)
+        CurrentTween = nil
+    end
+    Tweening = false
+    TpActive = false
+    -- Break any seat weld the engine left behind
+    local seat = hum.SeatPart
+    if seat and seat.Parent then
+        local Weld = seat:FindFirstChild("SeatWeld")
+        local p1 = Weld and Weld.Part1
+        if Weld and ((not p1) or (p1:IsA("BasePart") and p1:IsDescendantOf(char))) then
+            pcall(function() Weld:Destroy() end)
+        end
+    end
+    pcall(function()
+        hum.Sit = false
+        hum.PlatformStand = false
+    end)
+    -- Restore collision on every limb
+    for _, p in ipairs(char:GetDescendants()) do
+        if p:IsA("BasePart") then p.CanCollide = true end
+    end
+    -- Teleport up + clear all velocity so physics can reassert itself
+    pcall(function()
+        hrp.CFrame = hrp.CFrame + Vector3.new(0, 15, 0)
+        hrp.AssemblyLinearVelocity = Vector3.new(0, 20, 0)
+        hrp.AssemblyAngularVelocity = Vector3.zero
+    end)
+    pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+    pcall(function() hum:ChangeState(Enum.HumanoidStateType.Freefall) end)
+    pcall(function() hum:ChangeState(Enum.HumanoidStateType.Running) end)
+    NoClip(false)
+end
+
 local function RecoverPositionLock(reason)
     if RecoverLock.running or not _G.AutoLeviathanFull then return end
     if os.clock() - (RecoverLock.lastAt or 0) < 30 then return end
@@ -2742,43 +2791,59 @@ local function RecoverPositionLock(reason)
     RecoverLock.running = true
     task.spawn(function()
         local ok = pcall(function()
-        local _, _, humNow = GetCharacterParts()
-        local Phantom = humNow ~= nil and humNow.SeatPart ~= nil
-            and not _G.RJR_SeatConfirmed(humNow.SeatPart)
-        if os.clock() - RecoverLock.since > 180 then
-            RecoverLock.tries = 0
-            RecoverLock.since = os.clock()
-        end
-        if Phantom then
-            RecoverLock.tries = RecoverLock.tries + 1
-        end
-        SetStatus("Personaje bloqueado en el sitio (" .. tostring(reason or "?") .. "): lo libero")
-        pcall(function()
-            local _, _, hum = GetCharacterParts()
-            _G.RJR_BreakPhantomSeat(hum and hum.SeatPart or nil)
-        end)
-        pcall(Unseat)
-        local FreedAt = os.clock() + 3
-        local Freed = false
-        while os.clock() < FreedAt do
-            local _, _, hum = GetCharacterParts()
-            if not hum then Freed = true break end
-            if not hum.Sit and hum.SeatPart == nil then Freed = true break end
-            task.wait(0.2)
-        end
-        if ((not Freed) or RecoverLock.tries >= 2) and _G.AutoLeviathanFull and not _G.RJR_Resetting then
-            if _G.RJR_LeviathanPresent and _G.RJR_LeviathanPresent() then
-                SetStatus("Sigo bloqueado, pero hay Leviathan/puerta/corazón: no reinicio")
-            elseif os.clock() - (RecoverLock.lastResetAt or 0) < 180 then
-                SetStatus("Sigo bloqueado: espero antes de volver a reiniciar")
-            elseif _G.RJR_ResetCharacterAtTiki then
+            local _, hrpBefore, humNow = GetCharacterParts()
+            local BeforePos = hrpBefore and hrpBefore.Position
+            local Phantom = humNow ~= nil and humNow.SeatPart ~= nil
+                and not _G.RJR_SeatConfirmed(humNow.SeatPart)
+            if os.clock() - RecoverLock.since > 180 then
                 RecoverLock.tries = 0
                 RecoverLock.since = os.clock()
-                RecoverLock.lastResetAt = os.clock()
-                SetStatus("Sigo bloqueado: reinicio el personaje en Tiki")
-                pcall(_G.RJR_ResetCharacterAtTiki, "Personaje bloqueado")
             end
-        end
+
+            SetStatus("Personaje bloqueado en el sitio (" .. tostring(reason or "?") .. "): lo libero")
+            pcall(function()
+                local _, _, hum = GetCharacterParts()
+                _G.RJR_BreakPhantomSeat(hum and hum.SeatPart or nil)
+            end)
+            pcall(Unseat)
+
+            -- NEW: hard intervention so a non-seated stuck character actually moves
+            pcall(ForceUnstuck)
+
+            -- "Freed" now means: not seated AND position actually changed
+            local FreedAt = os.clock() + 3
+            local Freed = false
+            while os.clock() < FreedAt do
+                local _, hrpNow, hum = GetCharacterParts()
+                if not hum then Freed = true break end
+                local moved = BeforePos and hrpNow
+                    and (hrpNow.Position - BeforePos).Magnitude > 5
+                if not hum.Sit and hum.SeatPart == nil and moved then
+                    Freed = true
+                    break
+                end
+                task.wait(0.2)
+            end
+
+            -- Always count a failed attempt (not just phantom seats)
+            if Phantom or not Freed then
+                RecoverLock.tries = RecoverLock.tries + 1
+            end
+
+            if ((not Freed) or RecoverLock.tries >= 2)
+                and _G.AutoLeviathanFull and not _G.RJR_Resetting then
+                if _G.RJR_LeviathanPresent and _G.RJR_LeviathanPresent() then
+                    SetStatus("Sigo bloqueado, pero hay Leviathan/puerta/corazón: no reinicio")
+                elseif os.clock() - (RecoverLock.lastResetAt or 0) < 180 then
+                    SetStatus("Sigo bloqueado: espero antes de volver a reiniciar")
+                elseif _G.RJR_ResetCharacterAtTiki then
+                    RecoverLock.tries = 0
+                    RecoverLock.since = os.clock()
+                    RecoverLock.lastResetAt = os.clock()
+                    SetStatus("Sigo bloqueado: reinicio el personaje en Tiki")
+                    pcall(_G.RJR_ResetCharacterAtTiki, "Personaje bloqueado")
+                end
+            end
         end)
         if not ok then
             print("[Leviathan] RecoverPositionLock: error, se libera el flag")
@@ -2867,6 +2932,7 @@ task.spawn(function()
     end
 end)
 end
+
 local function ComputeHarpoonPitch(FromPos, ToPos)
     local dx = ToPos.X - FromPos.X
     local dy = ToPos.Y - FromPos.Y
