@@ -288,6 +288,17 @@ if _G.WebhookSendLeviathan == nil then _G.WebhookSendLeviathan = false end
 if _G.WebhookSendHeartSpawn == nil then _G.WebhookSendHeartSpawn = false end
 if _G.WebhookSendHeartGot == nil then _G.WebhookSendHeartGot = false end
 if _G.WebhookSendLowPlayers == nil then _G.WebhookSendLowPlayers = false end
+
+-- ============================================================
+-- Dragonstorm enhancement tunables (Leviathan + Sea events)
+-- ============================================================
+if _G.LeviathanDragonMulti == nil then _G.LeviathanDragonMulti = 3 end
+if _G.LeviathanDragonBurst == nil then _G.LeviathanDragonBurst = 2 end
+if _G.LeviathanDragonRange == nil then _G.LeviathanDragonRange = 2500 end
+if _G.SeaDragonMulti == nil then _G.SeaDragonMulti = 4 end
+if _G.SeaDragonBurst == nil then _G.SeaDragonBurst = 2 end
+if _G.SeaDragonRange == nil then _G.SeaDragonRange = 700 end
+
 local Character = LocalPlayer.Character
 local HD = Character and Character:FindFirstChild("Humanoid")
 local HRP = Character and Character:FindFirstChild("HumanoidRootPart")
@@ -594,6 +605,12 @@ local ConfigKeys = {
     "WebhookSendHeartGot",
     "WebhookSendLowPlayers",
     "ShowInfoUI",
+    "LeviathanDragonMulti",
+    "LeviathanDragonBurst",
+    "LeviathanDragonRange",
+    "SeaDragonMulti",
+    "SeaDragonBurst",
+    "SeaDragonRange",
 }
 local function EnsureConfigFolder()
     if typeof(isfolder) == "function" and typeof(makefolder) == "function" then
@@ -696,6 +713,12 @@ do
     _G.BoatHeight = TravelNumber(_G.BoatHeight, _G.BoatLockY or 150, 30, 500)
     _G.PlayerTweenSpeed = TravelNumber(_G.PlayerTweenSpeed, 275, 50, 500)
     _G.BoatLockY = _G.BoatHeight
+    _G.LeviathanDragonMulti = math.clamp(tonumber(_G.LeviathanDragonMulti) or 3, 1, 8)
+    _G.LeviathanDragonBurst = math.clamp(tonumber(_G.LeviathanDragonBurst) or 2, 1, 6)
+    _G.LeviathanDragonRange = math.clamp(tonumber(_G.LeviathanDragonRange) or 2500, 200, 10000)
+    _G.SeaDragonMulti = math.clamp(tonumber(_G.SeaDragonMulti) or 4, 1, 10)
+    _G.SeaDragonBurst = math.clamp(tonumber(_G.SeaDragonBurst) or 2, 1, 6)
+    _G.SeaDragonRange = math.clamp(tonumber(_G.SeaDragonRange) or 700, 100, 5000)
 end
 do
     local vu = game:GetService("VirtualUser")
@@ -2523,7 +2546,121 @@ local function fireShot(pos, hit)
     Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
     ShootGunEvent:FireServer(pos, { hit })
 end
-local SeaBoatModelsCache, SeaBoatModelsAt
+
+-- ============================================================
+-- Dragonstorm LEVIATHAN-ONLY damage booster
+-- Multi-segment × multi-shot burst. Does NOT touch the sea
+-- event path (_G.DragonGunFarm / getClosestSeaTarget remain
+-- unchanged in behaviour).
+-- ============================================================
+local LeviSegCache, LeviSegAt = nil, 0
+local function getLivingLeviathanSegments()
+    local now = os.clock()
+    if LeviSegCache and (now - LeviSegAt) < 0.05 then
+        return LeviSegCache
+    end
+    LeviSegAt = now
+    local list = {}
+    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
+    if seaBeasts then
+        for _, seg in ipairs(seaBeasts:GetChildren()) do
+            if seg.Name == "Leviathan Segment" then
+                local alive = false
+                local hum = seg:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    alive = true
+                else
+                    local hp = seg:FindFirstChild("Health")
+                    if hp and hp:IsA("ValueBase") and hp.Value > 0 then
+                        alive = true
+                    end
+                end
+                if alive then
+                    local hitbox = seg:FindFirstChild("Leviathan Segment")
+                    local part
+                    if hitbox and hitbox:IsA("BasePart") then
+                        part = hitbox
+                    else
+                        part = seg:FindFirstChild("HumanoidRootPart")
+                            or seg:FindFirstChild("RootPart")
+                            or seg.PrimaryPart
+                            or seg:FindFirstChildWhichIsA("BasePart", true)
+                    end
+                    if part then list[#list + 1] = part end
+                end
+            end
+        end
+    end
+    if #list == 0 and seaBeasts then
+        local levi = seaBeasts:FindFirstChild("Leviathan")
+        if levi then
+            local hum = levi:FindFirstChildOfClass("Humanoid")
+            local hp = levi:FindFirstChild("Health")
+            local alive = (hum and hum.Health > 0)
+                or (hp and hp:IsA("ValueBase") and hp.Value > 0)
+            if alive then
+                local part = levi:FindFirstChild("HumanoidRootPart")
+                    or levi:FindFirstChild("RootPart")
+                    or levi.PrimaryPart
+                    or levi:FindFirstChildWhichIsA("BasePart", true)
+                if part then list[1] = part end
+            end
+        end
+    end
+    LeviSegCache = list
+    return list
+end
+
+local function ensureDragonRemotes()
+    if not ShootGunEvent then
+        local modules = RS:FindFirstChild("Modules")
+        local net = modules and modules:FindFirstChild("Net")
+        ShootGunEvent = net and net:FindFirstChild("RE/ShootGunEvent")
+    end
+    if not Validator2 then
+        local remotes = RS:FindFirstChild("Remotes")
+        Validator2 = remotes and remotes:FindFirstChild("Validator2")
+    end
+    return ShootGunEvent ~= nil and Validator2 ~= nil
+end
+
+local function fireDragonBurstAtLeviathan()
+    if not shootFunc or not ensureDragonRemotes() then return end
+    local segs = getLivingLeviathanSegments()
+    if #segs == 0 then return end
+
+    local char = LocalPlayer.Character
+    local tool = char and char:FindFirstChildOfClass("Tool")
+    if not (tool and tool.Name == "Dragonstorm") then return end
+
+    local _, myHRP = GetCharacterParts()
+    if myHRP then
+        table.sort(segs, function(a, b)
+            return (a.Position - myHRP.Position).Magnitude
+                < (b.Position - myHRP.Position).Magnitude
+        end)
+    end
+
+    local pos = myHRP and myHRP.Position
+    local n = math.min(#segs, _G.LeviathanDragonMulti)
+    for i = 1, n do
+        local part = segs[i]
+        if part and part.Parent then
+            if not pos or (part.Position - pos).Magnitude <= _G.LeviathanDragonRange then
+                for _ = 1, _G.LeviathanDragonBurst do
+                    fireShot(part.Position, part)
+                end
+            end
+        end
+    end
+end
+
+-- ============================================================
+-- Dragonstorm SEA-EVENT multi-shot enhancer
+-- Parallel to getClosestSeaTarget() — returns ALL valid
+-- events in range, sorted nearest → farthest.
+-- ============================================================
+local SeaAllCache, SeaAllAt = nil, 0
 local function getAllPlayerBoatModels()
     local now = os.clock()
     if SeaBoatModelsCache and (now - SeaBoatModelsAt) < 0.5 then
@@ -2542,6 +2679,81 @@ local function getAllPlayerBoatModels()
     SeaBoatModelsCache, SeaBoatModelsAt = models, now
     return models
 end
+local SeaBoatModelsCache, SeaBoatModelsAt
+
+local function getAllSeaTargets()
+    local now = os.clock()
+    if SeaAllCache and (now - SeaAllAt) < 0.15 then
+        return SeaAllCache
+    end
+    SeaAllAt = now
+
+    local list = {}
+    local char = LocalPlayer.Character
+    if not char then
+        SeaAllCache = list
+        return list
+    end
+    local myHRP = char:FindFirstChild("HumanoidRootPart")
+    if not myHRP then
+        SeaAllCache = list
+        return list
+    end
+    local myPos = myHRP.Position
+    local playerBoats = getAllPlayerBoatModels()
+
+    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
+    if seaBeasts then
+        for _, e in ipairs(seaBeasts:GetChildren()) do
+            local hrp = e:FindFirstChild("HumanoidRootPart")
+            local hp = e:FindFirstChild("Health")
+            if hrp and hp and hp:IsA("ValueBase") and hp.Value > 0 then
+                local segment = e:FindFirstChild("Leviathan Segment")
+                local part = segment or getRandomLimb(e) or hrp
+                if part then
+                    local d = (part.Position - myPos).Magnitude
+                    if d <= _G.SeaDragonRange then
+                        list[#list + 1] = { part = part, dist = d }
+                    end
+                end
+            end
+        end
+    end
+
+    local enemies = workspace:FindFirstChild("Enemies")
+    if enemies then
+        for _, e in ipairs(enemies:GetChildren()) do
+            if table.find(VALID_SEA_ENEMIES, e.Name) and not playerBoats[e.Name] then
+                local engine = e:FindFirstChild("Engine")
+                local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                if isBoat then
+                    local hp = e:FindFirstChild("Health")
+                    if hp and hp:IsA("ValueBase") and hp.Value > 0 then
+                        local d = (engine.Position - myPos).Magnitude
+                        if d <= _G.SeaDragonRange then
+                            list[#list + 1] = { part = engine, dist = d }
+                        end
+                    end
+                else
+                    local hrp = e:FindFirstChild("HumanoidRootPart")
+                    local hum = e:FindFirstChildOfClass("Humanoid")
+                    if hrp and hum and hum.Health > 0 then
+                        local part = getRandomLimb(e) or hrp
+                        local d = (part.Position - myPos).Magnitude
+                        if d <= _G.SeaDragonRange then
+                            list[#list + 1] = { part = part, dist = d }
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    table.sort(list, function(a, b) return a.dist < b.dist end)
+    SeaAllCache = list
+    return list
+end
+
 local AttackRange = 450
 local SeaTargetCache, SeaTargetAt
 local function getClosestSeaTarget()
@@ -2613,6 +2825,7 @@ local function getClosestSeaTarget()
     SeaTargetCache, SeaTargetAt = best, now
     return best
 end
+
 local function StartDragonAttack()
     task.spawn(function()
         while not dragonReady do
@@ -2622,22 +2835,15 @@ local function StartDragonAttack()
         print("[Dragonstorm] listo")
         while _G.DragonGunFarm do
             pcall(function()
-                if not ShootGunEvent then
-                    local modules = RS:FindFirstChild("Modules")
-                    local net = modules and modules:FindFirstChild("Net")
-                    ShootGunEvent = net and net:FindFirstChild("RE/ShootGunEvent")
-                end
-                if not Validator2 then
-                    local remotes = RS:FindFirstChild("Remotes")
-                    Validator2 = remotes and remotes:FindFirstChild("Validator2")
-                end
-                if not ShootGunEvent or not Validator2 then
+                if not ensureDragonRemotes() then
                     return
                 end
-                local target = getClosestSeaTarget()
-                if not target then
+
+                local targets = getAllSeaTargets()
+                if #targets == 0 then
                     return
                 end
+
                 local char = LocalPlayer.Character
                 if not char then
                     return
@@ -2649,7 +2855,17 @@ local function StartDragonAttack()
                     end
                     return
                 end
-                fireShot(target.Position, target)
+
+                -- Multi-shot: N nearest targets × M shots each
+                local n = math.min(#targets, _G.SeaDragonMulti)
+                for i = 1, n do
+                    local t = targets[i].part
+                    if t and t.Parent then
+                        for _ = 1, _G.SeaDragonBurst do
+                            fireShot(t.Position, t)
+                        end
+                    end
+                end
             end)
             task.wait()
         end
@@ -2962,10 +3178,10 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     if not HasDragonstormEquipped() then
                         Equip_Auto("Dragonstorm")
                     end
-                    local target = getClosestSeaTarget()
-                    if target then
-                        fireShot(target.Position, target)
-                    end
+                    -- LEVIATHAN-ONLY multi-segment burst.
+                    -- Sea-event path (_G.DragonGunFarm / StartDragonAttack
+                    -- / getClosestSeaTarget) is untouched.
+                    fireDragonBurstAtLeviathan()
                 else
                     local Distance = Stand and (Stand.Position - HRP.Position).Magnitude or 0
                     if Distance <= 80 then
@@ -3234,7 +3450,6 @@ task.spawn(function()
             local pos = hrp.Position
             local seat = hum.SeatPart
 
-            -- ── Case 1: phantom seat / sitting without seat (existing logic) ──
             local Suspicious = false
             local Distance = nil
             if seat and seat.Parent then
@@ -3259,7 +3474,6 @@ task.spawn(function()
             end
             LastPos = pos
 
-            -- ── Case 2: boat is being sailed but we aren't moving (stuck at sea) ──
             local SailActive = (os.clock() - LastSailAt) < 6
             local NotTweening = not TpActive and not Tweening
             if SailActive and NotTweening then
@@ -3278,7 +3492,6 @@ task.spawn(function()
             end
             SeaLastPos = pos
 
-            -- ── Case 3: floating in the ocean and not moving (fell off boat) ──
             if not seat and not hum.Sit and NotTweening then
                 if pos.Y < 5 then
                     if WaterLastPos and (pos - WaterLastPos).Magnitude < 3 then
@@ -6093,6 +6306,101 @@ do
             end
             _G.HuntSelectEvents = CheckSkillTable(Value)
             SaveConfig()
+        end,
+    })
+
+    -- ============================================================
+    -- Dragonstorm damage tunables (Leviathan + Sea events)
+    -- ============================================================
+    local DragonSection = Tabs.Combat:AddSection("Dragonstorm Damage")
+    DragonSection:AddInput("dragon.levi.multi", {
+        Title = "Leviathan: Segments per Tick",
+        Description = "How many Leviathan segment hitboxes to fire at each tick (1-8)",
+        Default = tostring(_G.LeviathanDragonMulti),
+        Placeholder = "3",
+        Numeric = true,
+        Finished = false,
+        Callback = function(v)
+            local n = tonumber(v)
+            if n then
+                _G.LeviathanDragonMulti = math.clamp(math.floor(n), 1, 8)
+                SaveConfig()
+            end
+        end,
+    })
+    DragonSection:AddInput("dragon.levi.burst", {
+        Title = "Leviathan: Shots per Segment",
+        Description = "Burst shots fired per segment (1-6)",
+        Default = tostring(_G.LeviathanDragonBurst),
+        Placeholder = "2",
+        Numeric = true,
+        Finished = false,
+        Callback = function(v)
+            local n = tonumber(v)
+            if n then
+                _G.LeviathanDragonBurst = math.clamp(math.floor(n), 1, 6)
+                SaveConfig()
+            end
+        end,
+    })
+    DragonSection:AddInput("dragon.levi.range", {
+        Title = "Leviathan: Max Range",
+        Description = "Max distance (studs) to fire at Leviathan segments",
+        Default = tostring(_G.LeviathanDragonRange),
+        Placeholder = "2500",
+        Numeric = true,
+        Finished = false,
+        Callback = function(v)
+            local n = tonumber(v)
+            if n then
+                _G.LeviathanDragonRange = math.clamp(math.floor(n), 200, 10000)
+                SaveConfig()
+            end
+        end,
+    })
+    DragonSection:AddInput("sea.dragon.multi", {
+        Title = "Sea Events: Targets per Tick",
+        Description = "How many sea events to hit per tick (1-10)",
+        Default = tostring(_G.SeaDragonMulti),
+        Placeholder = "4",
+        Numeric = true,
+        Finished = false,
+        Callback = function(v)
+            local n = tonumber(v)
+            if n then
+                _G.SeaDragonMulti = math.clamp(math.floor(n), 1, 10)
+                SaveConfig()
+            end
+        end,
+    })
+    DragonSection:AddInput("sea.dragon.burst", {
+        Title = "Sea Events: Shots per Target",
+        Description = "Burst shots fired per sea-event target (1-6)",
+        Default = tostring(_G.SeaDragonBurst),
+        Placeholder = "2",
+        Numeric = true,
+        Finished = false,
+        Callback = function(v)
+            local n = tonumber(v)
+            if n then
+                _G.SeaDragonBurst = math.clamp(math.floor(n), 1, 6)
+                SaveConfig()
+            end
+        end,
+    })
+    DragonSection:AddInput("sea.dragon.range", {
+        Title = "Sea Events: Max Range",
+        Description = "Max distance (studs) to fire at sea events",
+        Default = tostring(_G.SeaDragonRange),
+        Placeholder = "700",
+        Numeric = true,
+        Finished = false,
+        Callback = function(v)
+            local n = tonumber(v)
+            if n then
+                _G.SeaDragonRange = math.clamp(math.floor(n), 100, 5000)
+                SaveConfig()
+            end
         end,
     })
 end
