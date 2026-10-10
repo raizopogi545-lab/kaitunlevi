@@ -405,12 +405,8 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         { es = "Esperando a que el corazón desaparezca (llevo {1} s)", en = "Waiting for heart to vanish ({1}s)", zh = "等待心脏消失 (已等 {1} 秒)", nested = false },
         { es = "[Auto Leviathan] Soborno disponible - progreso {1}/5", en = "[Auto Leviathan] Bribe ready - progress {1}/5", zh = "[Auto Leviathan] 贿赂CD已好 进度 {1}/5", nested = false },
         { es = "El corazón apareció: engancho en 5 s (llevo {1} s)", en = "Heart spawned, hooking in 5s ({1}s)", zh = "心脏已出现 等待5秒后勾心脏 (已等 {1} 秒)", nested = false },
-        { es = "Enganche: navego a X+300 del corazón (intento {1})", en = "Hook: sailing to heart X+300 (attempt {1})", zh = "勾心脏 开船前往心脏X+300位置 (第{1}次尝试)", nested = false },
-        { es = "Enganche: navegando a X+300 del corazón (dist {1})", en = "Hook: sailing to heart X+300 (dist {1})", zh = "勾心脏 开船前往心脏X+300 (距离 {1})", nested = false },
         { es = "Volviendo a Tiki: corazón a {1} del barco, cancelo", en = "Returning, heart {1} from boat, aborting", zh = "回Tiki 心脏离船 {1} 中断航程", nested = false },
         { es = "Siguiendo: pruebo el asiento {1} (cambio cada 1 s)", en = "Following, trying seat {1} (rotating every 1s)", zh = "跟随 尝试上船 {1} 座位 (每1秒换下一个)", nested = false },
-        { es = "Enganche: apunto la proa al corazón (intento {1})", en = "Hook: aiming bow at heart (attempt {1})", zh = "勾心脏 调整船头对准心脏 (第{1}次尝试)", nested = false },
-        { es = "Enganche: bajo al asiento del arpón (intento {1})", en = "Hook: unseating to harpoon seat (attempt {1})", zh = "勾心脏 下船上鱼叉座 (第{1}次尝试)", nested = false },
         { es = "Esperando a que aparezca el corazón (llevo {1} s)", en = "Waiting for heart ({1}s)", zh = "等待心脏出现 (已等 {1} 秒)", nested = false },
         { es = "Buscando al Leviathan: navegando (llevo {1} s)", en = "Hunting Leviathan, sailing ({1}s)", zh = "寻找利维坦 开船航行中 (已航行 {1} 秒)", nested = false },
         { es = "Barco a más de {1}, lo abandono y compro otro", en = "Boat is over {1} away, abandoning it and buying another", zh = "船超出{1} 放弃旧船 重新买船", nested = false },
@@ -422,7 +418,6 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         { es = "Soborno incompleto ({1}/5): soborno ahora", en = "Bribe incomplete ({1}/5), bribing now", zh = "间谍贿赂未完成 ({1}/5) 立即贿赂", nested = false },
         { es = "Farmeo marino: patrullando (llevo {1} s)", en = "Farming event, cruising ({1}s)", zh = "刷海上事件 开船巡海中 (已刷 {1} 秒)", nested = false },
         { es = "El Leviathan apareció: ataco en {1} s", en = "Leviathan spawned, attacking in {1}s", zh = "利维坦出现 等待{1}秒后攻击", nested = false },
-        { es = "Enganche: subo al timón (intento {1})", en = "Hook: boarding helm (attempt {1})", zh = "勾心脏 上驾驶座 (第{1}次尝试)", nested = false },
         { es = "Esperando compañeros a bordo ({1}/4)", en = "Waiting for teammates ({1}/4)", zh = "等待队友上船 ({1}/4)", nested = false },
         { es = "Sobornando al espía (intento {1}/4)", en = "Bribing spy ({1}/4)", zh = "贿赂间谍 第{1}次", nested = false },
         { es = "Atacando al Leviathan: {1} - vida {2}", en = "Attacking the Leviathan: {1} - HP {2}", zh = "攻击利维坦: {1} 血量 {2}", nested = false },
@@ -1947,7 +1942,7 @@ local function SailBoatTurn(seat, targetPos, speed, FixedY)
 end
 
 -- ============================================================
---  SeaAPI (with Leviathan multi-segment Dragonstorm boost)
+--  SeaAPI
 -- ============================================================
 local SeaAPI = {}
 do
@@ -2913,49 +2908,15 @@ end)
 end
 
 -- ============================================================
--- ENHANCED HARPOON HOOKING (fixed + optimized)
+--  HARPOON HOOKING — PITCH FAN (fixed para floating heart)
 -- ============================================================
 
--- Ballistic pitch with speed auto-tuned to the horizontal distance.
--- Short range -> flat, long range -> arcs up. Keeps the harpoon on the
--- heart's bounding sphere even when the heart is high above the boat.
-local function ComputeHarpoonPitch(FromPos, ToPos, SpeedOverride)
-    local dx = ToPos.X - FromPos.X
-    local dy = ToPos.Y - FromPos.Y
-    local dz = ToPos.Z - FromPos.Z
-    local horizontal = math.sqrt(dx * dx + dz * dz)
-    if horizontal < 1 then
-        return math.atan2(dy, horizontal)
-    end
-
-    -- Empirical harpoon launch speed (Blox Fruits ~ 320 studs/s) and
-    -- Roblox standard gravity.
-    local Speed = SpeedOverride or 320
-    local g = 196.2
-    local v2 = Speed * Speed
-    local v4 = v2 * v2
-    local disc = v4 - g * (g * horizontal * horizontal + 2 * dy * v2)
-
-    if disc < 0 then
-        -- Target unreachable at this speed: aim straight with a small bias.
-        return math.atan2(dy, horizontal) + 0.06
-    end
-
-    -- Lower (flat) solution — hits faster and is more forgiving of small
-    -- horizontal errors than the high-arc solution.
-    local root = math.sqrt(disc)
-    local pitch = math.atan((v2 - root) / (g * horizontal))
-    return pitch
-end
-
--- Reads the current live heart position or nil.
 local function LiveHeartPos()
     local Map = workspace:FindFirstChild("Map")
     local Heart = Map and Map:FindFirstChild("FrozenHeart")
     return Heart and GetHeartPos(Heart)
 end
 
--- Horizontal angle between the boat's bow and the vector to the target.
 local function BowErrorDeg(DriverSeat, TargetPos)
     if not DriverSeat or not DriverSeat.Parent then return 999 end
     local p = DriverSeat.Position
@@ -2969,13 +2930,46 @@ local function BowErrorDeg(DriverSeat, TargetPos)
     return math.deg(math.acos(dot))
 end
 
--- Fire the harpoon through the game's remote.
 local function FireHarpoonOnce(CommF2, Harpoon, Pitch, Yaw)
     if not CommF2 or not Harpoon or not Harpoon.Parent then return false end
     local ok = pcall(function()
         CommF2:InvokeServer("FireHarpoon", Pitch, Yaw or 0, Harpoon, workspace:GetServerTimeNow())
     end)
     return ok
+end
+
+-- Pagbuo ng pitch candidates para sa isang shot position.
+-- Priority: fan ng upward bias (para sa floating heart), tapos ballistic
+-- candidates para sa iba't ibang assumed speeds kung may gravity talaga.
+local function BuildPitchFan(fromPos, toPos)
+    local dx = toPos.X - fromPos.X
+    local dy = toPos.Y - fromPos.Y
+    local dz = toPos.Z - fromPos.Z
+    local horizontal = math.sqrt(dx * dx + dz * dz)
+    local flat = math.atan2(dy, math.max(horizontal, 1))
+
+    local pitches = {}
+    -- Phase 1: upward bias fan (para sa floating heart na mataas)
+    local degs = { 0, 4, 8, 13, 18, 24, 30, 38, 46, 55, 65, 75 }
+    for _, d in ipairs(degs) do
+        pitches[#pitches + 1] = flat + math.rad(d)
+    end
+
+    -- Phase 2: ballistic candidates kung may gravity yung harpoon
+    if horizontal > 1 then
+        local g = 196.2
+        for _, speed in ipairs({ 200, 280, 380, 500 }) do
+            local v2 = speed * speed
+            local v4 = v2 * v2
+            local disc = v4 - g * (g * horizontal * horizontal + 2 * dy * v2)
+            if disc >= 0 then
+                local root = math.sqrt(disc)
+                pitches[#pitches + 1] = math.atan((v2 - root) / (g * horizontal))
+            end
+        end
+    end
+
+    return pitches
 end
 
 local function HarpoonHeart()
@@ -3001,7 +2995,6 @@ local function HarpoonHeart()
         return false
     end
 
-    -- Muzzle is what actually launches the harpoon; use it for pitch, not the seat.
     local Muzzle = Harpoon:FindFirstChild("Muzzle")
         or Harpoon:FindFirstChild("Tip")
         or Harpoon.PrimaryPart
@@ -3011,18 +3004,20 @@ local function HarpoonHeart()
     if not CommF2 then return false end
 
     local BoatStartY = DriverSeat.Position.Y
-    local MAX_SHOTS = 24
-    local shots = 0
 
-    -- Rotating approach distances gives us multiple chances to land in the
-    -- harpoon's sweet spot without ever guessing "300" alone.
-    local Distances = { 320, 260, 380, 220, 420, 300, 460, 200, 500, 350 }
+    local Distances = { 300, 250, 350, 220, 400, 280, 450, 200, 500, 320, 380 }
     local DistanceIdx = 1
 
-    -- Pitch nudges applied on consecutive shots from the same position.
-    local PitchOffsets = { 0, math.rad(-1.5), math.rad(1.5), math.rad(-3), math.rad(3) }
+    local MAX_APPROACHES = 8
+    local approaches = 0
+    local totalShots = 0
+    local MAX_TOTAL_SHOTS = 90
 
-    while _G.AutoLeviathanFull and shots < MAX_SHOTS do
+    while _G.AutoLeviathanFull
+        and approaches < MAX_APPROACHES
+        and totalShots < MAX_TOTAL_SHOTS do
+        approaches = approaches + 1
+
         local hp = LiveHeartPos()
         if not hp then
             SetStatus("Enganche: el corazón desapareció")
@@ -3036,139 +3031,127 @@ local function HarpoonHeart()
         local ApproachDist = Distances[((DistanceIdx - 1) % #Distances) + 1]
         DistanceIdx = DistanceIdx + 1
 
-        -- -------- 1. Board driver & sail to the approach point --------
-        SetStatus("Enganche: subo al timón (disparo " .. (shots + 1) .. ", dist " .. ApproachDist .. ")")
-        if not BoardSeatRetry(DriverSeat, 10, 3) then break end
+        SetStatus("Enganche: subo al timón (approach " .. approaches .. ", dist " .. ApproachDist .. ")")
+        if not BoardSeatRetry(DriverSeat, 10, 3) then
+            SetStatus("Enganche: no pude subir al timón")
+            break
+        end
 
         local ApproachStart = os.clock()
         while _G.AutoLeviathanFull and os.clock() - ApproachStart < 45 do
             if not DriverSeat or not DriverSeat.Parent then break end
             local nowHp = LiveHeartPos()
             if not nowHp then break end
-
             local p = DriverSeat.Position
             local TargetPoint = Vector3.new(nowHp.X + ApproachDist, BoatStartY, nowHp.Z)
             local flat = Vector3.new(TargetPoint.X - p.X, 0, TargetPoint.Z - p.Z)
-            if flat.Magnitude < 10 then break end
-
-            SetStatus("Enganche: navegando (" .. math.floor(flat.Magnitude) .. ")")
+            if flat.Magnitude < 8 then break end
+            SetStatus("Enganche: navigate (" .. math.floor(flat.Magnitude) .. ")")
             SailBoatTurn(DriverSeat, TargetPoint, _G.BoatSpeed, BoatStartY)
             if not IsSittingOn(DriverSeat) then break end
         end
 
         if not IsSittingOn(DriverSeat) then
-            SetStatus("Enganche: no estoy en el timón, salto esta ronda")
+            SetStatus("Enganche: nawala ako sa timón")
             break
         end
 
-        -- -------- 2. Align the bow to the live heart --------
-        SetStatus("Enganche: apunto la proa al corazón (disparo " .. (shots + 1) .. ")")
+        SetStatus("Enganche: apunto la proa (approach " .. approaches .. ")")
         local AimStart = os.clock()
         while _G.AutoLeviathanFull and os.clock() - AimStart < 12 do
             if not DriverSeat or not DriverSeat.Parent then break end
             if not IsSittingOn(DriverSeat) then break end
             local nowHp = LiveHeartPos()
             if not nowHp then break end
-
             local p = DriverSeat.Position
             local flat = Vector3.new(nowHp.X - p.X, 0, nowHp.Z - p.Z)
             if flat.Magnitude < 0.5 then break end
             local yaw = math.atan2(flat.X, flat.Z) + math.pi
             DriverSeat.CFrame = CFrame.new(p.X, BoatStartY, p.Z) * CFrame.Angles(0, yaw, 0)
-
             if BowErrorDeg(DriverSeat, nowHp) <= 1.5 then break end
             task.wait()
         end
 
-        -- Verify alignment before we leave the driver seat.
         local VerifyHp = LiveHeartPos()
-        if not VerifyHp then break end
-        local alignErr = BowErrorDeg(DriverSeat, VerifyHp)
+        local alignErr = VerifyHp and BowErrorDeg(DriverSeat, VerifyHp) or 999
+
         if alignErr > 6 then
-            SetStatus(string.format("Enganche: alineación pobre (%.1f°), reintento", alignErr))
-            -- Don't unseat — just realign on the next loop pass.
-            task.wait(0.2)
-            goto continue
-        end
+            SetStatus(string.format("Enganche: alineación pobre (%.1f°), retry", alignErr))
+            task.wait(0.3)
+        else
+            SetStatus("Enganche: bajo al arpón")
+            if not Unseat() then
+                SetStatus("Enganche: hindi maka-baba, retry")
+                task.wait(0.3)
+            else
+                task.wait(0.2)
+                if not BoardSeatRetry(HarpoonSeat, 8, 2) then
+                    SetStatus("Enganche: hindi maka-akyat sa arpón")
+                    task.wait(0.3)
+                else
+                    local Stabilize = os.clock()
+                    while _G.AutoLeviathanFull and os.clock() - Stabilize < 0.4 do task.wait() end
 
-        -- -------- 3. Swap to the harpoon seat --------
-        SetStatus("Enganche: bajo al asiento del arpón")
-        if not Unseat() then
-            SetStatus("Enganche fallido: no pude bajarme, salto la ronda")
-            break
-        end
-        task.wait(0.2)
+                    if IsSittingOn(HarpoonSeat) then
+                        local hpFire = LiveHeartPos()
+                        local grabbed = false
 
-        if not BoardSeatRetry(HarpoonSeat, 8, 2) then
-            SetStatus("Enganche fallido: no pude subir al asiento del arpón")
-            break
-        end
+                        if hpFire then
+                            local mPos = Muzzle and Muzzle.Position
+                            if mPos then
+                                local pitches = BuildPitchFan(mPos, hpFire)
+                                SetStatus(string.format(
+                                    "Enganche: %d shots, heart Y=%.0f, dist=%.0f",
+                                    #pitches, hpFire.Y,
+                                    math.sqrt((hpFire.X-mPos.X)^2 + (hpFire.Z-mPos.Z)^2)))
 
-        -- Let the seat weld settle before we start firing.
-        local Stabilize = os.clock()
-        while _G.AutoLeviathanFull and os.clock() - Stabilize < 0.35 do task.wait() end
+                                for i, pitch in ipairs(pitches) do
+                                    if not _G.AutoLeviathanFull then break end
+                                    if not IsSittingOn(HarpoonSeat) then break end
+                                    if IsFrozenHeartHarpooned() then grabbed = true break end
+                                    if totalShots >= MAX_TOTAL_SHOTS then break end
 
-        if not IsSittingOn(HarpoonSeat) then
-            SetStatus("Enganche: me caí del asiento del arpón")
-            break
-        end
+                                    local curHp = LiveHeartPos()
+                                    if not curHp then break end
 
-        -- -------- 4. Fire a small barrage of pitch variants --------
-        -- We stay on the harpoon seat and try a couple of pitch values,
-        -- since the boat doesn't move between shots and the heart doesn't
-        -- move either. This saves an entire approach cycle per miss.
-        local MuzzlePos = Muzzle and Muzzle.Position
-        local hpFire = LiveHeartPos()
-        if not MuzzlePos or not hpFire then break end
+                                    if DriverSeat and DriverSeat.Parent then
+                                        local driftErr = BowErrorDeg(DriverSeat, curHp)
+                                        if driftErr > 10 then
+                                            SetStatus(string.format("Enganche: proa drift (%.1f°), re-approach", driftErr))
+                                            break
+                                        end
+                                    end
 
-        local grabbed = false
-        for _, offs in ipairs(PitchOffsets) do
-            if not _G.AutoLeviathanFull then break end
-            if not IsSittingOn(HarpoonSeat) then break end
-            if IsFrozenHeartHarpooned() then grabbed = true break end
-            if shots >= MAX_SHOTS then break end
+                                    totalShots = totalShots + 1
+                                    SetStatus(string.format("Enganche: shot %d/%d (%.1f°)",
+                                        i, #pitches, math.deg(pitch)))
+                                    FireHarpoonOnce(CommF2, Harpoon, pitch, 0)
 
-            -- Re-check bow alignment; the boat can rotate between shots.
-            local currentHp = LiveHeartPos()
-            if not currentHp then break end
-            if not DriverSeat or not DriverSeat.Parent then break end
-            local driftErr = BowErrorDeg(DriverSeat, currentHp)
-            if driftErr > 8 then
-                SetStatus(string.format("Enganche: proa se desvió (%.1f°), vuelvo a apuntar", driftErr))
-                break -- exit the barrage; outer loop re-approaches
+                                    local PostStart = os.clock()
+                                    while _G.AutoLeviathanFull and os.clock() - PostStart < 1.8 do
+                                        if not workspace:FindFirstChild("Map") then break end
+                                        if not workspace.Map:FindFirstChild("FrozenHeart") then break end
+                                        if IsFrozenHeartHarpooned() then grabbed = true break end
+                                        task.wait(0.12)
+                                    end
+                                    if grabbed then break end
+                                end
+
+                                if grabbed or IsFrozenHeartHarpooned() then
+                                    SetStatus("¡Corazón enganchado!")
+                                    return true
+                                end
+                            end
+                        end
+                    else
+                        SetStatus("Enganche: nahulog sa arpón seat")
+                    end
+
+                    pcall(Unseat)
+                    task.wait(0.15)
+                end
             end
-
-            -- Recompute pitch each shot in case the heart moved.
-            local mPos = Muzzle and Muzzle.Position
-            if not mPos then break end
-            local Pitch = ComputeHarpoonPitch(mPos, currentHp) + (offs or 0)
-
-            shots = shots + 1
-            SetStatus(string.format("Enganche: disparo %d (%.1f°)", shots, math.deg(Pitch)))
-            FireHarpoonOnce(CommF2, Harpoon, Pitch, 0)
-
-            -- Wait briefly for the harpoon to land before next variant.
-            local PostStart = os.clock()
-            while _G.AutoLeviathanFull and os.clock() - PostStart < 2.5 do
-                if not workspace:FindFirstChild("Map") then break end
-                if not workspace.Map:FindFirstChild("FrozenHeart") then break end
-                if IsFrozenHeartHarpooned() then grabbed = true break end
-                task.wait(0.15)
-            end
-
-            if grabbed then break end
         end
-
-        if grabbed or IsFrozenHeartHarpooned() then
-            SetStatus("¡Corazón enganchado!")
-            return true
-        end
-
-        -- If we still missed, unseat and try again with a different distance.
-        pcall(Unseat)
-        task.wait(0.15)
-
-        ::continue::
     end
 
     Unseat()
@@ -3176,7 +3159,7 @@ local function HarpoonHeart()
         SetStatus("¡Corazón enganchado!")
         return true
     end
-    SetStatus("Fallo: el corazón no quedó enganchado")
+    SetStatus("Fallo: hindi na-hook ang corazón")
     return false
 end
 
@@ -5630,7 +5613,7 @@ do
 end
 
 -- ============================================================
--- Webhook section — FIXED v2
+-- Webhook section
 -- ============================================================
 do
     local WebhookSendLock = false
