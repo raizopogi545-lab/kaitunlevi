@@ -2510,12 +2510,6 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     if not HasDragonstormEquipped() then
                         Equip_Auto("Dragonstorm")
                     end
-                    -- ============================================
-                    -- ENHANCEMENT: Multi-segment Leviathan burst
-                    -- Uses original fireShot unchanged. Fires at
-                    -- up to 3 nearest Leviathan segments, 2 shots each.
-                    -- Falls back to original single-target if no segments found.
-                    -- ============================================
                     local _leviSegs = {}
                     local _sbFolder = workspace:FindFirstChild("SeaBeasts")
                     if _sbFolder then
@@ -2734,17 +2728,9 @@ _G.RJR_StartBoatDeadMonitor = function()
     end)
 end
 
--- ============================================================
--- FIXED: RecoverPositionLock now actually frees non-seated stuck
--- characters. Adds ForceUnstuck (cancel tween, restore collision,
--- break seat weld, teleport up, clear velocity, change state) and
--- changes "Freed" detection to require real position movement.
--- ============================================================
 do
 local RecoverLock = { running = false, tries = 0, since = 0 }
 
--- NEW: real unstick — cancels tweens, restores collision, breaks welds,
--- teleports up, kills velocity, resets humanoid state.
 local function ForceUnstuck()
     local char, hrp, hum = GetCharacterParts()
     if not char or not hrp or not hum then return end
@@ -2755,7 +2741,6 @@ local function ForceUnstuck()
     end
     Tweening = false
     TpActive = false
-    -- Break any seat weld the engine left behind
     local seat = hum.SeatPart
     if seat and seat.Parent then
         local Weld = seat:FindFirstChild("SeatWeld")
@@ -2768,11 +2753,9 @@ local function ForceUnstuck()
         hum.Sit = false
         hum.PlatformStand = false
     end)
-    -- Restore collision on every limb
     for _, p in ipairs(char:GetDescendants()) do
         if p:IsA("BasePart") then p.CanCollide = true end
     end
-    -- Teleport up + clear all velocity so physics can reassert itself
     pcall(function()
         hrp.CFrame = hrp.CFrame + Vector3.new(0, 15, 0)
         hrp.AssemblyLinearVelocity = Vector3.new(0, 20, 0)
@@ -2806,11 +2789,8 @@ local function RecoverPositionLock(reason)
                 _G.RJR_BreakPhantomSeat(hum and hum.SeatPart or nil)
             end)
             pcall(Unseat)
-
-            -- NEW: hard intervention so a non-seated stuck character actually moves
             pcall(ForceUnstuck)
 
-            -- "Freed" now means: not seated AND position actually changed
             local FreedAt = os.clock() + 3
             local Freed = false
             while os.clock() < FreedAt do
@@ -2825,7 +2805,6 @@ local function RecoverPositionLock(reason)
                 task.wait(0.2)
             end
 
-            -- Always count a failed attempt (not just phantom seats)
             if Phantom or not Freed then
                 RecoverLock.tries = RecoverLock.tries + 1
             end
@@ -5546,23 +5525,70 @@ do
     })
     ButtonKeys[#ButtonKeys + 1] = { element = ResetButton, key = "reset.data" }
 end
+
+-- ============================================================
+-- Webhook section — FIXED
+-- ============================================================
 do
     local WebhookSendLock = false
     local AvatarCache = {}
+
+    -- HTTP request resolver (cached) --------------------------------
+    local HttpRequestFn, HttpRequestKind
+    local function GetHttpRequestFn()
+        if HttpRequestFn then return HttpRequestFn, HttpRequestKind end
+        if typeof(syn) == "table" and typeof(syn.request) == "function" then
+            HttpRequestFn, HttpRequestKind = syn.request, "syn"
+        elseif typeof(http) == "table" and typeof(http.request) == "function" then
+            HttpRequestFn, HttpRequestKind = http.request, "http"
+        elseif typeof(http_request) == "function" then
+            HttpRequestFn, HttpRequestKind = http_request, "http_request"
+        elseif typeof(request) == "function" then
+            HttpRequestFn, HttpRequestKind = request, "request"
+        elseif typeof(http) == "table" and typeof(http.post) == "function" then
+            HttpRequestFn, HttpRequestKind = http.post, "http_post"
+        end
+        return HttpRequestFn, HttpRequestKind
+    end
+
+    local function DoHttpPost(url, body, headers)
+        local fn, kind = GetHttpRequestFn()
+        if not fn then return nil, "no-http-api" end
+        if kind == "http_post" then
+            local ok, resp = pcall(function()
+                return http.post(http, url, body, "application/json")
+            end)
+            if not ok then return nil, tostring(resp) end
+            return resp
+        end
+        local ok, resp = pcall(fn, {
+            Url = url,
+            Method = "POST",
+            Headers = headers,
+            Body = body,
+        })
+        if not ok then return nil, tostring(resp) end
+        return resp
+    end
+    -- ---------------------------------------------------------------
+
     local function GetAvatarImage(userId)
         userId = tostring(userId)
         if AvatarCache[userId] then return AvatarCache[userId] end
         local fallback = "https://thumbnails.roblox.com/v1/users/avatar?userIds=" .. userId
             .. "&size=420x420&format=Png&isCircular=false"
-        local avatarReq = (syn and syn.request) or (http and http.request) or http_request or request
+        local fn, kind = GetHttpRequestFn()
         local found
-        if avatarReq then
-            local ok, resp = pcall(avatarReq, { Url = fallback, Method = "GET" })
-            if ok and resp and (resp.StatusCode or resp.statusCode) == 200 then
+        if fn and kind ~= "http_post" then
+            local ok, resp = pcall(fn, { Url = fallback, Method = "GET" })
+            if ok and resp then
+                local code = resp.StatusCode or resp.statusCode or resp.Status
                 local body = resp.Body or resp.body or ""
-                local okDec, data = pcall(HttpService.JSONDecode, HttpService, body)
-                if okDec and type(data) == "table" and data.data and type(data.data[1]) == "table" then
-                    found = data.data[1].imageUrl
+                if code == 200 then
+                    local okDec, data = pcall(HttpService.JSONDecode, HttpService, body)
+                    if okDec and type(data) == "table" and data.data and type(data.data[1]) == "table" then
+                        found = data.data[1].imageUrl
+                    end
                 end
             end
         end
@@ -5570,116 +5596,145 @@ do
         AvatarCache[userId] = found
         return found
     end
+
     local function SendWebhook(content, title, onDone, mentionEveryone)
-        if _G.WebhookURL == nil or _G.WebhookURL == "" then
-            if onDone then onDone(false) end
-            return false
+        local url = tostring(_G.WebhookURL or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if url == "" then
+            warn("[Webhook] URL vacía")
+            if onDone then onDone(false, "url-vacia") end
+            return false, "url-vacia"
+        end
+        if not url:match("^https?://") then
+            url = "https://" .. url
         end
         if WebhookSendLock then
-            if onDone then onDone(false) end
-            return false
+            if onDone then onDone(false, "ocupado") end
+            return false, "ocupado"
         end
-        local req = (syn and syn.request) or (http and http.request) or http_request or request
-        local httpPost = http and http.post
-        if not req and not httpPost then
-            if onDone then onDone(false) end
-            return false, "no request api"
+        local _, kind = GetHttpRequestFn()
+        if not kind then
+            warn("[Webhook] No hay API HTTP disponible en este executor")
+            if onDone then onDone(false, "sin-api-http") end
+            return false, "sin-api-http"
         end
+
         WebhookSendLock = true
         task.spawn(function()
             local ok = false
-            pcall(function()
-                local HttpServiceLocal = game:GetService("HttpService")
-                local payload, headers
-                headers = { ["Content-Type"] = "application/json" }
-                do
-                    local titleStr = title or "Auto Leviathan"
-                    local embedColor
-                    if titleStr:find("Leviathan", 1, true) then embedColor = 0x9C27B0
-                    elseif titleStr:find("Corazón", 1, true) or titleStr:find("Heart", 1, true) then embedColor = 0x1E88E5
-                    elseif titleStr:find("Soborno", 1, true) or titleStr:find("Bribe", 1, true) then embedColor = 0xFB8C00
-                    elseif titleStr:find("Jugadores", 1, true) or titleStr:find("Players", 1, true) then embedColor = 0xE53935
-                    else embedColor = 0x32CD32 end
-                    local fields = {}
-                    local descriptions = {}
-                    for line in (content or ""):gmatch("[^\n]+") do
-                        local k, v = line:match("^(.-):%s*(.*)$")
-                        if k and v and v ~= "" then
-                            fields[#fields + 1] = {
-                                name = k:gsub("^%s*(.-)%s*$", "%1"),
-                                value = v:gsub("^%s*(.-)%s*$", "%1"),
-                                inline = true,
-                            }
-                        else
-                            descriptions[#descriptions + 1] = line
-                        end
+            local errMsg = nil
+
+            local success, err = pcall(function()
+                local titleStr = title or "Auto Leviathan"
+                local embedColor
+                if titleStr:find("Leviathan", 1, true) then embedColor = 0x9C27B0
+                elseif titleStr:find("Corazón", 1, true) or titleStr:find("Heart", 1, true) then embedColor = 0x1E88E5
+                elseif titleStr:find("Soborno", 1, true) or titleStr:find("Bribe", 1, true) then embedColor = 0xFB8C00
+                elseif titleStr:find("Jugadores", 1, true) or titleStr:find("Players", 1, true) then embedColor = 0xE53935
+                else embedColor = 0x32CD32 end
+
+                local fields, descriptions = {}, {}
+                for line in (content or ""):gmatch("[^\n]+") do
+                    local k, v = line:match("^(.-):%s*(.*)$")
+                    if k and v and v ~= "" then
+                        fields[#fields + 1] = {
+                            name  = (k:gsub("^%s*(.-)%s*$", "%1")),
+                            value = (v:gsub("^%s*(.-)%s*$", "%1")),
+                            inline = true,
+                        }
+                    else
+                        descriptions[#descriptions + 1] = line
                     end
-                    if #fields == 0 then
-                        fields = { { name = " ", value = table.concat(descriptions, "\n"), inline = false } }
-                    end
-                    local userFields = {
-                        { name = T("wh.field.user"), value = LocalPlayer.Name, inline = true },
-                        { name = T("wh.field.display"), value = LocalPlayer.DisplayName, inline = true },
-                        { name = T("wh.field.uid"), value = string.format("[%d](https://www.roblox.com/users/%d/profile)", LocalPlayer.UserId, LocalPlayer.UserId), inline = true },
-                    }
-                    local finalFields = {}
-                    for _, f in ipairs(fields) do finalFields[#finalFields + 1] = f end
-                    for _, f in ipairs(userFields) do finalFields[#finalFields + 1] = f end
-                    local SenderName = (_G.WebhookUsername and _G.WebhookUsername ~= "") and _G.WebhookUsername or "Auto Leviathan"
-                    payload = {
-                        username = SenderName,
-                        avatar_url = GetAvatarImage(LocalPlayer.UserId),
-                        embeds = {{
-                            color = tonumber("0x" .. string.format("%X", embedColor)),
-                            title = titleStr,
-                            description = (#descriptions > 0) and table.concat(descriptions, "\n") or nil,
-                            thumbnail = { url = GetAvatarImage(LocalPlayer.UserId) },
-                            fields = finalFields,
-                            footer = {
-                                text = SenderName .. " · " .. os.date("%Y-%m-%d %H:%M:%S"),
-                                icon_url = GetAvatarImage(LocalPlayer.UserId),
-                            },
-                        }}
-                    }
-                    if mentionEveryone then payload.content = "@everyone" end
                 end
-                local resp
-                if httpPost and not req then
-                    resp = httpPost(_G.WebhookURL, HttpServiceLocal:JSONEncode(payload), headers)
+                if #fields == 0 then
+                    fields = { { name = " ", value = table.concat(descriptions, "\n"), inline = false } }
+                end
+
+                local uid = LocalPlayer.UserId
+                local userFields = {
+                    { name = T("wh.field.user"),    value = LocalPlayer.Name,        inline = true },
+                    { name = T("wh.field.display"), value = LocalPlayer.DisplayName, inline = true },
+                    { name = T("wh.field.uid"),     value = string.format("[%d](https://www.roblox.com/users/%d/profile)", uid, uid), inline = true },
+                }
+                local finalFields = {}
+                for _, f in ipairs(fields)     do finalFields[#finalFields + 1] = f end
+                for _, f in ipairs(userFields) do finalFields[#finalFields + 1] = f end
+
+                local SenderName = (_G.WebhookUsername and _G.WebhookUsername ~= "") and _G.WebhookUsername or "Auto Leviathan"
+                local avatar = GetAvatarImage(uid)
+
+                local payload = {
+                    username   = SenderName,
+                    avatar_url = avatar,
+                    embeds = {{
+                        color       = embedColor,
+                        title       = titleStr,
+                        description = (#descriptions > 0) and table.concat(descriptions, "\n") or nil,
+                        thumbnail   = { url = avatar },
+                        fields      = finalFields,
+                        footer      = {
+                            text     = SenderName .. " · " .. os.date("%Y-%m-%d %H:%M:%S"),
+                            icon_url = avatar,
+                        },
+                    }},
+                }
+                if mentionEveryone then
+                    payload.content = "@everyone"
+                    payload.allowed_mentions = { parse = { "everyone" } }
+                end
+
+                local encoded = HttpService:JSONEncode(payload)
+                local headers = { ["Content-Type"] = "application/json" }
+                local resp, reqErr = DoHttpPost(url, encoded, headers)
+                if not resp then
+                    error("HTTP request failed: " .. tostring(reqErr))
+                end
+
+                local code = resp.StatusCode or resp.statusCode or resp.Status or resp.status
+                local body = resp.Body or resp.body or ""
+                if code == nil then
+                    ok = true
+                elseif code == 200 or code == 204 then
+                    ok = true
                 else
-                    resp = req({
-                        Url = _G.WebhookURL,
-                        Method = "POST",
-                        Headers = headers,
-                        Body = HttpServiceLocal:JSONEncode(payload)
-                    })
+                    warn("[Webhook] HTTP " .. tostring(code) .. " -> " .. tostring(body):sub(1, 300))
+                    errMsg = "HTTP " .. tostring(code)
+                    ok = false
                 end
-                local code = resp and (resp.StatusCode or resp.statusCode or resp.Status or resp.status)
-                ok = code == nil or code == 200 or code == 204
-                if not ok then print("[Webhook] envio fallido HTTP " .. tostring(code)) end
             end)
+
+            if not success then
+                warn("[Webhook] Error: " .. tostring(err))
+                errMsg = errMsg or tostring(err)
+                ok = false
+            end
+
             WebhookSendLock = false
-            if onDone then onDone(ok) end
+            if onDone then onDone(ok, errMsg) end
         end)
         return true
     end
+
     local WebhookStatusPara = Tabs.Webhook:AddParagraph({
         Title = T("webhook.status"),
         Content = T("webhook.off"),
     })
     ParagraphKeys[#ParagraphKeys + 1] = { element = WebhookStatusPara, title = "webhook.status" }
+
     local function SendWebhookUI(content, title, mentionEveryone)
-        local okCall, err = SendWebhook(content, title, function(ok)
+        local okCall, err = SendWebhook(content, title, function(ok, errMsg)
             if ok then
                 WebhookStatusPara:SetDesc(T("webhook.sent") .. os.date("%H:%M:%S"))
             else
-                WebhookStatusPara:SetDesc(T("wh.sendfailed"))
+                WebhookStatusPara:SetDesc(T("wh.sendfailed")
+                    .. (errMsg and (" (" .. tostring(errMsg):sub(1, 90) .. ")") or ""))
             end
         end, mentionEveryone)
         if not okCall then
-            WebhookStatusPara:SetDesc(T("wh.sendfailed") .. (err and (" (" .. tostring(err) .. ")") or ""))
+            WebhookStatusPara:SetDesc(T("wh.sendfailed")
+                .. (err and (" (" .. tostring(err) .. ")") or ""))
         end
     end
+
     local function GetMaterialCounts()
         local Etc = GetCraftData()
         local ScaleT, HeartT, ScrollT = "0", "0", ""
@@ -5873,6 +5928,10 @@ do
         end
     end)
 end
+-- ============================================================
+-- End webhook section
+-- ============================================================
+
 do
     local LanguageSection = Tabs.Config:AddSection(T("language"))
     SectionKeys[#SectionKeys + 1] = { element = LanguageSection, key = "language" }
