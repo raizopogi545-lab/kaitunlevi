@@ -5527,13 +5527,13 @@ do
 end
 
 -- ============================================================
--- Webhook section — FIXED
+-- Webhook section — FIXED v2
 -- ============================================================
 do
     local WebhookSendLock = false
     local AvatarCache = {}
+    local LastSendState = "idle"
 
-    -- HTTP request resolver (cached) --------------------------------
     local HttpRequestFn, HttpRequestKind
     local function GetHttpRequestFn()
         if HttpRequestFn then return HttpRequestFn, HttpRequestKind end
@@ -5562,15 +5562,11 @@ do
             return resp
         end
         local ok, resp = pcall(fn, {
-            Url = url,
-            Method = "POST",
-            Headers = headers,
-            Body = body,
+            Url = url, Method = "POST", Headers = headers, Body = body,
         })
         if not ok then return nil, tostring(resp) end
         return resp
     end
-    -- ---------------------------------------------------------------
 
     local function GetAvatarImage(userId)
         userId = tostring(userId)
@@ -5597,31 +5593,39 @@ do
         return found
     end
 
+    local function NormalizeWebhookURL(raw)
+        local url = tostring(raw or "")
+        url = url:gsub("^%s+", ""):gsub("%s+$", "")
+        if url == "" then return nil, "empty" end
+        if not url:match("^https?://") then url = "https://" .. url end
+        return url, nil
+    end
+
     local function SendWebhook(content, title, onDone, mentionEveryone)
-        local url = tostring(_G.WebhookURL or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        if url == "" then
-            warn("[Webhook] URL vacía")
-            if onDone then onDone(false, "url-vacia") end
-            return false, "url-vacia"
-        end
-        if not url:match("^https?://") then
-            url = "https://" .. url
+        local url = NormalizeWebhookURL(_G.WebhookURL)
+        if not url then
+            warn("[Webhook] URL vacía — pega el link de Discord en el campo Webhook URL y pulsa Enter.")
+            if onDone then onDone(false, "URL vacía") end
+            return false, "URL vacía"
         end
         if WebhookSendLock then
-            if onDone then onDone(false, "ocupado") end
-            return false, "ocupado"
+            if onDone then onDone(false, "envío anterior en curso") end
+            return false, "busy"
         end
         local _, kind = GetHttpRequestFn()
         if not kind then
-            warn("[Webhook] No hay API HTTP disponible en este executor")
-            if onDone then onDone(false, "sin-api-http") end
-            return false, "sin-api-http"
+            warn("[Webhook] Este executor no tiene request / http.request / http.post.")
+            if onDone then onDone(false, "sin API HTTP") end
+            return false, "sin-api"
         end
 
+        print(string.format("[Webhook] Enviando... URL=%s... (%d chars) kind=%s",
+            url:sub(1, 45), #url, tostring(kind)))
+
         WebhookSendLock = true
+        LastSendState = "sending"
         task.spawn(function()
-            local ok = false
-            local errMsg = nil
+            local ok, errMsg = false, nil
 
             local success, err = pcall(function()
                 local titleStr = title or "Auto Leviathan"
@@ -5638,7 +5642,7 @@ do
                     if k and v and v ~= "" then
                         fields[#fields + 1] = {
                             name  = (k:gsub("^%s*(.-)%s*$", "%1")),
-                            value = (v:gsub("^%s*(.-)%s*$", "%1")),
+                            value = (v:gsub("^%s*(.-)%s*$", "%1")):sub(1, 1024),
                             inline = true,
                         }
                     else
@@ -5646,7 +5650,7 @@ do
                     end
                 end
                 if #fields == 0 then
-                    fields = { { name = " ", value = table.concat(descriptions, "\n"), inline = false } }
+                    fields = { { name = " ", value = table.concat(descriptions, "\n"):sub(1, 1024), inline = false } }
                 end
 
                 local uid = LocalPlayer.UserId
@@ -5667,8 +5671,8 @@ do
                     avatar_url = avatar,
                     embeds = {{
                         color       = embedColor,
-                        title       = titleStr,
-                        description = (#descriptions > 0) and table.concat(descriptions, "\n") or nil,
+                        title       = titleStr:sub(1, 256),
+                        description = (#descriptions > 0) and table.concat(descriptions, "\n"):sub(1, 4000) or nil,
                         thumbnail   = { url = avatar },
                         fields      = finalFields,
                         footer      = {
@@ -5686,15 +5690,17 @@ do
                 local headers = { ["Content-Type"] = "application/json" }
                 local resp, reqErr = DoHttpPost(url, encoded, headers)
                 if not resp then
-                    error("HTTP request failed: " .. tostring(reqErr))
+                    error("request failed: " .. tostring(reqErr))
                 end
 
                 local code = resp.StatusCode or resp.statusCode or resp.Status or resp.status
                 local body = resp.Body or resp.body or ""
                 if code == nil then
                     ok = true
+                    print("[Webhook] Sin código HTTP pero la llamada no lanzó error -> OK")
                 elseif code == 200 or code == 204 then
                     ok = true
+                    print("[Webhook] OK HTTP " .. tostring(code))
                 else
                     warn("[Webhook] HTTP " .. tostring(code) .. " -> " .. tostring(body):sub(1, 300))
                     errMsg = "HTTP " .. tostring(code)
@@ -5709,6 +5715,7 @@ do
             end
 
             WebhookSendLock = false
+            LastSendState = ok and "ok" or "fail"
             if onDone then onDone(ok, errMsg) end
         end)
         return true
@@ -5716,22 +5723,40 @@ do
 
     local WebhookStatusPara = Tabs.Webhook:AddParagraph({
         Title = T("webhook.status"),
-        Content = T("webhook.off"),
+        Content = "URL: (vacía)",
     })
     ParagraphKeys[#ParagraphKeys + 1] = { element = WebhookStatusPara, title = "webhook.status" }
 
+    local function RefreshWebhookStatusPara()
+        local url = tostring(_G.WebhookURL or "")
+        local trimmed = url:gsub("^%s+", ""):gsub("%s+$", "")
+        local urlState
+        if trimmed == "" then
+            urlState = "URL: (vacía) — pega el link y pulsa Enter"
+        elseif not trimmed:match("^https?://discord%.com/api/webhooks/") then
+            urlState = "URL inválida (" .. #trimmed .. " chars)"
+        else
+            urlState = string.format("URL OK (%d chars) · termina en ...%s",
+                #trimmed, trimmed:sub(-8))
+        end
+        local sendState
+        if LastSendState == "sending" then sendState = " · Enviando..."
+        elseif LastSendState == "ok" then sendState = " · Último envío: OK"
+        elseif LastSendState == "fail" then sendState = " · Último envío: FALLO"
+        else sendState = "" end
+        WebhookStatusPara:SetDesc(urlState .. sendState)
+    end
+
     local function SendWebhookUI(content, title, mentionEveryone)
         local okCall, err = SendWebhook(content, title, function(ok, errMsg)
-            if ok then
-                WebhookStatusPara:SetDesc(T("webhook.sent") .. os.date("%H:%M:%S"))
-            else
-                WebhookStatusPara:SetDesc(T("wh.sendfailed")
-                    .. (errMsg and (" (" .. tostring(errMsg):sub(1, 90) .. ")") or ""))
+            RefreshWebhookStatusPara()
+            if not ok and errMsg then
+                SendNotify("Webhook", tostring(errMsg))
             end
         end, mentionEveryone)
         if not okCall then
-            WebhookStatusPara:SetDesc(T("wh.sendfailed")
-                .. (err and (" (" .. tostring(err) .. ")") or ""))
+            RefreshWebhookStatusPara()
+            if err then SendNotify("Webhook", tostring(err)) end
         end
     end
 
@@ -5765,17 +5790,41 @@ do
             .. "\n" .. T("wh.scroll") .. ": " .. (ScrollT == "" and T("wh.none") or ScrollT)
             .. "\n" .. T("wh.crafted") .. ": " .. CraftStatus
     end
+
     Tabs.Webhook:AddInput("webhook.url", {
         Title = T("webhook.url"),
-        Description = T("webhook.url.desc"),
-        Default = _G.WebhookURL,
-        Placeholder = "https://discord.com/api/webhooks/...",
+        Description = "Pega el link y pulsa Enter (o haz clic fuera del campo) para guardarlo",
+        Default = _G.WebhookURL or "",
+        Placeholder = "https://discord.com/api/webhooks/123456/abcdef...",
         Finished = true,
         Callback = function(Text)
             _G.WebhookURL = tostring(Text or "")
             SaveConfig()
+            RefreshWebhookStatusPara()
+            local trimmed = _G.WebhookURL:gsub("^%s+", ""):gsub("%s+$", "")
+            if trimmed ~= "" then
+                print("[Webhook] URL guardada, " .. #trimmed .. " caracteres")
+                SendNotify("Webhook", "URL guardada (" .. #trimmed .. " chars)")
+            else
+                SendNotify("Webhook", "URL borrada")
+            end
         end,
     })
+
+    local TestButton = Tabs.Webhook:AddButton({
+        Title = "Test Webhook (send now)",
+        Callback = function()
+            RefreshWebhookStatusPara()
+            local trimmed = tostring(_G.WebhookURL or ""):gsub("^%s+", ""):gsub("%s+$", "")
+            if trimmed == "" then
+                SendNotify("Webhook", "La URL está vacía. Pega el link primero.")
+                return
+            end
+            SendWebhookUI(BuildProgressMsg(), T("wh.title.manual"))
+            SendNotify("Webhook", "Enviando prueba...")
+        end,
+    })
+
     Tabs.Webhook:AddInput("webhook.username", {
         Title = T("webhook.username"),
         Description = T("webhook.username.desc"),
@@ -5791,7 +5840,17 @@ do
         Title = T("webhook.auto"),
         Description = T("webhook.auto.desc"),
         Default = _G.AutoWebhook,
-        Callback = function(State) _G.AutoWebhook = State SaveConfig() end,
+        Callback = function(State)
+            _G.AutoWebhook = State
+            SaveConfig()
+            if State then
+                local trimmed = tostring(_G.WebhookURL or ""):gsub("^%s+", ""):gsub("%s+$", "")
+                if trimmed == "" then
+                    SendNotify("Webhook", "AVISO: Auto está ON pero la URL está vacía.")
+                end
+            end
+            RefreshWebhookStatusPara()
+        end,
     })
     Tabs.Webhook:AddInput("webhook.interval", {
         Title = T("webhook.interval"),
@@ -5844,24 +5903,13 @@ do
         Default = _G.WebhookSendLowPlayers,
         Callback = function(State) _G.WebhookSendLowPlayers = State SaveConfig() end,
     })
-    local SendNowButton = Tabs.Webhook:AddButton({
-        Title = T("webhook.send.now"),
-        Callback = function()
-            pcall(function() SendWebhookUI(BuildProgressMsg(), T("wh.title.manual")) end)
-        end,
-    })
-    ButtonKeys[#ButtonKeys + 1] = { element = SendNowButton, key = "webhook.send.now" }
+
     task.spawn(function()
         while task.wait(1) do
-            pcall(function()
-                if _G.AutoWebhook then
-                    WebhookStatusPara:SetDesc(T("webhook.sending"))
-                else
-                    WebhookStatusPara:SetDesc(T("webhook.off"))
-                end
-            end)
+            pcall(RefreshWebhookStatusPara)
         end
     end)
+
     task.spawn(function()
         while true do
             task.wait(_G.WebhookInterval or 60)
@@ -5871,6 +5919,7 @@ do
             end
         end
     end)
+
     task.spawn(function()
         local PrevBribeReady = nil
         local PrevLeviathan = false
@@ -5927,6 +5976,8 @@ do
             end
         end
     end)
+
+    task.defer(RefreshWebhookStatusPara)
 end
 -- ============================================================
 -- End webhook section
