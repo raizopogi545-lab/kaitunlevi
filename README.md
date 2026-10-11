@@ -105,6 +105,10 @@ T, ModeDisplay = (function()
         ["language"] = { en = "Language", es = "Idioma", zh = "语言" },
         ["language.desc"] = { en = "Interface language, applied instantly", es = "Idioma de la interfaz, se aplica al instante", zh = "界面语言，立即生效" },
         ["menu.keybind"] = { en = "Menu Keybind", es = "Tecla del menu", zh = "菜单快捷键" },
+        ["min.players"] = { en = "Min Players", es = "Jugadores mínimos", zh = "最低人数" },
+        ["min.players.desc"] = { en = "If server drops below this count, reset & buy new boat", es = "Si el servidor baja de este número, reinicia y compra barco", zh = "服务器人数低于此值时，重置并购买新船" },
+        ["auto.reset.low"] = { en = "Auto Reset Low Players", es = "Reiniciar si pocos jugadores", zh = "人数不足时自动重置" },
+        ["auto.reset.low.desc"] = { en = "Automatically reset the run and rebuy a boat when players drop below Min Players", es = "Reinicia la partida y recompra barco cuando baje del mínimo", zh = "人数低于最低值时自动重置并重新买船" },
         ["mode.captain"] = { en = "Captain", es = "Capitán", zh = "开船" },
         ["mode.follower"] = { en = "Follower", es = "Seguidor", zh = "跟随" },
         ["mode.select"] = { en = "Mode Select", es = "Selección de modo", zh = "模式选择" },
@@ -178,6 +182,7 @@ T, ModeDisplay = (function()
         ["webhook.send.bribe"] = { en = "Send On Cooldown Ready", es = "Enviar cuando el soborno este listo", zh = "CD好时发送" },
         ["webhook.send.bribe.desc"] = { en = "Send once when bribe CD is ready", es = "Envia un aviso cuando termina la espera del soborno", zh = "贿赂CD结束时可发送一次" },
         ["webhook.send.heartgot"] = { en = "Send On Heart Grabbed", es = "Enviar cuando se engancha el corazón", zh = "得到心脏时发送" },
+        ["webhook.send.heartsaved"] = { en = "Send On Heart Reached Tiki", es = "Enviar cuando el corazón llega a Tiki", zh = "心脏抵达 Tiki 时发送" },
         ["webhook.send.heartspawn"] = { en = "Send On Heart Spawn", es = "Enviar cuando aparece el corazón", zh = "心脏出现时发送" },
         ["webhook.send.leviathan"] = { en = "Send On Leviathan Spawn", es = "Enviar cuando aparece el Leviathan", zh = "利维坦出现时发送" },
         ["webhook.send.now"] = { en = "Send Now", es = "Enviar progreso ahora", zh = "立即发送进度" },
@@ -201,6 +206,7 @@ T, ModeDisplay = (function()
         ["wh.material"] = { en = "Materials", es = "Materiales", zh = "材料" },
         ["wh.msg.bribe.ready"] = { en = "[Auto Leviathan] Bribe CD ready - progress {n}/5", es = "[Auto Leviathan] Soborno disponible - progreso {n}/5", zh = "[Auto Leviathan] 贿赂CD已好 进度 {n}/5" },
         ["wh.msg.heartgot"] = { en = "[Auto Leviathan] Heart hooked!", es = "[Auto Leviathan] Corazón enganchado", zh = "[Auto Leviathan] 已勾到心脏!" },
+        ["wh.msg.heartsaved"] = { en = "[Auto Leviathan] Heart delivered to Tiki!", es = "[Auto Leviathan] Corazón entregado en Tiki", zh = "[Auto Leviathan] 心脏已送达 Tiki!" },
         ["wh.msg.heartspawn"] = { en = "[Auto Leviathan] Heart spawned!", es = "[Auto Leviathan] El corazón apareció", zh = "[Auto Leviathan] 心脏出现!" },
         ["wh.msg.leviathan"] = { en = "[Auto Leviathan] Leviathan spawned!", es = "[Auto Leviathan] El Leviathan apareció", zh = "[Auto Leviathan] 利维坦出现!" },
         ["wh.none"] = { en = "None", es = "Ninguno", zh = "无" },
@@ -208,6 +214,7 @@ T, ModeDisplay = (function()
         ["wh.sendfailed"] = { en = "Send Failed", es = "Error al enviar", zh = "发送失败" },
         ["wh.title.bribe"] = { en = "Bribe CD Ready", es = "Soborno disponible", zh = "贿赂CD已好" },
         ["wh.title.heartgot"] = { en = "Heart Grabbed", es = "Corazón enganchado", zh = "已勾到心脏" },
+        ["wh.title.heartsaved"] = { en = "Heart Reached Tiki", es = "Corazón entregado en Tiki", zh = "心脏抵达 Tiki" },
         ["wh.title.heartspawn"] = { en = "Heart Spawned", es = "Corazón aparecido", zh = "心脏出现" },
         ["wh.title.leviathan"] = { en = "Leviathan Spawned", es = "Leviathan apareció", zh = "利维坦出现" },
         ["wh.title.lowplayers"] = { en = "Low Players", es = "Pocos jugadores", zh = "人数不足" },
@@ -275,7 +282,12 @@ if _G.WebhookSendBribeReady == nil then _G.WebhookSendBribeReady = false end
 if _G.WebhookSendLeviathan == nil then _G.WebhookSendLeviathan = false end
 if _G.WebhookSendHeartSpawn == nil then _G.WebhookSendHeartSpawn = false end
 if _G.WebhookSendHeartGot == nil then _G.WebhookSendHeartGot = false end
+if _G.WebhookSendHeartSaved == nil then _G.WebhookSendHeartSaved = false end
 if _G.WebhookSendLowPlayers == nil then _G.WebhookSendLowPlayers = false end
+if _G.MinPlayers == nil then _G.MinPlayers = 5 end
+if _G.AutoResetLowPlayers == nil then _G.AutoResetLowPlayers = true end
+_G.RJR_HeartSavedFlag = false
+_G.RJR_HeartSavedAt = nil
 local Character = LocalPlayer.Character
 local HD = Character and Character:FindFirstChild("Humanoid")
 local HRP = Character and Character:FindFirstChild("HumanoidRootPart")
@@ -393,6 +405,7 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         ["Asiento fantasma: lo suelto y vuelvo a subir"] = { en = "Phantom seat: releasing it and boarding again", zh = "坐下状态未生效 松开座位 重新上船" },
         ["Sigo bloqueado: reinicio el personaje en Tiki"] = { en = "Still stuck, resetting the character at Tiki", zh = "仍未恢复 重置角色回Tiki" },
         ["Corazón presente y sin barco: voy a comprar uno"] = { en = "Heart present but no boat: going to buy one", zh = "心脏已出现但没有船 去买船" },
+        ["Pocos jugadores: reinicio para buscar servidor"] = { en = "Low players: resetting to find a new server", zh = "人数不足 重置以寻找新服务器" },
     }
     local StatusPatterns = {
         { es = "Personaje bloqueado en el sitio ({1}): lo libero", en = "Character stuck in place ({1}): freeing it", zh = "人物卡在原地 ({1}) 正在解卡", nested = false },
@@ -432,6 +445,7 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         { es = "De caza: farmeo {1}", en = "Farming event while hunting: {1}", zh = "寻找利维坦途中 刷海上事件: {1}", nested = false },
         { es = "{1}: fabricado", en = "{1}: crafted", zh = "{1}: 已制作", nested = false },
         { es = "Falta {1} ({2}/{3})", en = "Missing {1} ({2}/{3})", zh = "缺 {1} ({2}/{3})", nested = false },
+        { es = "Pocos jugadores ({1}/{2}): reiniciando para buscar servidor", en = "Low players ({1}/{2}): resetting to find a new server", zh = "人数不足 ({1}/{2}) 重置以寻找新服务器", nested = false },
     }
     local function EscapePattern(text)
         return (text:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1"))
@@ -526,7 +540,7 @@ local ConfigUser = tostring(LocalPlayer and LocalPlayer.Name or "default"):gsub(
 local ConfigFile = ConfigFolder .. "/" .. ConfigUser .. "_leviathan_config.json"
 local ConfigLegacyFile = ConfigFolder .. "/leviathan_config.json"
 local ConfigKeys = {
-    "Mode","SilentAim","Language","FollowTarget","SelectWeapon","SkillMelee","SkillSword","SkillFruit","SkillGun","FastAttack","DragonGunFarm","DragonGunLeviathan","RemoveFog","AntiDracoAura","AutoFastMode","FPSBoost","AutoBuso","AutoKen","AutoV3","AutoV4","BoatSpeed","BoatHeight","PlayerTweenSpeed","CruiseReturn","AutoCraftScrolls","CraftQuality","AutoRandomFruit","AutoStoreFruits","HuntFightEvents","SoloSeaFarm","RespawnRebuy","HuntSelectEvents","WebhookURL","WebhookUsername","AutoWebhook","WebhookInterval","WebhookSendProgress","WebhookSendBribeReady","WebhookSendLeviathan","WebhookSendHeartSpawn","WebhookSendHeartGot","WebhookSendLowPlayers","ShowInfoUI",
+    "Mode","SilentAim","Language","FollowTarget","SelectWeapon","SkillMelee","SkillSword","SkillFruit","SkillGun","FastAttack","DragonGunFarm","DragonGunLeviathan","RemoveFog","AntiDracoAura","AutoFastMode","FPSBoost","AutoBuso","AutoKen","AutoV3","AutoV4","BoatSpeed","BoatHeight","PlayerTweenSpeed","CruiseReturn","AutoCraftScrolls","CraftQuality","AutoRandomFruit","AutoStoreFruits","HuntFightEvents","SoloSeaFarm","RespawnRebuy","HuntSelectEvents","WebhookURL","WebhookUsername","AutoWebhook","WebhookInterval","WebhookSendProgress","WebhookSendBribeReady","WebhookSendLeviathan","WebhookSendHeartSpawn","WebhookSendHeartGot","WebhookSendHeartSaved","WebhookSendLowPlayers","ShowInfoUI","MinPlayers","AutoResetLowPlayers",
 }
 local function EnsureConfigFolder()
     if typeof(isfolder) == "function" and typeof(makefolder) == "function" then
@@ -595,6 +609,7 @@ do
     _G.BoatHeight = TravelNumber(_G.BoatHeight, _G.BoatLockY or 150, 30, 500)
     _G.PlayerTweenSpeed = TravelNumber(_G.PlayerTweenSpeed, 275, 50, 500)
     _G.BoatLockY = _G.BoatHeight
+    _G.MinPlayers = math.clamp(tonumber(_G.MinPlayers) or 5, 1, 30)
 end
 do
     local vu = game:GetService("VirtualUser")
@@ -2643,6 +2658,11 @@ _G.RJR_StartBoatDeadMonitor = function()
         local CaptainDeathAt = 0
         local CaptainDeathFollowed = false
         local CaptainDeathReason = "Capitán muerto"
+        -- --- Player count monitoring (new) ---
+        local LastPlayerCountCheck = 0
+        local LastPlayerCountResetAt = 0
+        local PLAYER_CHECK_INTERVAL = 3
+        local PLAYER_RESET_COOLDOWN = 120
         while _G.AutoLeviathanFull do
             if _G.RespawnRebuy then
                 local isCaptain = _G.Mode == "Capitán"
@@ -2691,6 +2711,18 @@ _G.RJR_StartBoatDeadMonitor = function()
                             and os.clock() - CaptainDeathAt >= 1.5
                             and not _G.RJR_Resetting then
                             Trigger = CaptainDeathReason
+                        end
+                    end
+                end
+                -- --- NEW: low-player monitoring ---
+                if _G.AutoResetLowPlayers and not Trigger then
+                    if os.clock() - LastPlayerCountCheck >= PLAYER_CHECK_INTERVAL then
+                        LastPlayerCountCheck = os.clock()
+                        local N = #Players:GetPlayers()
+                        local Min = tonumber(_G.MinPlayers) or 5
+                        if N < Min and os.clock() - LastPlayerCountResetAt > PLAYER_RESET_COOLDOWN then
+                            LastPlayerCountResetAt = os.clock()
+                            Trigger = string.format("Pocos jugadores (%d/%d): reiniciando para buscar servidor", N, Min)
                         end
                     end
                 end
@@ -2908,7 +2940,7 @@ end)
 end
 
 -- ============================================================
---  HARPOON HOOKING — PITCH FAN (fixed para floating heart)
+--  HARPOON HOOKING — PITCH FAN (improved tolerances)
 -- ============================================================
 
 local function LiveHeartPos()
@@ -2938,9 +2970,7 @@ local function FireHarpoonOnce(CommF2, Harpoon, Pitch, Yaw)
     return ok
 end
 
--- Pagbuo ng pitch candidates para sa isang shot position.
--- Priority: fan ng upward bias (para sa floating heart), tapos ballistic
--- candidates para sa iba't ibang assumed speeds kung may gravity talaga.
+-- Build pitch candidates: upward bias fan + ballistic candidates.
 local function BuildPitchFan(fromPos, toPos)
     local dx = toPos.X - fromPos.X
     local dy = toPos.Y - fromPos.Y
@@ -2949,22 +2979,23 @@ local function BuildPitchFan(fromPos, toPos)
     local flat = math.atan2(dy, math.max(horizontal, 1))
 
     local pitches = {}
-    -- Phase 1: upward bias fan (para sa floating heart na mataas)
-    local degs = { 0, 4, 8, 13, 18, 24, 30, 38, 46, 55, 65, 75 }
+    -- Wider upward fan: 14 angles, up to 85°.
+    local degs = { -4, 0, 4, 8, 13, 18, 24, 30, 38, 46, 55, 65, 75, 85 }
     for _, d in ipairs(degs) do
         pitches[#pitches + 1] = flat + math.rad(d)
     end
 
-    -- Phase 2: ballistic candidates kung may gravity yung harpoon
+    -- Ballistic candidates assuming projectile gravity.
     if horizontal > 1 then
         local g = 196.2
-        for _, speed in ipairs({ 200, 280, 380, 500 }) do
+        for _, speed in ipairs({ 180, 220, 280, 340, 400, 460, 520 }) do
             local v2 = speed * speed
             local v4 = v2 * v2
             local disc = v4 - g * (g * horizontal * horizontal + 2 * dy * v2)
             if disc >= 0 then
                 local root = math.sqrt(disc)
                 pitches[#pitches + 1] = math.atan((v2 - root) / (g * horizontal))
+                pitches[#pitches + 1] = math.atan((v2 + root) / (g * horizontal))
             end
         end
     end
@@ -3005,13 +3036,14 @@ local function HarpoonHeart()
 
     local BoatStartY = DriverSeat.Position.Y
 
-    local Distances = { 300, 250, 350, 220, 400, 280, 450, 200, 500, 320, 380 }
+    -- More approach distances to increase the chance of a clean launch.
+    local Distances = { 300, 260, 340, 220, 380, 280, 420, 240, 460, 200, 500, 320, 400, 360, 520 }
     local DistanceIdx = 1
 
-    local MAX_APPROACHES = 8
+    local MAX_APPROACHES = 10
     local approaches = 0
     local totalShots = 0
-    local MAX_TOTAL_SHOTS = 90
+    local MAX_TOTAL_SHOTS = 120
 
     while _G.AutoLeviathanFull
         and approaches < MAX_APPROACHES
@@ -3068,14 +3100,16 @@ local function HarpoonHeart()
             if flat.Magnitude < 0.5 then break end
             local yaw = math.atan2(flat.X, flat.Z) + math.pi
             DriverSeat.CFrame = CFrame.new(p.X, BoatStartY, p.Z) * CFrame.Angles(0, yaw, 0)
-            if BowErrorDeg(DriverSeat, nowHp) <= 1.5 then break end
+            -- Widened from 1.5° to 2.5° for stability.
+            if BowErrorDeg(DriverSeat, nowHp) <= 2.5 then break end
             task.wait()
         end
 
         local VerifyHp = LiveHeartPos()
         local alignErr = VerifyHp and BowErrorDeg(DriverSeat, VerifyHp) or 999
 
-        if alignErr > 6 then
+        -- Widened from 6° to 9° so aligned shots are not rejected too eagerly.
+        if alignErr > 9 then
             SetStatus(string.format("Enganche: alineación pobre (%.1f°), retry", alignErr))
             task.wait(0.3)
         else
@@ -3116,7 +3150,8 @@ local function HarpoonHeart()
 
                                     if DriverSeat and DriverSeat.Parent then
                                         local driftErr = BowErrorDeg(DriverSeat, curHp)
-                                        if driftErr > 10 then
+                                        -- Widened from 10° to 15°.
+                                        if driftErr > 15 then
                                             SetStatus(string.format("Enganche: proa drift (%.1f°), re-approach", driftErr))
                                             break
                                         end
@@ -3128,7 +3163,8 @@ local function HarpoonHeart()
                                     FireHarpoonOnce(CommF2, Harpoon, pitch, 0)
 
                                     local PostStart = os.clock()
-                                    while _G.AutoLeviathanFull and os.clock() - PostStart < 1.8 do
+                                    -- Wait a bit longer to give the harpoon time to register.
+                                    while _G.AutoLeviathanFull and os.clock() - PostStart < 2.2 do
                                         if not workspace:FindFirstChild("Map") then break end
                                         if not workspace.Map:FindFirstChild("FrozenHeart") then break end
                                         if IsFrozenHeartHarpooned() then grabbed = true break end
@@ -3435,6 +3471,11 @@ local function ReturnTiki(Speed)
     end
     if Returned then
         SetStatus("De vuelta en Tiki: espero a que el corazón desaparezca")
+        -- NEW: flag heart delivered for the webhook.
+        if not _G.RJR_HeartSavedFlag then
+            _G.RJR_HeartSavedFlag = true
+            _G.RJR_HeartSavedAt = os.time()
+        end
     end
     return Returned
 end
@@ -5242,6 +5283,31 @@ TravelSection:AddToggle("cruise.return", {
         SaveConfig()
     end,
 })
+-- NEW: Min Players + Auto Reset Low Players
+TravelSection:AddInput("min.players", {
+    Title = T("min.players"),
+    Description = T("min.players.desc"),
+    Default = tostring(_G.MinPlayers),
+    Placeholder = "5",
+    Numeric = true,
+    Finished = false,
+    Callback = function(Value)
+        local n = tonumber(Value)
+        if n then
+            _G.MinPlayers = math.clamp(math.floor(n), 1, 30)
+            SaveConfig()
+        end
+    end,
+})
+TravelSection:AddToggle("auto.reset.low", {
+    Title = T("auto.reset.low"),
+    Description = T("auto.reset.low.desc"),
+    Default = _G.AutoResetLowPlayers,
+    Callback = function(State)
+        _G.AutoResetLowPlayers = State
+        SaveConfig()
+    end,
+})
 local MainSection = Tabs.Status:AddSection(T("sec.main"))
 SectionKeys[#SectionKeys + 1] = { element = MainSection, key = "sec.main" }
 _G.RJR_AutoFullToggle = {
@@ -5983,6 +6049,13 @@ do
         Default = _G.WebhookSendHeartGot,
         Callback = function(State) _G.WebhookSendHeartGot = State SaveConfig() end,
     })
+    -- NEW: heart delivered to Tiki webhook
+    Tabs.Webhook:AddToggle("webhook.send.heartsaved", {
+        Title = T("webhook.send.heartsaved"),
+        Description = "",
+        Default = _G.WebhookSendHeartSaved,
+        Callback = function(State) _G.WebhookSendHeartSaved = State SaveConfig() end,
+    })
     Tabs.Webhook:AddToggle("wh.lowplayers", {
         Title = T("wh.lowplayers"),
         Description = T("wh.lowplayers.desc"),
@@ -6011,6 +6084,7 @@ do
         local PrevLeviathan = false
         local PrevHeartSpawn = false
         local PrevHeartGot = false
+        local PrevHeartSaved = false
         local PrevLowPlayers = false
         while true do
             task.wait(1)
@@ -6049,6 +6123,16 @@ do
                             SendWebhookUI(T("wh.msg.heartgot"), T("wh.title.heartgot"))
                         end
                         PrevHeartGot = Got
+                    end
+                    -- NEW: Heart delivered to Tiki event.
+                    if _G.WebhookSendHeartSaved then
+                        if _G.RJR_HeartSavedFlag and not PrevHeartSaved then
+                            local When = _G.RJR_HeartSavedAt
+                            local whenStr = When and os.date("%Y-%m-%d %H:%M:%S", When) or "?"
+                            SendWebhookUI(T("wh.msg.heartsaved") .. "\nHora: " .. whenStr,
+                                T("wh.title.heartsaved"))
+                        end
+                        PrevHeartSaved = _G.RJR_HeartSavedFlag
                     end
                     if _G.WebhookSendLowPlayers then
                         local N = #Players:GetPlayers()
