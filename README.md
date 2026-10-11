@@ -105,10 +105,6 @@ T, ModeDisplay = (function()
         ["language"] = { en = "Language", es = "Idioma", zh = "语言" },
         ["language.desc"] = { en = "Interface language, applied instantly", es = "Idioma de la interfaz, se aplica al instante", zh = "界面语言，立即生效" },
         ["menu.keybind"] = { en = "Menu Keybind", es = "Tecla del menu", zh = "菜单快捷键" },
-        ["min.players"] = { en = "Min Players", es = "Jugadores mínimos", zh = "最低人数" },
-        ["min.players.desc"] = { en = "If server drops below this count, reset & buy new boat", es = "Si el servidor baja de este número, reinicia y compra barco", zh = "服务器人数低于此值时，重置并购买新船" },
-        ["auto.reset.low"] = { en = "Auto Reset Low Players", es = "Reiniciar si pocos jugadores", zh = "人数不足时自动重置" },
-        ["auto.reset.low.desc"] = { en = "Automatically reset the run and rebuy a boat when players drop below Min Players", es = "Reinicia la partida y recompra barco cuando baje del mínimo", zh = "人数低于最低值时自动重置并重新买船" },
         ["mode.captain"] = { en = "Captain", es = "Capitán", zh = "开船" },
         ["mode.follower"] = { en = "Follower", es = "Seguidor", zh = "跟随" },
         ["mode.select"] = { en = "Mode Select", es = "Selección de modo", zh = "模式选择" },
@@ -284,9 +280,8 @@ if _G.WebhookSendHeartSpawn == nil then _G.WebhookSendHeartSpawn = false end
 if _G.WebhookSendHeartGot == nil then _G.WebhookSendHeartGot = false end
 if _G.WebhookSendHeartSaved == nil then _G.WebhookSendHeartSaved = false end
 if _G.WebhookSendLowPlayers == nil then _G.WebhookSendLowPlayers = false end
-if _G.MinPlayers == nil then _G.MinPlayers = 5 end
-if _G.AutoResetLowPlayers == nil then _G.AutoResetLowPlayers = true end
--- FIX #7 — heart cycle state (reset by the webhook monitor)
+-- FIX: minimum-players auto-reset feature removed entirely.
+-- (Removed: _G.MinPlayers default and _G.AutoResetLowPlayers default.)
 _G.RJR_HeartSavedFlag = false
 _G.RJR_HeartSavedAt = nil
 _G.RJR_HeartSavedDuration = nil
@@ -407,7 +402,6 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         ["Asiento fantasma: lo suelto y vuelvo a subir"] = { en = "Phantom seat: releasing it and boarding again", zh = "坐下状态未生效 松开座位 重新上船" },
         ["Sigo bloqueado: reinicio el personaje en Tiki"] = { en = "Still stuck, resetting the character at Tiki", zh = "仍未恢复 重置角色回Tiki" },
         ["Corazón presente y sin barco: voy a comprar uno"] = { en = "Heart present but no boat: going to buy one", zh = "心脏已出现但没有船 去买船" },
-        ["Pocos jugadores: reinicio para buscar servidor"] = { en = "Low players: resetting to find a new server", zh = "人数不足 重置以寻找新服务器" },
     }
     local StatusPatterns = {
         { es = "Personaje bloqueado en el sitio ({1}): lo libero", en = "Character stuck in place ({1}): freeing it", zh = "人物卡在原地 ({1}) 正在解卡", nested = false },
@@ -447,7 +441,6 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         { es = "De caza: farmeo {1}", en = "Farming event while hunting: {1}", zh = "寻找利维坦途中 刷海上事件: {1}", nested = false },
         { es = "{1}: fabricado", en = "{1}: crafted", zh = "{1}: 已制作", nested = false },
         { es = "Falta {1} ({2}/{3})", en = "Missing {1} ({2}/{3})", zh = "缺 {1} ({2}/{3})", nested = false },
-        { es = "Pocos jugadores ({1}/{2}): reiniciando para buscar servidor", en = "Low players ({1}/{2}): resetting to find a new server", zh = "人数不足 ({1}/{2}) 重置以寻找新服务器", nested = false },
     }
     local function EscapePattern(text)
         return (text:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1"))
@@ -541,8 +534,9 @@ local ConfigFolder = "MangoJuiceHub"
 local ConfigUser = tostring(LocalPlayer and LocalPlayer.Name or "default"):gsub("[^%w_%-]", "_")
 local ConfigFile = ConfigFolder .. "/" .. ConfigUser .. "_leviathan_config.json"
 local ConfigLegacyFile = ConfigFolder .. "/leviathan_config.json"
+-- FIX: MinPlayers / AutoResetLowPlayers removed from ConfigKeys.
 local ConfigKeys = {
-    "Mode","SilentAim","Language","FollowTarget","SelectWeapon","SkillMelee","SkillSword","SkillFruit","SkillGun","FastAttack","DragonGunFarm","DragonGunLeviathan","RemoveFog","AntiDracoAura","AutoFastMode","FPSBoost","AutoBuso","AutoKen","AutoV3","AutoV4","BoatSpeed","BoatHeight","PlayerTweenSpeed","CruiseReturn","AutoCraftScrolls","CraftQuality","AutoRandomFruit","AutoStoreFruits","HuntFightEvents","SoloSeaFarm","RespawnRebuy","HuntSelectEvents","WebhookURL","WebhookUsername","AutoWebhook","WebhookInterval","WebhookSendProgress","WebhookSendBribeReady","WebhookSendLeviathan","WebhookSendHeartSpawn","WebhookSendHeartGot","WebhookSendHeartSaved","WebhookSendLowPlayers","ShowInfoUI","MinPlayers","AutoResetLowPlayers",
+    "Mode","SilentAim","Language","FollowTarget","SelectWeapon","SkillMelee","SkillSword","SkillFruit","SkillGun","FastAttack","DragonGunFarm","DragonGunLeviathan","RemoveFog","AntiDracoAura","AutoFastMode","FPSBoost","AutoBuso","AutoKen","AutoV3","AutoV4","BoatSpeed","BoatHeight","PlayerTweenSpeed","CruiseReturn","AutoCraftScrolls","CraftQuality","AutoRandomFruit","AutoStoreFruits","HuntFightEvents","SoloSeaFarm","RespawnRebuy","HuntSelectEvents","WebhookURL","WebhookUsername","AutoWebhook","WebhookInterval","WebhookSendProgress","WebhookSendBribeReady","WebhookSendLeviathan","WebhookSendHeartSpawn","WebhookSendHeartGot","WebhookSendHeartSaved","WebhookSendLowPlayers","ShowInfoUI",
 }
 local function EnsureConfigFolder()
     if typeof(isfolder) == "function" and typeof(makefolder) == "function" then
@@ -611,7 +605,7 @@ do
     _G.BoatHeight = TravelNumber(_G.BoatHeight, _G.BoatLockY or 150, 30, 500)
     _G.PlayerTweenSpeed = TravelNumber(_G.PlayerTweenSpeed, 275, 50, 500)
     _G.BoatLockY = _G.BoatHeight
-    _G.MinPlayers = math.clamp(tonumber(_G.MinPlayers) or 5, 1, 30)
+    -- FIX: MinPlayers clamp removed with the low-player reset feature.
 end
 do
     local vu = game:GetService("VirtualUser")
@@ -1453,8 +1447,11 @@ local function OwnedBoatsOf(player)
     end
     return result
 end
+-- FIX: OwnBoatUnusable no longer short-circuits on `_G.RJR_Resetting`.
+-- That check made BuyOwnBoat() refuse to buy while a reset was running —
+-- which is exactly the moment we MUST buy. The monitor already guards
+-- re-entry via `not _G.RJR_Resetting`.
 local function OwnBoatUnusable(player, isCrew)
-    if _G.RJR_Resetting then return true end
     local boats = OwnedBoatsOf(player)
     if #boats == 0 then return false end
     local _, hrp = GetCharacterParts()
@@ -1786,44 +1783,60 @@ local function DebugDumpBoats()
             tostring(IsBeastHunterBoat(b))))
     end
 end
+-- FIX: BuyOwnBoat
+--   * Removed the old `if OwnBoatUnusable(LocalPlayer, false) then return false end`
+--     guard. It always returned true during a reset (because OwnBoatUnusable
+--     checked _G.RJR_Resetting), and it always returned true when the old boat
+--     was dead. Both are cases where we MUST buy, not refuse.
+--   * Added a re-entry lock (_G.RJR_BuyInProgress) so the main loop and the
+--     reset cannot both fly to the dealer at the same time.
+--   * Fixed the abort condition: the previous check `OwnBoatUnusable` was
+--     inverted and aborted the flight on the very first tick.
 local function BuyOwnBoat(Message)
-    if OwnBoatUnusable(LocalPlayer, false) then
-        SetStatus("Barco viejo inservible: espero el reinicio para recomprar")
-        return false
-    end
-    SetStatus(Message or "El barco desapareció: vuelo a comprar otro")
-    local _, _, humB = GetCharacterParts()
-    if humB and (humB.Sit or humB.SeatPart ~= nil) then
-        if not Unseat() then
-            SetStatus("No pude bajarme antes de comprar: voy igual al vendedor")
+    if _G.RJR_BuyInProgress then return false end
+    _G.RJR_BuyInProgress = true
+    local ok, err = pcall(function()
+        SetStatus(Message or "El barco desapareció: vuelo a comprar otro")
+        local _, _, humB = GetCharacterParts()
+        if humB and (humB.Sit or humB.SeatPart ~= nil) then
+            if not Unseat() then
+                SetStatus("No pude bajarme antes de comprar: voy igual al vendedor")
+            end
         end
-    end
-    local start = os.clock()
-    local Arrived = false
-    while _G.AutoLeviathanFull and os.clock() - start < 90 do
-        local _, hrp = GetCharacterParts()
-        if hrp and (hrp.Position - BoatDealerCF.Position).Magnitude <= 20 then
-            Arrived = true
-            break
+        local start = os.clock()
+        local Arrived = false
+        while _G.AutoLeviathanFull and os.clock() - start < 90 do
+            local _, hrp = GetCharacterParts()
+            if hrp and (hrp.Position - BoatDealerCF.Position).Magnitude <= 20 then
+                Arrived = true
+                break
+            end
+            _tp(LiveFixedCF(BoatDealerCF), function()
+                -- Abort only when the reason for buying has disappeared:
+                -- script stopped, or a boat has appeared.
+                return (not _G.AutoLeviathanFull) or (GetOwnBoat() ~= nil)
+            end)
+            task.wait(0.5)
         end
-        _tp(LiveFixedCF(BoatDealerCF), function()
-            return (not _G.AutoLeviathanFull) or OwnBoatUnusable(LocalPlayer, false)
-        end)
-        task.wait(0.5)
-    end
-    if not Arrived then
+        if not Arrived then
+            DebugDumpBoats()
+            print("[DEBUG] BuyOwnBoat no llegó al vendedor de barcos")
+            SetStatus("No llegué al vendedor de barcos: reintentando")
+            return
+        end
+        local CommF2 = Leviathan_CommF()
+        if CommF2 then
+            pcall(function() CommF2:InvokeServer("BuyBoat", "Beast Hunter") end)
+        end
+        task.wait(1)
         DebugDumpBoats()
-        print("[DEBUG] BuyOwnBoat no llegó al vendedor de barcos", tostring(select(2, GetCharacterParts()) and select(2, GetCharacterParts()).Position or nil))
-        SetStatus("No llegué al vendedor de barcos: reintentando")
+        print("[DEBUG] BuyOwnBoat llamó a BuyBoat, esperando el barco nuevo")
+    end)
+    _G.RJR_BuyInProgress = false
+    if not ok then
+        print("[Leviathan] BuyOwnBoat error: " .. tostring(err))
         return false
     end
-    local CommF2 = Leviathan_CommF()
-    if CommF2 then
-        pcall(function() CommF2:InvokeServer("BuyBoat", "Beast Hunter") end)
-    end
-    task.wait(1)
-    DebugDumpBoats()
-    print("[DEBUG] BuyOwnBoat llamó a BuyBoat, esperando el barco nuevo")
     return true
 end
 local function NearestPlayerDistance(boat)
@@ -1847,12 +1860,12 @@ local function NearestPlayerDistance(boat)
     return Min
 end
 local LastRebuyAt = 0
+-- FIX: RebuyBoatAndBoard
+--   Removed the old `if OwnBoatUnusable(LocalPlayer, false) then ... return nil, nil end`
+--   early return. We are literally here because the boat is unusable —
+--   refusing to continue on that condition guaranteed no boat was bought.
 local function RebuyBoatAndBoard()
     LastRebuyAt = os.clock()
-    if OwnBoatUnusable(LocalPlayer, false) then
-        SetStatus("Barco viejo inservible: espero el reinicio para recomprar")
-        return nil, nil
-    end
     SetStatus("El barco desapareció: vuelo a comprar otro")
     BuyOwnBoat()
     local SpawnStart = os.clock()
@@ -2594,6 +2607,7 @@ end
 _G.RJR_BoatDeadArmed = true
 _G.RJR_BoatDeadMonitorRunning = false
 _G.RJR_Resetting = false
+_G.RJR_BuyInProgress = false
 _G.RJR_LeviathanPresent = function()
     local MapL = workspace:FindFirstChild("Map")
     if not MapL then
@@ -2604,9 +2618,6 @@ _G.RJR_LeviathanPresent = function()
     end
     return SeaAPI.Leviathan_SegmentsExist()
 end
--- ============================================================
--- FIX #5 — Hardened reset (bulletproof flag + active rebuy)
--- ============================================================
 _G.RJR_ResetCharacterAtTiki = function(reason)
     if _G.RJR_Resetting then return end
     if _G.RJR_LeviathanPresent() then
@@ -2648,8 +2659,8 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
             _G.RJR_AbandonedBoats[boat] = true
             print("[Leviathan] Reinicio hecho, barco viejo abandonado: " .. boat.Name)
         end
-        -- FIX: actively buy and verify the replacement boat before
-        -- releasing the lock, so the main loop is not the only path.
+        -- Actively buy and verify the replacement boat before releasing
+        -- the lock, so the main loop is not the only path.
         if _G.AutoLeviathanFull then
             task.wait(0.5)
             pcall(BuyOwnBoat, reason .. ": comprando barco nuevo")
@@ -2669,10 +2680,9 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
     end
     _G.RJR_Resetting = false
 end
--- ============================================================
--- FIX #6 — Respawn Rebuy monitor: respect lock, faster rearm,
---         plus low-player trigger routed through the same path
--- ============================================================
+-- FIX: The minimum-players auto-reset block was removed entirely.
+-- The monitor now only reacts to actual boat destruction / captain death,
+-- and still respects the Frozen Dimension gate check via _G.RJR_LeviathanPresent.
 _G.RJR_StartBoatDeadMonitor = function()
     if _G.RJR_BoatDeadMonitorRunning then return end
     _G.RJR_BoatDeadMonitorRunning = true
@@ -2686,12 +2696,7 @@ _G.RJR_StartBoatDeadMonitor = function()
         local CaptainDeathAt = 0
         local CaptainDeathFollowed = false
         local CaptainDeathReason = "Capitán muerto"
-        local LastPlayerCountCheck = 0
-        local LastPlayerCountResetAt = 0
-        local PLAYER_CHECK_INTERVAL = 3
-        local PLAYER_RESET_COOLDOWN = 120
         while _G.AutoLeviathanFull do
-            -- FIX: if a reset is already running, do nothing this tick.
             if _G.RespawnRebuy and not _G.RJR_Resetting then
                 local isCaptain = _G.Mode == "Capitán"
                 local target = isCaptain and LocalPlayer or Players:FindFirstChild(_G.FollowTarget)
@@ -2742,18 +2747,7 @@ _G.RJR_StartBoatDeadMonitor = function()
                         end
                     end
                 end
-                -- NEW: low-player monitoring (uses the same reset pipeline).
-                if _G.AutoResetLowPlayers and not Trigger then
-                    if os.clock() - LastPlayerCountCheck >= PLAYER_CHECK_INTERVAL then
-                        LastPlayerCountCheck = os.clock()
-                        local N = #Players:GetPlayers()
-                        local Min = tonumber(_G.MinPlayers) or 5
-                        if N < Min and os.clock() - LastPlayerCountResetAt > PLAYER_RESET_COOLDOWN then
-                            LastPlayerCountResetAt = os.clock()
-                            Trigger = string.format("Pocos jugadores (%d/%d): reiniciando para buscar servidor", N, Min)
-                        end
-                    end
-                end
+                -- Frozen Dimension gate / heart / Leviathan always suppress reset.
                 if Trigger and _G.RJR_LeviathanPresent and _G.RJR_LeviathanPresent() then
                     Trigger = nil
                 end
@@ -2767,7 +2761,6 @@ _G.RJR_StartBoatDeadMonitor = function()
                             CaptainDeathFollowed = true
                         end
                         task.spawn(_G.RJR_ResetCharacterAtTiki, Trigger)
-                    -- FIX: was 120s; 30s retries a failed buy much sooner.
                     elseif not _G.RJR_BoatDeadArmed and os.clock() - LastResetAt > 30 then
                         _G.RJR_BoatDeadArmed = true
                     end
@@ -2970,9 +2963,6 @@ end
 
 -- ============================================================
 --  HARPOON HOOKING
---  FIX #1 — BuildPitchFan: symmetric fan (no upward bias)
---  FIX #2 — BoatLocalAim helper for boat-local yaw/pitch
---  FIX #3 — HarpoonHeart: correct origin, straight shot first
 -- ============================================================
 
 local function LiveHeartPos()
@@ -3002,7 +2992,6 @@ local function FireHarpoonOnce(CommF2, Harpoon, Pitch, Yaw)
     return ok
 end
 
--- FIX #1: symmetric pitch fan around the straight-line angle.
 local function BuildPitchFan(fromPos, toPos)
     local dx = toPos.X - fromPos.X
     local dy = toPos.Y - fromPos.Y
@@ -3032,7 +3021,6 @@ local function BuildPitchFan(fromPos, toPos)
     return pitches, flat
 end
 
--- FIX #2: convert world points into boat-local pitch/yaw.
 local function BoatLocalAim(boatCF, fireOrigin, targetPos)
     local lo = boatCF:PointToObjectSpace(fireOrigin)
     local lt = boatCF:PointToObjectSpace(targetPos)
@@ -3041,12 +3029,10 @@ local function BoatLocalAim(boatCF, fireOrigin, targetPos)
     local dz = lt.Z - lo.Z
     local horiz = math.sqrt(dx * dx + dz * dz)
     local pitch = math.atan2(dy, math.max(horiz, 1e-4))
-    -- Roblox: -Z is forward.
     local yaw = math.atan2(dx, -dz)
     return pitch, yaw, horiz
 end
 
--- FIX #3: HarpoonHeart — fires straight-line first, then a small fan.
 local function HarpoonHeart()
     local boat = GetOwnBoat()
     if not boat then return false end
@@ -3070,7 +3056,6 @@ local function HarpoonHeart()
         return false
     end
 
-    -- FIX: try the most likely fire origins in order and log the one we pick.
     local Muzzle = Harpoon:FindFirstChild("Muzzle")
         or Harpoon:FindFirstChild("Tip")
         or Harpoon:FindFirstChild("MuzzlePoint")
@@ -3184,7 +3169,6 @@ local function HarpoonHeart()
                                 hpFire.Y, baseHoriz,
                                 math.deg(basePitch), math.deg(baseYaw)))
 
-                            -- Phase 1 — single straight-line shot.
                             FireHarpoonOnce(CommF2, Harpoon, basePitch, baseYaw)
                             totalShots = totalShots + 1
                             local PostStart = os.clock()
@@ -3195,7 +3179,6 @@ local function HarpoonHeart()
                                 task.wait(0.12)
                             end
 
-                            -- Phase 2 — small fan around the straight-line aim.
                             if not grabbed then
                                 local pitches, _ = BuildPitchFan(mPos, hpFire)
                                 local yaws = {
@@ -3219,7 +3202,6 @@ local function HarpoonHeart()
                                             SetStatus(string.format("Enganche: proa drift (%.1f°), re-approach", driftErr))
                                             break
                                         end
-                                        -- Refresh base yaw each shot in case the boat drifted.
                                         local _, freshYaw = BoatLocalAim(DriverSeat.CFrame, mPos, curHp)
                                         yaws[1] = freshYaw
                                     end
@@ -3542,7 +3524,6 @@ local function ReturnTiki(Speed)
     end
     if Returned then
         SetStatus("De vuelta en Tiki: espero a que el corazón desaparezca")
-        -- FIX #4 — mark heart delivered only when the boat physically reaches Tiki.
         if not _G.RJR_HeartSavedFlag then
             _G.RJR_HeartSavedFlag = true
             _G.RJR_HeartSavedAt = os.time()
@@ -5356,30 +5337,7 @@ TravelSection:AddToggle("cruise.return", {
         SaveConfig()
     end,
 })
-TravelSection:AddInput("min.players", {
-    Title = T("min.players"),
-    Description = T("min.players.desc"),
-    Default = tostring(_G.MinPlayers),
-    Placeholder = "5",
-    Numeric = true,
-    Finished = false,
-    Callback = function(Value)
-        local n = tonumber(Value)
-        if n then
-            _G.MinPlayers = math.clamp(math.floor(n), 1, 30)
-            SaveConfig()
-        end
-    end,
-})
-TravelSection:AddToggle("auto.reset.low", {
-    Title = T("auto.reset.low"),
-    Description = T("auto.reset.low.desc"),
-    Default = _G.AutoResetLowPlayers,
-    Callback = function(State)
-        _G.AutoResetLowPlayers = State
-        SaveConfig()
-    end,
-})
+-- FIX: min.players input and auto.reset.low toggle were removed.
 local MainSection = Tabs.Status:AddSection(T("sec.main"))
 SectionKeys[#SectionKeys + 1] = { element = MainSection, key = "sec.main" }
 _G.RJR_AutoFullToggle = {
@@ -6150,7 +6108,6 @@ do
         end
     end)
 
-    -- FIX #7 — reset the per-cycle heart flags when the heart disappears.
     task.spawn(function()
         local PrevBribeReady = nil
         local PrevLeviathan = false
