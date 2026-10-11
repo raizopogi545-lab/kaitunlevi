@@ -286,8 +286,10 @@ if _G.WebhookSendHeartSaved == nil then _G.WebhookSendHeartSaved = false end
 if _G.WebhookSendLowPlayers == nil then _G.WebhookSendLowPlayers = false end
 if _G.MinPlayers == nil then _G.MinPlayers = 5 end
 if _G.AutoResetLowPlayers == nil then _G.AutoResetLowPlayers = true end
+-- FIX #7 — heart cycle state (reset by the webhook monitor)
 _G.RJR_HeartSavedFlag = false
 _G.RJR_HeartSavedAt = nil
+_G.RJR_HeartSavedDuration = nil
 local Character = LocalPlayer.Character
 local HD = Character and Character:FindFirstChild("Humanoid")
 local HRP = Character and Character:FindFirstChild("HumanoidRootPart")
@@ -2602,6 +2604,9 @@ _G.RJR_LeviathanPresent = function()
     end
     return SeaAPI.Leviathan_SegmentsExist()
 end
+-- ============================================================
+-- FIX #5 — Hardened reset (bulletproof flag + active rebuy)
+-- ============================================================
 _G.RJR_ResetCharacterAtTiki = function(reason)
     if _G.RJR_Resetting then return end
     if _G.RJR_LeviathanPresent() then
@@ -2609,42 +2614,65 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
         return
     end
     _G.RJR_Resetting = true
-    local WaitStart = os.clock()
-    while _G.AutoLeviathanFull and os.clock() - WaitStart < 120 do
-        local M = select(1, SeaAPI.Sea_Mob(1200))
-        if not M then break end
-        SetStatus(reason .. ": esperando a terminar el evento marino")
-        task.wait(1)
-    end
-    if _G.RJR_LeviathanPresent() then
-        SetStatus("Leviathan, puerta o corazón presentes: no reinicio")
-        _G.RJR_Resetting = false
-        return
-    end
-    SetStatus(reason .. ": reiniciando en Tiki para comprar barco")
-    pcall(Unseat)
-    pcall(function()
-        local CommF2 = Leviathan_CommF()
-        if CommF2 then
-            CommF2:InvokeServer("SetLastSpawnPoint", "Tiki")
+    local ok, err = pcall(function()
+        local WaitStart = os.clock()
+        while _G.AutoLeviathanFull and os.clock() - WaitStart < 120 do
+            local M = select(1, SeaAPI.Sea_Mob(1200))
+            if not M then break end
+            SetStatus(reason .. ": esperando a terminar el evento marino")
+            task.wait(1)
+        end
+        if _G.RJR_LeviathanPresent() then
+            SetStatus("Leviathan, puerta o corazón presentes: no reinicio")
+            return
+        end
+        SetStatus(reason .. ": reiniciando en Tiki para comprar barco")
+        pcall(Unseat)
+        pcall(function()
+            local CommF2 = Leviathan_CommF()
+            if CommF2 then
+                CommF2:InvokeServer("SetLastSpawnPoint", "Tiki")
+            end
+        end)
+        local _, _, hum = GetCharacterParts()
+        if hum and hum.Health > 0 then
+            pcall(function() hum.Health = 0 end)
+        end
+        local Deadline = os.clock() + 25
+        while os.clock() < Deadline do
+            local _, h, hm = GetCharacterParts()
+            if h and hm and hm.Health > 0 then break end
+            task.wait(0.2)
+        end
+        for _, boat in ipairs(OwnedBoatsOf(LocalPlayer)) do
+            _G.RJR_AbandonedBoats[boat] = true
+            print("[Leviathan] Reinicio hecho, barco viejo abandonado: " .. boat.Name)
+        end
+        -- FIX: actively buy and verify the replacement boat before
+        -- releasing the lock, so the main loop is not the only path.
+        if _G.AutoLeviathanFull then
+            task.wait(0.5)
+            pcall(BuyOwnBoat, reason .. ": comprando barco nuevo")
+            local SpawnWait = os.clock()
+            while _G.AutoLeviathanFull and os.clock() - SpawnWait < 45 do
+                local b = GetOwnBoat()
+                if b then
+                    print("[Leviathan] Barco nuevo confirmado: " .. b.Name)
+                    break
+                end
+                task.wait(0.5)
+            end
         end
     end)
-    local _, _, hum = GetCharacterParts()
-    if hum and hum.Health > 0 then
-        pcall(function() hum.Health = 0 end)
-    end
-    local Deadline = os.clock() + 20
-    while os.clock() < Deadline do
-        local _, h, hm = GetCharacterParts()
-        if h and hm and hm.Health > 0 then break end
-        task.wait(0.2)
-    end
-    for _, boat in ipairs(OwnedBoatsOf(LocalPlayer)) do
-        _G.RJR_AbandonedBoats[boat] = true
-        print("[Leviathan] Reinicio hecho, barco viejo abandonado: " .. boat.Name)
+    if not ok then
+        print("[Leviathan] ResetCharacterAtTiki error: " .. tostring(err))
     end
     _G.RJR_Resetting = false
 end
+-- ============================================================
+-- FIX #6 — Respawn Rebuy monitor: respect lock, faster rearm,
+--         plus low-player trigger routed through the same path
+-- ============================================================
 _G.RJR_StartBoatDeadMonitor = function()
     if _G.RJR_BoatDeadMonitorRunning then return end
     _G.RJR_BoatDeadMonitorRunning = true
@@ -2658,13 +2686,13 @@ _G.RJR_StartBoatDeadMonitor = function()
         local CaptainDeathAt = 0
         local CaptainDeathFollowed = false
         local CaptainDeathReason = "Capitán muerto"
-        -- --- Player count monitoring (new) ---
         local LastPlayerCountCheck = 0
         local LastPlayerCountResetAt = 0
         local PLAYER_CHECK_INTERVAL = 3
         local PLAYER_RESET_COOLDOWN = 120
         while _G.AutoLeviathanFull do
-            if _G.RespawnRebuy then
+            -- FIX: if a reset is already running, do nothing this tick.
+            if _G.RespawnRebuy and not _G.RJR_Resetting then
                 local isCaptain = _G.Mode == "Capitán"
                 local target = isCaptain and LocalPlayer or Players:FindFirstChild(_G.FollowTarget)
                 local Trigger = nil
@@ -2714,7 +2742,7 @@ _G.RJR_StartBoatDeadMonitor = function()
                         end
                     end
                 end
-                -- --- NEW: low-player monitoring ---
+                -- NEW: low-player monitoring (uses the same reset pipeline).
                 if _G.AutoResetLowPlayers and not Trigger then
                     if os.clock() - LastPlayerCountCheck >= PLAYER_CHECK_INTERVAL then
                         LastPlayerCountCheck = os.clock()
@@ -2739,7 +2767,8 @@ _G.RJR_StartBoatDeadMonitor = function()
                             CaptainDeathFollowed = true
                         end
                         task.spawn(_G.RJR_ResetCharacterAtTiki, Trigger)
-                    elseif not _G.RJR_BoatDeadArmed and os.clock() - LastResetAt > 120 then
+                    -- FIX: was 120s; 30s retries a failed buy much sooner.
+                    elseif not _G.RJR_BoatDeadArmed and os.clock() - LastResetAt > 30 then
                         _G.RJR_BoatDeadArmed = true
                     end
                 else
@@ -2940,7 +2969,10 @@ end)
 end
 
 -- ============================================================
---  HARPOON HOOKING — PITCH FAN (improved tolerances)
+--  HARPOON HOOKING
+--  FIX #1 — BuildPitchFan: symmetric fan (no upward bias)
+--  FIX #2 — BoatLocalAim helper for boat-local yaw/pitch
+--  FIX #3 — HarpoonHeart: correct origin, straight shot first
 -- ============================================================
 
 local function LiveHeartPos()
@@ -2970,7 +3002,7 @@ local function FireHarpoonOnce(CommF2, Harpoon, Pitch, Yaw)
     return ok
 end
 
--- Build pitch candidates: upward bias fan + ballistic candidates.
+-- FIX #1: symmetric pitch fan around the straight-line angle.
 local function BuildPitchFan(fromPos, toPos)
     local dx = toPos.X - fromPos.X
     local dy = toPos.Y - fromPos.Y
@@ -2979,13 +3011,11 @@ local function BuildPitchFan(fromPos, toPos)
     local flat = math.atan2(dy, math.max(horizontal, 1))
 
     local pitches = {}
-    -- Wider upward fan: 14 angles, up to 85°.
-    local degs = { -4, 0, 4, 8, 13, 18, 24, 30, 38, 46, 55, 65, 75, 85 }
+    local degs = { 0, -2, 2, -4, 4, -7, 7, -11, 11, -16, 16, -22, 22, -30, 30, -40, 40, -55, 55, -70, 70 }
     for _, d in ipairs(degs) do
         pitches[#pitches + 1] = flat + math.rad(d)
     end
 
-    -- Ballistic candidates assuming projectile gravity.
     if horizontal > 1 then
         local g = 196.2
         for _, speed in ipairs({ 180, 220, 280, 340, 400, 460, 520 }) do
@@ -2999,10 +3029,24 @@ local function BuildPitchFan(fromPos, toPos)
             end
         end
     end
-
-    return pitches
+    return pitches, flat
 end
 
+-- FIX #2: convert world points into boat-local pitch/yaw.
+local function BoatLocalAim(boatCF, fireOrigin, targetPos)
+    local lo = boatCF:PointToObjectSpace(fireOrigin)
+    local lt = boatCF:PointToObjectSpace(targetPos)
+    local dx = lt.X - lo.X
+    local dy = lt.Y - lo.Y
+    local dz = lt.Z - lo.Z
+    local horiz = math.sqrt(dx * dx + dz * dz)
+    local pitch = math.atan2(dy, math.max(horiz, 1e-4))
+    -- Roblox: -Z is forward.
+    local yaw = math.atan2(dx, -dz)
+    return pitch, yaw, horiz
+end
+
+-- FIX #3: HarpoonHeart — fires straight-line first, then a small fan.
 local function HarpoonHeart()
     local boat = GetOwnBoat()
     if not boat then return false end
@@ -3026,21 +3070,25 @@ local function HarpoonHeart()
         return false
     end
 
+    -- FIX: try the most likely fire origins in order and log the one we pick.
     local Muzzle = Harpoon:FindFirstChild("Muzzle")
         or Harpoon:FindFirstChild("Tip")
+        or Harpoon:FindFirstChild("MuzzlePoint")
         or Harpoon.PrimaryPart
+        or Harpoon:FindFirstChildWhichIsA("BasePart", true)
         or HarpoonSeat
+    if Muzzle then
+        print(string.format("[Hook] fire origin = %s @ %.1f,%.1f,%.1f",
+            Muzzle:GetFullName(), Muzzle.Position.X, Muzzle.Position.Y, Muzzle.Position.Z))
+    end
 
     local CommF2 = Leviathan_CommF()
     if not CommF2 then return false end
 
     local BoatStartY = DriverSeat.Position.Y
-
-    -- More approach distances to increase the chance of a clean launch.
-    local Distances = { 300, 260, 340, 220, 380, 280, 420, 240, 460, 200, 500, 320, 400, 360, 520 }
+    local Distances = { 300, 260, 340, 220, 380, 280, 420, 240, 460, 200, 500 }
     local DistanceIdx = 1
-
-    local MAX_APPROACHES = 10
+    local MAX_APPROACHES = 8
     local approaches = 0
     local totalShots = 0
     local MAX_TOTAL_SHOTS = 120
@@ -3082,7 +3130,6 @@ local function HarpoonHeart()
             SailBoatTurn(DriverSeat, TargetPoint, _G.BoatSpeed, BoatStartY)
             if not IsSittingOn(DriverSeat) then break end
         end
-
         if not IsSittingOn(DriverSeat) then
             SetStatus("Enganche: nawala ako sa timón")
             break
@@ -3100,16 +3147,13 @@ local function HarpoonHeart()
             if flat.Magnitude < 0.5 then break end
             local yaw = math.atan2(flat.X, flat.Z) + math.pi
             DriverSeat.CFrame = CFrame.new(p.X, BoatStartY, p.Z) * CFrame.Angles(0, yaw, 0)
-            -- Widened from 1.5° to 2.5° for stability.
-            if BowErrorDeg(DriverSeat, nowHp) <= 2.5 then break end
+            if BowErrorDeg(DriverSeat, nowHp) <= 2.0 then break end
             task.wait()
         end
 
         local VerifyHp = LiveHeartPos()
         local alignErr = VerifyHp and BowErrorDeg(DriverSeat, VerifyHp) or 999
-
-        -- Widened from 6° to 9° so aligned shots are not rejected too eagerly.
-        if alignErr > 9 then
+        if alignErr > 7 then
             SetStatus(string.format("Enganche: alineación pobre (%.1f°), retry", alignErr))
             task.wait(0.3)
         else
@@ -3130,16 +3174,37 @@ local function HarpoonHeart()
                         local hpFire = LiveHeartPos()
                         local grabbed = false
 
-                        if hpFire then
-                            local mPos = Muzzle and Muzzle.Position
-                            if mPos then
-                                local pitches = BuildPitchFan(mPos, hpFire)
-                                SetStatus(string.format(
-                                    "Enganche: %d shots, heart Y=%.0f, dist=%.0f",
-                                    #pitches, hpFire.Y,
-                                    math.sqrt((hpFire.X-mPos.X)^2 + (hpFire.Z-mPos.Z)^2)))
+                        if hpFire and Muzzle and Muzzle.Parent then
+                            local mPos = Muzzle.Position
+                            local boatCF = DriverSeat and DriverSeat.Parent and DriverSeat.CFrame or CFrame.new()
 
-                                for i, pitch in ipairs(pitches) do
+                            local basePitch, baseYaw, baseHoriz = BoatLocalAim(boatCF, mPos, hpFire)
+                            SetStatus(string.format(
+                                "Enganche: heart Y=%.0f, dist=%.0f, pitch=%.1f°, yaw=%.1f°",
+                                hpFire.Y, baseHoriz,
+                                math.deg(basePitch), math.deg(baseYaw)))
+
+                            -- Phase 1 — single straight-line shot.
+                            FireHarpoonOnce(CommF2, Harpoon, basePitch, baseYaw)
+                            totalShots = totalShots + 1
+                            local PostStart = os.clock()
+                            while _G.AutoLeviathanFull and os.clock() - PostStart < 2.0 do
+                                if not workspace:FindFirstChild("Map") then break end
+                                if not workspace.Map:FindFirstChild("FrozenHeart") then break end
+                                if IsFrozenHeartHarpooned() then grabbed = true break end
+                                task.wait(0.12)
+                            end
+
+                            -- Phase 2 — small fan around the straight-line aim.
+                            if not grabbed then
+                                local pitches, _ = BuildPitchFan(mPos, hpFire)
+                                local yaws = {
+                                    baseYaw,
+                                    baseYaw - 0.03, baseYaw + 0.03,
+                                    baseYaw - 0.06, baseYaw + 0.06,
+                                }
+                                for _, pitch in ipairs(pitches) do
+                                    if grabbed then break end
                                     if not _G.AutoLeviathanFull then break end
                                     if not IsSittingOn(HarpoonSeat) then break end
                                     if IsFrozenHeartHarpooned() then grabbed = true break end
@@ -3150,33 +3215,39 @@ local function HarpoonHeart()
 
                                     if DriverSeat and DriverSeat.Parent then
                                         local driftErr = BowErrorDeg(DriverSeat, curHp)
-                                        -- Widened from 10° to 15°.
                                         if driftErr > 15 then
                                             SetStatus(string.format("Enganche: proa drift (%.1f°), re-approach", driftErr))
                                             break
                                         end
+                                        -- Refresh base yaw each shot in case the boat drifted.
+                                        local _, freshYaw = BoatLocalAim(DriverSeat.CFrame, mPos, curHp)
+                                        yaws[1] = freshYaw
                                     end
 
-                                    totalShots = totalShots + 1
-                                    SetStatus(string.format("Enganche: shot %d/%d (%.1f°)",
-                                        i, #pitches, math.deg(pitch)))
-                                    FireHarpoonOnce(CommF2, Harpoon, pitch, 0)
+                                    for _, yaw in ipairs(yaws) do
+                                        if grabbed or totalShots >= MAX_TOTAL_SHOTS then break end
+                                        if not IsSittingOn(HarpoonSeat) then break end
+                                        totalShots = totalShots + 1
+                                        SetStatus(string.format("Enganche: shot %d/%d (p=%.1f° y=%.1f°)",
+                                            totalShots, MAX_TOTAL_SHOTS,
+                                            math.deg(pitch), math.deg(yaw)))
+                                        FireHarpoonOnce(CommF2, Harpoon, pitch, yaw)
 
-                                    local PostStart = os.clock()
-                                    -- Wait a bit longer to give the harpoon time to register.
-                                    while _G.AutoLeviathanFull and os.clock() - PostStart < 2.2 do
-                                        if not workspace:FindFirstChild("Map") then break end
-                                        if not workspace.Map:FindFirstChild("FrozenHeart") then break end
-                                        if IsFrozenHeartHarpooned() then grabbed = true break end
-                                        task.wait(0.12)
+                                        local Ps = os.clock()
+                                        while _G.AutoLeviathanFull and os.clock() - Ps < 1.8 do
+                                            if not workspace:FindFirstChild("Map") then break end
+                                            if not workspace.Map:FindFirstChild("FrozenHeart") then break end
+                                            if IsFrozenHeartHarpooned() then grabbed = true break end
+                                            task.wait(0.12)
+                                        end
+                                        if grabbed then break end
                                     end
-                                    if grabbed then break end
                                 end
+                            end
 
-                                if grabbed or IsFrozenHeartHarpooned() then
-                                    SetStatus("¡Corazón enganchado!")
-                                    return true
-                                end
+                            if grabbed or IsFrozenHeartHarpooned() then
+                                SetStatus("¡Corazón enganchado!")
+                                return true
                             end
                         end
                     else
@@ -3471,10 +3542,12 @@ local function ReturnTiki(Speed)
     end
     if Returned then
         SetStatus("De vuelta en Tiki: espero a que el corazón desaparezca")
-        -- NEW: flag heart delivered for the webhook.
+        -- FIX #4 — mark heart delivered only when the boat physically reaches Tiki.
         if not _G.RJR_HeartSavedFlag then
             _G.RJR_HeartSavedFlag = true
             _G.RJR_HeartSavedAt = os.time()
+            _G.RJR_HeartSavedDuration = os.clock() - TotalStart
+            print(string.format("[Heart] Delivered to Tiki after %.1fs", _G.RJR_HeartSavedDuration))
         end
     end
     return Returned
@@ -5283,7 +5356,6 @@ TravelSection:AddToggle("cruise.return", {
         SaveConfig()
     end,
 })
--- NEW: Min Players + Auto Reset Low Players
 TravelSection:AddInput("min.players", {
     Title = T("min.players"),
     Description = T("min.players.desc"),
@@ -6049,7 +6121,6 @@ do
         Default = _G.WebhookSendHeartGot,
         Callback = function(State) _G.WebhookSendHeartGot = State SaveConfig() end,
     })
-    -- NEW: heart delivered to Tiki webhook
     Tabs.Webhook:AddToggle("webhook.send.heartsaved", {
         Title = T("webhook.send.heartsaved"),
         Description = "",
@@ -6079,6 +6150,7 @@ do
         end
     end)
 
+    -- FIX #7 — reset the per-cycle heart flags when the heart disappears.
     task.spawn(function()
         local PrevBribeReady = nil
         local PrevLeviathan = false
@@ -6105,32 +6177,39 @@ do
                         end
                         PrevLeviathan = NowLV
                     end
+                    local Map = workspace:FindFirstChild("Map")
+                    local Heart = Map and Map:FindFirstChild("FrozenHeart")
+                    local NowSpawn = Heart ~= nil
+                    if PrevHeartSpawn and not NowSpawn then
+                        _G.RJR_HeartSavedFlag = false
+                        _G.RJR_HeartSavedAt = nil
+                        _G.RJR_HeartSavedDuration = nil
+                        PrevHeartGot = false
+                        PrevHeartSaved = false
+                    end
                     if _G.WebhookSendHeartSpawn then
-                        local Map = workspace:FindFirstChild("Map")
-                        local Heart = Map and Map:FindFirstChild("FrozenHeart")
-                        local NowSpawn = Heart ~= nil
                         if NowSpawn and not PrevHeartSpawn then
                             SendWebhookUI(T("wh.msg.heartspawn"), T("wh.title.heartspawn"))
                         end
-                        PrevHeartSpawn = NowSpawn
                     end
-                    if _G.WebhookSendHeartGot then
-                        local Map = workspace:FindFirstChild("Map")
-                        local Heart = Map and Map:FindFirstChild("FrozenHeart")
-                        local HP = Heart and GetHeartPos(Heart)
+                    PrevHeartSpawn = NowSpawn
+                    if _G.WebhookSendHeartGot and Heart then
+                        local HP = GetHeartPos(Heart)
                         local Got = HP ~= nil and IsFrozenHeartHarpooned()
                         if Got and not PrevHeartGot then
                             SendWebhookUI(T("wh.msg.heartgot"), T("wh.title.heartgot"))
                         end
                         PrevHeartGot = Got
                     end
-                    -- NEW: Heart delivered to Tiki event.
                     if _G.WebhookSendHeartSaved then
                         if _G.RJR_HeartSavedFlag and not PrevHeartSaved then
                             local When = _G.RJR_HeartSavedAt
+                            local Dur = _G.RJR_HeartSavedDuration
                             local whenStr = When and os.date("%Y-%m-%d %H:%M:%S", When) or "?"
-                            SendWebhookUI(T("wh.msg.heartsaved") .. "\nHora: " .. whenStr,
-                                T("wh.title.heartsaved"))
+                            local body = T("wh.msg.heartsaved")
+                                .. "\nHora: " .. whenStr
+                                .. (Dur and ("\nDuracion: " .. string.format("%.1fs", Dur)) or "")
+                            SendWebhookUI(body, T("wh.title.heartsaved"))
                         end
                         PrevHeartSaved = _G.RJR_HeartSavedFlag
                     end
