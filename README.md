@@ -97,12 +97,14 @@ T, ModeDisplay = (function()
         ["detail.not.seated"] = { en = "Not seated", es = "Sin asiento", zh = "未坐船" },
         ["detail.seat"] = { en = "Current Seat", es = "Asiento actual", zh = "当前座位" },
         ["detail.teammates"] = { en = "Teammates On Board", es = "Compañeros a bordo", zh = "队友上船" },
+        ["dragon.burst"] = { en = "Dragonstorm Burst", es = "Ráfaga Dragonstorm", zh = "龙炮连击数" },
+        ["dragon.burst.desc"] = { en = "Hit parts sent per shot (1 = original, 6 = max safe). Higher = more damage per FireServer", es = "Partes de impacto por disparo (1 = original, 6 = máximo seguro). Más = más daño por disparo", zh = "每次射击携带的命中部件数（1=原版，6=安全上限）。越大单发伤害越高" },
+        ["dragon.multi"] = { en = "Dragonstorm Multi-Segment", es = "Dragonstorm multi-segmento", zh = "龙炮多段命中" },
+        ["dragon.multi.desc"] = { en = "Hit every nearby Leviathan segment in one shot", es = "Golpea todos los segmentos del Leviathan cercanos en un disparo", zh = "一发命中附近所有利维坦分段" },
         ["dragon.farm"] = { en = "Dragonstorm for Farming", es = "Usar Dragonstorm al farmear", zh = "刷海使用龙炮" },
         ["dragon.farm.desc"] = { en = "Use Dragonstorm for sea events (not Leviathan)", es = "Usa Dragonstorm en los eventos marinos (no en el Leviathan)", zh = "海上事件用 Dragonstorm 打（利维坦不用）" },
         ["dragon.leviathan"] = { en = "Dragonstorm vs Leviathan", es = "Dragonstorm contra el Leviathan", zh = "龙炮打利维坦" },
         ["dragon.leviathan.desc"] = { en = "Shoot Leviathan with Dragonstorm", es = "Dispara al Leviathan con Dragonstorm (funciona sin el modo de farmeo)", zh = "打利维坦时用 Dragonstorm 射击（不开刷海龙炮也能用）" },
-        ["dragon.multipart"] = { en = "Dragonstorm Multi-Hit", es = "Dragonstorm Multi-Impacto", zh = "龙炮多重命中" },
-        ["dragon.multipart.desc"] = { en = "Send full hit list per shot (bigger damage on large targets). Turn off if the game rejects shots.", es = "Envia lista completa por disparo (mas dano en objetivos grandes). Apaga si el juego rechaza disparos.", zh = "每发发送完整命中列表（大型目标伤害更高）。如果游戏拒绝射击就关闭。" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -261,10 +263,6 @@ if _G.AutoKen == nil then _G.AutoKen = false end
 if _G.FastAttack == nil then _G.FastAttack = false end
 if _G.DragonGunFarm == nil then _G.DragonGunFarm = false end
 if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
--- Multi-part hitlist for Dragonstorm: sends the full pellet list per shot.
--- Default OFF because some game builds reject multi-part hitlists. Turn it on
--- in the Combat tab to test; if shots stop registering, turn it back off.
-if _G.DragonMultiPart == nil then _G.DragonMultiPart = false end
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
 if _G.AutoFastMode == nil then _G.AutoFastMode = false end
@@ -294,6 +292,9 @@ if _G.WebhookSendLeviathan == nil then _G.WebhookSendLeviathan = false end
 if _G.WebhookSendHeartSpawn == nil then _G.WebhookSendHeartSpawn = false end
 if _G.WebhookSendHeartGot == nil then _G.WebhookSendHeartGot = false end
 if _G.WebhookSendLowPlayers == nil then _G.WebhookSendLowPlayers = false end
+-- Dragonstorm enhancement defaults
+if _G.DragonBurstCount == nil then _G.DragonBurstCount = 4 end
+if _G.DragonMultiSegment == nil then _G.DragonMultiSegment = true end
 local Character = LocalPlayer.Character
 local HD = Character and Character:FindFirstChild("Humanoid")
 local HRP = Character and Character:FindFirstChild("HumanoidRootPart")
@@ -569,7 +570,8 @@ local ConfigKeys = {
     "FastAttack",
     "DragonGunFarm",
     "DragonGunLeviathan",
-    "DragonMultiPart",
+    "DragonBurstCount",
+    "DragonMultiSegment",
     "RemoveFog",
     "AntiDracoAura",
     "AutoFastMode",
@@ -703,6 +705,8 @@ do
     _G.BoatHeight = TravelNumber(_G.BoatHeight, _G.BoatLockY or 150, 30, 500)
     _G.PlayerTweenSpeed = TravelNumber(_G.PlayerTweenSpeed, 275, 50, 500)
     _G.BoatLockY = _G.BoatHeight
+    _G.DragonBurstCount = math.clamp(tonumber(_G.DragonBurstCount) or 4, 1, 6)
+    if _G.DragonMultiSegment == nil then _G.DragonMultiSegment = true end
 end
 do
     local vu = game:GetService("VirtualUser")
@@ -2541,7 +2545,7 @@ local function Sea_EventRoot(Mob)
 end
 
 -- ============================================================
--- Dragonstorm (corrected + DPS-focused)
+-- Dragonstorm (ENHANCED - multi-hit burst, no signature change)
 -- ============================================================
 local ShootGunEvent = nil
 local Validator2 = nil
@@ -2553,20 +2557,6 @@ local VALID_SEA_ENEMIES = {
     "Fish Crew Member", "Haunted Crew Member",
     "FishBoat", "PirateBrigade", "PirateGrandBrigade",
     "PirateBasic",
-}
-
--- Priority weights: lower = preferred. Bigger value targets get picked
--- before low-HP trash even when the trash is physically closer.
-local SEA_PRIORITY_WEIGHT = {
-    ["Terrorshark"] = 0.5,
-    ["SeaBeast1"] = 0.6,
-    ["PirateBrigade"] = 0.7,
-    ["PirateGrandBrigade"] = 0.7,
-    ["PirateBasic"] = 0.8,
-    ["FishBoat"] = 0.8,
-    ["Shark"] = 1.0,
-    ["Piranha"] = 1.0,
-    ["Fish Crew Member"] = 1.0,
 }
 
 local function initDragon()
@@ -2596,7 +2586,7 @@ local function initDragon()
     end)
     if success and shootFunc then
         dragonReady = true
-        print("[Dragonstorm] initDragon OK")
+        print("[Dragonstorm] initDragon OK (burst=" .. tostring(_G.DragonBurstCount) .. ", multi-seg=" .. tostring(_G.DragonMultiSegment) .. ")")
         return true
     end
     if not initDragonErrorReported then
@@ -2607,68 +2597,96 @@ local function initDragon()
     return false
 end
 
--- Builds a full pellet list for one shot. When _G.DragonMultiPart is true,
--- all these parts are sent in one FireServer call, letting the shotgun M1
--- register multiple hits per shot on large targets (Leviathan segments,
--- Sea Beasts, pirate ships).
-local LIMB_PARTS = {
-    "Head", "UpperTorso", "LowerTorso",
-    "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm",
-    "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg",
-    "HumanoidRootPart",
-}
-local function buildDragonHitList(primaryPart, ownerModel)
-    local list = {}
-    local seen = {}
-    local function push(p)
-        if p and p:IsA("BasePart") and not seen[p] then
-            seen[p] = true
-            list[#list + 1] = p
-        end
+-- Collect up to maxCount valid BaseParts from a single model.
+-- `primary` is always included first; extra parts are appended so that
+-- a single FireServer call damages every collidable part of the target.
+local function CollectPartsFromModel(model, primary, maxCount)
+    if not model or not model.Parent then
+        return {}
     end
-    push(primaryPart)
-    if ownerModel then
-        for _, name in ipairs(LIMB_PARTS) do
-            push(ownerModel:FindFirstChild(name))
-        end
-        if #list == 0 then
-            push(ownerModel.PrimaryPart)
-            push(ownerModel:FindFirstChildWhichIsA("BasePart", true))
-        end
+    maxCount = maxCount or _G.DragonBurstCount or 4
+    if maxCount < 1 then maxCount = 1 end
+    local out = {}
+    if primary and typeof(primary) == "Instance"
+        and primary:IsA("BasePart") and primary.Parent then
+        out[#out + 1] = primary
     end
-    return list
+    if #out >= maxCount then
+        return out
+    end
+    pcall(function()
+        for _, d in ipairs(model:GetDescendants()) do
+            if d:IsA("BasePart") and d.Parent and d ~= primary then
+                out[#out + 1] = d
+                if #out >= maxCount then
+                    break
+                end
+            end
+        end
+    end)
+    return out
 end
 
--- fireShot: sends exactly the list of parts. When DragonMultiPart is off,
--- only the first valid part is sent (the pre-regression format that was
--- confirmed to work). When on, the whole list is sent for extra coverage.
-local function fireShot(pos, hit)
+-- Collect the individual Leviathan segment hitboxes from every nearby
+-- "Leviathan Segment" model. Each segment counts as a separate hit,
+-- so this multiplies the damage done per shot against the boss.
+local function CollectLeviathanParts(maxCount)
+    maxCount = maxCount or _G.DragonBurstCount or 4
+    if maxCount < 1 then maxCount = 1 end
+    local out = {}
+    if not _G.DragonMultiSegment then
+        return out
+    end
+    local SeaBeasts = workspace:FindFirstChild("SeaBeasts")
+    if not SeaBeasts then
+        return out
+    end
+    local _, myHRP = GetCharacterParts()
+    if not myHRP then
+        return out
+    end
+    local myPos = myHRP.Position
+    for _, model in ipairs(SeaBeasts:GetChildren()) do
+        if model.Name == "Leviathan Segment" or model.Name == "Leviathan" then
+            if not Leviathan_IsDead(model) then
+                local seg = model:FindFirstChild("Leviathan Segment")
+                    or model:FindFirstChild("HumanoidRootPart")
+                    or model.PrimaryPart
+                if seg and seg:IsA("BasePart")
+                    and (seg.Position - myPos).Magnitude <= 3000 then
+                    out[#out + 1] = seg
+                    if #out >= maxCount then
+                        break
+                    end
+                end
+            end
+        end
+    end
+    return out
+end
+
+-- Fire ONE shot carrying an array of hit parts.
+-- The internal state machine advances exactly once per shot, so the
+-- server-side Validator stays happy, while every BasePart in the
+-- array is applied damage by the game on the receiving end.
+local function fireShot(pos, hits)
     if not shootFunc or not Validator2 or not ShootGunEvent then
         return false
     end
-    local hitList
-    if typeof(hit) == "Instance" and hit:IsA("BasePart") then
-        hitList = { hit }
-    elseif type(hit) == "table" then
-        hitList = hit
-    else
-        return false
-    end
-
-    -- Validate: keep only parts still parented in the game
-    local validList = {}
-    for _, p in ipairs(hitList) do
-        if typeof(p) == "Instance" and p:IsA("BasePart") and p.Parent then
-            validList[#validList + 1] = p
+    -- Normalise the argument to a non-empty array of BaseParts.
+    local partList = {}
+    if typeof(hits) == "Instance" and hits:IsA("BasePart") then
+        partList[1] = hits
+    elseif type(hits) == "table" then
+        for _, p in ipairs(hits) do
+            if typeof(p) == "Instance" and p:IsA("BasePart") and p.Parent then
+                partList[#partList + 1] = p
+            end
         end
     end
-    if #validList == 0 then return false end
-
-    -- When MultiPart is off, only send the first part (safe mode)
-    if not _G.DragonMultiPart then
-        validList = { validList[1] }
+    if #partList == 0 then
+        return false
     end
-
     local u20 = debug.getupvalue(shootFunc, idx.u20)
     local u21 = debug.getupvalue(shootFunc, idx.u21)
     local u22 = debug.getupvalue(shootFunc, idx.u22)
@@ -2676,6 +2694,9 @@ local function fireShot(pos, hit)
     local u24 = debug.getupvalue(shootFunc, idx.u24)
     local u25 = debug.getupvalue(shootFunc, idx.u25)
     local u26 = debug.getupvalue(shootFunc, idx.u26)
+    if not (u20 and u21 and u22 and u23 and u24 and u25 and u26) then
+        return false
+    end
     local u79 = u25 * u21
     local u80 = (u24 * u21 + u25 * u20) % u22
     u80 = (u80 * u22 + u79) % u23
@@ -2686,7 +2707,7 @@ local function fireShot(pos, hit)
     debug.setupvalue(shootFunc, idx.u25, u25)
     debug.setupvalue(shootFunc, idx.u26, u26)
     Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
-    ShootGunEvent:FireServer(pos, validList)
+    ShootGunEvent:FireServer(pos, partList)
     return true
 end
 
@@ -2721,58 +2742,14 @@ local function targetOwnerAlive(part)
     return true
 end
 
--- ============================================================
--- Leviathan focus lock: DPS fix
--- ============================================================
--- Without this, the closest-segment selection flips between the three
--- Leviathan tails every 0.2 s, splitting Dragonstorm damage across all
--- three at once and never finishing any of them. The lock below sticks
--- to one segment until it dies.
-local FocusedSegment = nil
-local function leviathanSegmentAlive(model)
-    if not model or not model.Parent then return false end
-    local hp = model:FindFirstChild("Health")
-    if hp and hp:IsA("ValueBase") then
-        return hp.Value > 0
-    end
-    local hum = model:FindFirstChildOfClass("Humanoid")
-    if hum then
-        return hum.Health > 0
-    end
-    return true
-end
-local function getFocusedLeviathanSegment()
-    if FocusedSegment and leviathanSegmentAlive(FocusedSegment) then
-        return FocusedSegment
-    end
-    FocusedSegment = nil
-    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
-    if not seaBeasts then return nil end
-    local char = LocalPlayer.Character
-    local myHRP = char and char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then return nil end
-    local myPos = myHRP.Position
-    local best, bestDist = nil, math.huge
-    for _, e in ipairs(seaBeasts:GetChildren()) do
-        if e.Name == "Leviathan Segment" and leviathanSegmentAlive(e) then
-            local part = e:FindFirstChild("Leviathan Segment")
-                or e:FindFirstChild("HumanoidRootPart")
-                or e.PrimaryPart
-            if part and part:IsA("BasePart") then
-                local d = (part.Position - myPos).Magnitude
-                if d < bestDist then
-                    bestDist, best = d, e
-                end
-            end
-        end
-    end
-    FocusedSegment = best
-    return best
-end
-
 local AttackRange = 2500
 local SeaTargetCache, SeaTargetAt, SeaTargetModel
 
+-- Returns (part, model). Picks the exact server-valid hit part per entity:
+--   * Leviathan segment  -> "Leviathan Segment"
+--   * Sea Beast          -> "HumanoidRootPart" (fallback PrimaryPart)
+--   * Pirate boats       -> "Engine"
+--   * ground mobs        -> "HumanoidRootPart" (fallback first BasePart)
 local function getClosestSeaTarget()
     local now = os.clock()
     if SeaTargetCache and (now - SeaTargetAt) < 0.2 then
@@ -2790,40 +2767,29 @@ local function getClosestSeaTarget()
     local playerBoats = getAllPlayerBoatModels()
     local selectionSet = Sea_SelectionSet()
 
-    -- Leviathan: use the focus lock so damage lands on one segment at a time.
-    local focused = getFocusedLeviathanSegment()
-    if focused then
-        local part = focused:FindFirstChild("Leviathan Segment")
-            or focused:FindFirstChild("HumanoidRootPart")
-            or focused.PrimaryPart
-        if part and part:IsA("BasePart") then
-            local d = (part.Position - myPos).Magnitude
-            if d < bestDist then
-                bestDist, best, bestModel = d, part, focused
-            end
-        end
-    end
-
-    -- Other SeaBeasts (non-Leviathan) — normal distance selection
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
-            if e.Name ~= "Leviathan Segment" and e.Name ~= "Leviathan" then
-                local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
-                local allowed = configName == nil
-                    or (selectionSet == nil or selectionSet[configName] == true)
-                if allowed then
-                    local hp = e:FindFirstChild("Health")
-                    local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
-                    if alive then
-                        local part = e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
-                        if part and part:IsA("BasePart") then
-                            local d = (part.Position - myPos).Magnitude
-                            local weight = SEA_PRIORITY_WEIGHT[e.Name] or 1.0
-                            local effective = d * weight
-                            if effective < bestDist then
-                                bestDist, best, bestModel = effective, part, e
-                            end
+            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
+            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
+            local allowed = isLeviathan
+                or configName == nil
+                or (selectionSet == nil or selectionSet[configName] == true)
+            if allowed then
+                local hp = e:FindFirstChild("Health")
+                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+                if alive then
+                    local part
+                    if isLeviathan then
+                        part = e:FindFirstChild("Leviathan Segment")
+                    end
+                    part = part
+                        or e:FindFirstChild("HumanoidRootPart")
+                        or e.PrimaryPart
+                    if part and part:IsA("BasePart") then
+                        local d = (part.Position - myPos).Magnitude
+                        if d < bestDist then
+                            bestDist, best, bestModel = d, part, e
                         end
                     end
                 end
@@ -2831,7 +2797,6 @@ local function getClosestSeaTarget()
         end
     end
 
-    -- Enemies folder
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, e in ipairs(enemies:GetChildren()) do
@@ -2854,10 +2819,8 @@ local function getClosestSeaTarget()
                     end
                     if part and part:IsA("BasePart") then
                         local d = (part.Position - myPos).Magnitude
-                        local weight = SEA_PRIORITY_WEIGHT[e.Name] or 1.0
-                        local effective = d * weight
-                        if effective < bestDist then
-                            bestDist, best, bestModel = effective, part, e
+                        if d < bestDist then
+                            bestDist, best, bestModel = d, part, e
                         end
                     end
                 end
@@ -2885,7 +2848,7 @@ local function StartDragonAttack()
             end
             task.wait(5)
         end
-        print("[Dragonstorm] listo")
+        print("[Dragonstorm] listo (burst=" .. tostring(_G.DragonBurstCount) .. ")")
         local lastDiag = 0
         while _G.DragonGunFarm do
             local ok, err = pcall(function()
@@ -2909,11 +2872,6 @@ local function StartDragonAttack()
                     end
                     return
                 end
-                -- Recheck alive right before firing (kills shots on stale targets)
-                if not targetOwnerAlive(target) then
-                    SeaTargetCache, SeaTargetModel = nil, nil
-                    return
-                end
                 local char = LocalPlayer.Character
                 if not char then return end
                 local tool = char:FindFirstChildOfClass("Tool")
@@ -2923,11 +2881,22 @@ local function StartDragonAttack()
                     end
                     return
                 end
-                local hitList = buildDragonHitList(target, targetModel)
-                local fired = fireShot(target.Position, hitList)
+                local ownerName = targetModel and targetModel.Name or target.Name
+                -- Build the burst: multiple parts of the same enemy per FireServer call.
+                local parts
+                if targetModel and (targetModel.Name == "Leviathan Segment"
+                    or targetModel.Name == "Leviathan") then
+                    parts = CollectLeviathanParts(_G.DragonBurstCount)
+                else
+                    parts = CollectPartsFromModel(targetModel, target, _G.DragonBurstCount)
+                end
+                if #parts == 0 then
+                    parts = { target }
+                end
+                local fired = fireShot(target.Position, parts)
                 if not fired and os.clock() - lastDiag > 2 then
                     lastDiag = os.clock()
-                    print("[Dragonstorm] disparo rechazado para " .. tostring(targetModel and targetModel.Name or target.Name))
+                    print("[Dragonstorm] disparo rechazado para " .. ownerName)
                 end
             end)
             if not ok and os.clock() - lastDiag > 2 then
@@ -3082,8 +3051,6 @@ end
 local function Leviathan_SegmentsExist()
     return Leviathan_Find() ~= nil
 end
--- Hover height: Dragonstorm's shotgun spread works best at closer range,
--- so drop from 75 to 38 studs when the weapon is equipped.
 local function Leviathan_Stand(model, part)
     local Root = model:FindFirstChild("HumanoidRootPart")
         or model:FindFirstChild("RootPart")
@@ -3093,11 +3060,7 @@ local function Leviathan_Stand(model, part)
     if not Root then
         return nil
     end
-    local height = 75
-    if _G.DragonGunFarm or _G.DragonGunLeviathan or HasDragonstormEquipped() then
-        height = 38
-    end
-    local standPos = Vector3.new(Root.Position.X, Root.Position.Y + height, Root.Position.Z)
+    local standPos = Vector3.new(Root.Position.X, Root.Position.Y + 75, Root.Position.Z)
     return FaceTargetCF(standPos, model) or CFrame.new(standPos)
 end
 local LeviathanWaitDone = false
@@ -3258,8 +3221,16 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     end
                     local target, targetModel = getClosestSeaTarget()
                     if target then
-                        local hitList = buildDragonHitList(target, targetModel)
-                        fireShot(target.Position, hitList)
+                        -- Pull every nearby segment hitbox so a single shot damages
+                        -- the Leviathan's whole body, not just one segment.
+                        local parts = CollectLeviathanParts(_G.DragonBurstCount)
+                        if #parts == 0 then
+                            parts = CollectPartsFromModel(targetModel, target, _G.DragonBurstCount)
+                        end
+                        if #parts == 0 then
+                            parts = { target }
+                        end
+                        fireShot(target.Position, parts)
                     end
                 else
                     local Distance = Stand and (Stand.Position - HRP.Position).Magnitude or 0
@@ -6430,12 +6401,24 @@ do
             end
         end,
     })
-    CombatSection:AddToggle("dragon.multipart", {
-        Title = T("dragon.multipart"),
-        Description = T("dragon.multipart.desc"),
-        Default = _G.DragonMultiPart,
+    CombatSection:AddSlider("dragon.burst", {
+        Title = T("dragon.burst"),
+        Description = T("dragon.burst.desc"),
+        Default = _G.DragonBurstCount or 4,
+        Min = 1,
+        Max = 6,
+        Rounding = 0,
+        Callback = function(Value)
+            _G.DragonBurstCount = math.clamp(tonumber(Value) or 4, 1, 6)
+            SaveConfig()
+        end,
+    })
+    CombatSection:AddToggle("dragon.multi", {
+        Title = T("dragon.multi"),
+        Description = T("dragon.multi.desc"),
+        Default = _G.DragonMultiSegment ~= false,
         Callback = function(State)
-            _G.DragonMultiPart = State and true or false
+            _G.DragonMultiSegment = State and true or false
             SaveConfig()
         end,
     })
