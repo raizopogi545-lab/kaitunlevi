@@ -2748,9 +2748,6 @@ local function getClosestSeaTarget()
     return best, bestModel
 end
 
--- StartDragonAttack never blocks forever on initDragon. It warns once if
--- init fails (game update) and retries every 5 s. The inner loop logs its
--- stage once per 2 s so the user can see target/detection/fire failures.
 local DragonAttackRunning = false
 local function StartDragonAttack()
     if DragonAttackRunning then
@@ -5615,6 +5612,10 @@ task.spawn(function()
     end
 end)
 local FruitsBlackList = {}
+
+-- ============================================================
+-- Auto Roll Fruit
+-- ============================================================
 task.spawn(function()
     local RollCooldown = 60
     local LastRollAt = 0
@@ -5635,68 +5636,78 @@ task.spawn(function()
         end
     end
 end)
-task.spawn(function()
-    local StorageFull = false
-    local FullNotified = false
-    local LastFullCheckAt = 0
 
-    local function LooksFull(res)
+-- ============================================================
+-- Auto Store Fruits (fixed: no more spam when a fruit is full)
+-- ============================================================
+-- Root cause of the previous spam:
+--   The old LooksFull() looked for "full", "space", "no room",
+--   "inventory limit" but the game actually returns
+--   "You can only store 5 of each Blox Fruit." — none of the
+--   old substrings matched. The loop therefore never paused, kept
+--   firing StoreFruit on every fruit every second, and each call
+--   produced its own red toast on screen.
+-- Fix:
+--   * Match the real server message ("can only store") plus a
+--     couple of defensive fallbacks.
+--   * Only one StoreFruit attempt per second (break after first).
+--   * Blacklist the specific fruit name on the full response with
+--     a timestamp, retrying that fruit once per RETRY_INTERVAL.
+--   * Fall back to k.Name if the OriginalName attribute is missing.
+task.spawn(function()
+    local RETRY_INTERVAL = 60
+    local FullNotified = false
+
+    local function IsFullMessage(res)
         if type(res) ~= "string" then return false end
         local low = res:lower()
-        return low:find("full") ~= nil
-            or low:find("space") ~= nil
-            or low:find("no room") ~= nil
-            or low:find("inventory limit") ~= nil
+        return low:find("can only store", 1, true) ~= nil
+            or low:find("inventory full", 1, true) ~= nil
+            or low:find("storage full", 1, true) ~= nil
+            or low:find("no room", 1, true) ~= nil
     end
 
     while task.wait(1) do
-        if _G.AutoStoreFruits and HRP then
-            if StorageFull then
-                if os.clock() - LastFullCheckAt >= 30 then
-                    StorageFull = false
-                    FullNotified = false
-                    LastFullCheckAt = os.clock()
-                end
-            end
+        if _G.AutoStoreFruits and HRP and HD and HD.Health > 0 then
+            local now = os.clock()
+            local attempted = false
+            local Containers = { LocalPlayer.Backpack, Character }
+            for _, container in ipairs(Containers) do
+                if container and not attempted then
+                    for _, k in ipairs(container:GetChildren()) do
+                        if k:IsA("Tool")
+                            and string.find(k.Name, "Fruit", 1, true) then
 
-            if not StorageFull then
-                local Containers = {LocalPlayer.Backpack, Character}
-                for _, container in ipairs(Containers) do
-                    if container then
-                        for _, k in ipairs(container:GetChildren()) do
-                            if k:IsA("Tool")
-                                and string.find(k.Name, "Fruit", 1, true)
-                                and not FruitsBlackList[k:GetAttribute("OriginalName")] then
+                            local originalName = k:GetAttribute("OriginalName") or k.Name
+                            local lastTried = FruitsBlackList[originalName]
 
+                            if not lastTried or (now - lastTried) > RETRY_INTERVAL then
                                 local ok, result = pcall(function()
                                     return CommF:InvokeServer(
                                         "StoreFruit",
-                                        k:GetAttribute("OriginalName"),
+                                        originalName,
                                         k
                                     )
                                 end)
 
-                                if ok then
-                                    if result == 1 then
-                                        FruitsBlackList[k:GetAttribute("OriginalName")] = true
-                                    elseif LooksFull(result) then
-                                        StorageFull = true
-                                        LastFullCheckAt = os.clock()
-                                        if not FullNotified then
-                                            FullNotified = true
-                                            print("[AutoStoreFruits] Almacén lleno, pausando intentos")
-                                        end
-                                        break
+                                attempted = true
+
+                                if ok and IsFullMessage(result) then
+                                    FruitsBlackList[originalName] = now
+                                    if not FullNotified then
+                                        FullNotified = true
+                                        print("[AutoStoreFruits] Storage limit reached for "
+                                            .. tostring(originalName)
+                                            .. "; will retry in " .. RETRY_INTERVAL .. "s")
                                     end
                                 end
+                                break
                             end
                         end
-                        if StorageFull then break end
                     end
                 end
             end
         else
-            StorageFull = false
             FullNotified = false
         end
     end
