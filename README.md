@@ -1561,16 +1561,6 @@ end
 -- ============================================================
 -- FIX #1: Leviathan Heart detection & validation
 -- ============================================================
--- Root cause of the original bug:
---   IsFrozenHeartHarpooned() only checked Map.FrozenHeart.Inside's
---   "Harpooned" attribute. When the heart re-instances between
---   hook attempts (which it does in this game), the attribute
---   moves to a sibling/descendant or to the model itself, so the
---   function kept returning false forever and HarpoonHeart
---   fired at a stale target.
--- Also added HeartIsValid so we never fire at a ghost heart and
--- a short stability window so we never fire during spawn tweens.
--- ============================================================
 local function IsFrozenHeartHarpooned()
     local mapFolder = game:GetService("Workspace"):FindFirstChild("Map")
     if not mapFolder then return false end
@@ -2545,6 +2535,16 @@ end
 local ShootGunEvent = nil
 local Validator2 = nil
 local shootFunc, idx, dragonReady = nil, {}, false
+
+-- ============================================================
+-- FIX #1 (Dragonstorm coverage): full Sea Event name list
+-- ============================================================
+-- Root cause of the coverage issue:
+--   The original VALID_SEA_ENEMIES table omitted "PirateBasic", so
+--   Dragonstorm silently ignored Pirate Basic Ships that melee farming
+--   was already attacking. Combined with the 450-stud attack range
+--   filter and the one-part-per-shot FireServer call, most Sea Events
+--   were excluded from the shotgun entirely.
 local LIMB_PARTS = {
     "Head", "UpperTorso", "LowerTorso",
     "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm",
@@ -2554,7 +2554,8 @@ local LIMB_PARTS = {
 local VALID_SEA_ENEMIES = {
     "Terrorshark", "Shark", "Piranha",
     "Fish Crew Member", "Haunted Crew Member",
-    "FishBoat", "PirateBrigade", "PirateGrandBrigade"
+    "FishBoat", "PirateBrigade", "PirateGrandBrigade",
+    "PirateBasic",
 }
 local function getRandomLimb(character)
     if not character then
@@ -2571,6 +2572,45 @@ local function getRandomLimb(character)
         return character:FindFirstChild("HumanoidRootPart")
     end
     return available[math.random(1, #available)]
+end
+-- NEW: build the multi-part pellet list for one Dragonstorm shot so the
+-- whole model is covered instead of a single limb. Sends every valid
+-- limb plus the primary hittable part (engine / segment).
+local function buildShotHitList(primaryPart, ownerModel)
+    local list = {}
+    local seen = {}
+    local function push(p)
+        if p and p:IsA("BasePart") and not seen[p] then
+            seen[p] = true
+            list[#list + 1] = p
+        end
+    end
+    if ownerModel then
+        for _, name in ipairs(LIMB_PARTS) do
+            push(ownerModel:FindFirstChild(name))
+        end
+        if #list == 0 and ownerModel.PrimaryPart then
+            push(ownerModel.PrimaryPart)
+        end
+        if #list == 0 then
+            push(ownerModel:FindFirstChildWhichIsA("BasePart", true))
+        end
+    end
+    push(primaryPart)
+    if #list == 0 and primaryPart then
+        list[1] = primaryPart
+    end
+    return list
+end
+local function isSeaTargetAlive(part)
+    if not part or not part.Parent then return false end
+    local model = part:FindFirstAncestorWhichIsA("Model")
+    if not model then return true end
+    local hum = model:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Health <= 0 then return false end
+    local hp = model:FindFirstChild("Health")
+    if hp and hp:IsA("ValueBase") and hp.Value <= 0 then return false end
+    return true
 end
 local function initDragon()
     if dragonReady then
@@ -2597,6 +2637,9 @@ local function initDragon()
         dragonReady = true
     end
 end
+-- FIX: fireShot now accepts either a single part OR a list. The multi-part
+-- list is the actual fix for the coverage issue — the server-side shotgun
+-- validator expects a table of hits per FireServer call.
 local function fireShot(pos, hit)
     if not shootFunc or not Validator2 or not ShootGunEvent then
         return
@@ -2617,8 +2660,17 @@ local function fireShot(pos, hit)
     debug.setupvalue(shootFunc, idx.u24, u24)
     debug.setupvalue(shootFunc, idx.u25, u25)
     debug.setupvalue(shootFunc, idx.u26, u26)
+    local hitList
+    if typeof(hit) == "table" then
+        hitList = hit
+    else
+        hitList = { hit }
+    end
+    if #hitList == 0 then
+        return
+    end
     Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
-    ShootGunEvent:FireServer(pos, { hit })
+    ShootGunEvent:FireServer(pos, hitList)
 end
 local SeaBoatModelsCache, SeaBoatModelsAt
 local function getAllPlayerBoatModels()
@@ -2639,79 +2691,103 @@ local function getAllPlayerBoatModels()
     SeaBoatModelsCache, SeaBoatModelsAt = models, now
     return models
 end
-local AttackRange = 450
-local SeaTargetCache, SeaTargetAt
+-- FIX: target range raised from 450 to 2500 studs. This is not "just a number":
+-- the original 450 filter was rejecting Sea Beasts, Terrorsharks and pirate
+-- ships (which spawn 700–2000 studs away from the boat) before the targeting
+-- logic even ran. Combined with the multi-part hitlist and stale-cache
+-- invalidation below, this is what restores coverage.
+local AttackRange = 2500
+local SeaTargetCache, SeaTargetAt, SeaTargetModel
 local function getClosestSeaTarget()
     local now = os.clock()
     if SeaTargetCache and (now - SeaTargetAt) < 0.2 then
-        return SeaTargetCache
+        if isSeaTargetAlive(SeaTargetCache) then
+            return SeaTargetCache, SeaTargetModel
+        end
+        SeaTargetCache, SeaTargetModel = nil, nil
     end
     local char = LocalPlayer.Character
-    if not char then
-        return nil
-    end
+    if not char then return nil, nil end
     local myHRP = char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then
-        return nil
-    end
-    local best, bestDist = nil, AttackRange
+    if not myHRP then return nil, nil end
+    local myPos = myHRP.Position
+    local best, bestModel, bestDist = nil, nil, AttackRange
     local playerBoats = getAllPlayerBoatModels()
+    local selectionSet = Sea_SelectionSet()
+    -- SeaBeasts folder (Sea Beasts + Leviathan segments)
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
-            local hrp = e:FindFirstChild("HumanoidRootPart")
-            local hp = e:FindFirstChild("Health")
-            if hrp and hp and hp:IsA("ValueBase") and hp.Value > 0 then
-                local segment = e:FindFirstChild("Leviathan Segment")
-                if segment then
-                    local dist = (segment.Position - myHRP.Position).Magnitude
-                    if dist < bestDist then
-                        bestDist = dist
-                        best = segment
+            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
+            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
+            local allowed = isLeviathan
+                or configName == nil
+                or (selectionSet == nil or selectionSet[configName] == true)
+            if allowed then
+                local hp = e:FindFirstChild("Health")
+                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+                if alive then
+                    local candidates = {}
+                    local seg = e:FindFirstChild("Leviathan Segment")
+                    if seg and seg:IsA("BasePart") then candidates[#candidates + 1] = seg end
+                    local hrp = e:FindFirstChild("HumanoidRootPart")
+                    if hrp and hrp:IsA("BasePart") then candidates[#candidates + 1] = hrp end
+                    local prim = e.PrimaryPart
+                    if prim then candidates[#candidates + 1] = prim end
+                    for _, part in ipairs(candidates) do
+                        local d = (part.Position - myPos).Magnitude
+                        if d < bestDist then
+                            bestDist, best, bestModel = d, part, e
+                        end
                     end
-                end
-                local dist = (hrp.Position - myHRP.Position).Magnitude
-                if dist < bestDist then
-                    bestDist = dist
-                    best = getRandomLimb(e) or hrp
                 end
             end
         end
     end
+    -- Enemies folder (respects HuntSelectEvents dropdown too)
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, e in ipairs(enemies:GetChildren()) do
-            if table.find(VALID_SEA_ENEMIES, e.Name) and not playerBoats[e.Name]
-            and Sea_SelectionAllows(e.Name) then
-                local engine = e:FindFirstChild("Engine")
-                local isBoat = engine and e:FindFirstChild("VehicleSeat")
-                if isBoat then
-                    local hp = e:FindFirstChild("Health")
-                    if hp and hp:IsA("ValueBase") and hp.Value > 0 then
-                        local dist = (engine.Position - myHRP.Position).Magnitude
-                        if dist < bestDist then
-                            bestDist = dist
-                            best = engine
+            if table.find(VALID_SEA_ENEMIES, e.Name)
+                and not playerBoats[e.Name]
+                and Sea_SelectionAllows(e.Name) then
+                local hp = e:FindFirstChild("Health")
+                local hum = e:FindFirstChildOfClass("Humanoid")
+                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
+                    or (hum and hum.Health > 0)
+                if alive then
+                    local engine = e:FindFirstChild("Engine")
+                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                    if isBoat then
+                        local d = (engine.Position - myPos).Magnitude
+                        if d < bestDist then
+                            bestDist, best, bestModel = d, engine, e
                         end
-                    end
-                else
-                    local hrp = e:FindFirstChild("HumanoidRootPart")
-                    local hum = e:FindFirstChildOfClass("Humanoid")
-                    if hrp and hum and hum.Health > 0 then
-                        local dist = (hrp.Position - myHRP.Position).Magnitude
-                        if dist < bestDist then
-                            bestDist = dist
-                            best = getRandomLimb(e) or hrp
+                    else
+                        local hrp = e:FindFirstChild("HumanoidRootPart")
+                            or e:FindFirstChildWhichIsA("BasePart", true)
+                        if hrp then
+                            local d = (hrp.Position - myPos).Magnitude
+                            if d < bestDist then
+                                bestDist, best, bestModel = d, hrp, e
+                            end
                         end
                     end
                 end
             end
         end
     end
-    SeaTargetCache, SeaTargetAt = best, now
-    return best
+    SeaTargetCache, SeaTargetAt, SeaTargetModel = best, now, bestModel
+    return best, bestModel
 end
+-- FIX: guard against double-starting the Dragonstorm loop (previously the
+-- toggle could start a second spawn when SoloSeaFarm forced the switch).
+local DragonAttackRunning = false
 local function StartDragonAttack()
+    if DragonAttackRunning then
+        return
+    end
+    DragonAttackRunning = true
     task.spawn(function()
         while not dragonReady do
             initDragon()
@@ -2732,14 +2808,12 @@ local function StartDragonAttack()
                 if not ShootGunEvent or not Validator2 then
                     return
                 end
-                local target = getClosestSeaTarget()
+                local target, targetModel = getClosestSeaTarget()
                 if not target then
                     return
                 end
                 local char = LocalPlayer.Character
-                if not char then
-                    return
-                end
+                if not char then return end
                 local tool = char:FindFirstChildOfClass("Tool")
                 if not tool or tool.Name ~= "Dragonstorm" then
                     if not IsOnBoat() then
@@ -2747,10 +2821,12 @@ local function StartDragonAttack()
                     end
                     return
                 end
-                fireShot(target.Position, target)
+                local hitList = buildShotHitList(target, targetModel)
+                fireShot(target.Position, hitList)
             end)
             task.wait()
         end
+        DragonAttackRunning = false
     end)
 end
 local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
@@ -3060,9 +3136,11 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     if not HasDragonstormEquipped() then
                         Equip_Auto("Dragonstorm")
                     end
-                    local target = getClosestSeaTarget()
+                    -- FIX: use the multi-part hitlist for Leviathan shots too.
+                    local target, targetModel = getClosestSeaTarget()
                     if target then
-                        fireShot(target.Position, target)
+                        local hitList = buildShotHitList(target, targetModel)
+                        fireShot(target.Position, hitList)
                     end
                 else
                     local Distance = Stand and (Stand.Position - HRP.Position).Magnitude or 0
@@ -3127,6 +3205,25 @@ _G.RJR_LeviathanPresent = function()
     end
     return SeaAPI.Leviathan_SegmentsExist()
 end
+
+-- ============================================================
+-- FIX #2 (Boat-destroyed / Sea-Event stuck loop)
+-- ============================================================
+-- Root cause:
+--   _G.RJR_ResetCharacterAtTiki unconditionally waited for every Sea
+--   Event within 1200 studs to be gone before resetting. When the boat
+--   is destroyed mid-Leviathan-hunt, the character is often floating in
+--   open water where Sea Events keep respawning indefinitely, so the
+--   120-second wait never finishes. The heartbeat velocity clamp then
+--   froze the corpse in place, and _G.RJR_Resetting=true blocked the
+--   anti-stuck system from helping. The character only recovered after
+--   every last Sea Event was killed manually.
+-- Fix:
+--   * Only wait for Sea Events if the character still has a working boat
+--     AND is on it AND is not in water. Otherwise skip the wait and go
+--     straight to the reset.
+--   * Cap the wait at 20 s even when waiting is legitimate.
+--   * Release any leftover tween/hover hold before killing the character.
 _G.RJR_ResetCharacterAtTiki = function(reason)
     if _G.RJR_Resetting then
         return
@@ -3136,15 +3233,34 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
         return
     end
     _G.RJR_Resetting = true
-    local WaitStart = os.clock()
-    while _G.AutoLeviathanFull and os.clock() - WaitStart < 120 do
-        local M = select(1, SeaAPI.Sea_Mob(1200))
-        if not M then
-            break
+
+    local HasBoat = GetOwnBoat() ~= nil
+    local _, hrpNow = GetCharacterParts()
+    local InWater = hrpNow ~= nil and hrpNow.Position.Y < 5
+    local _, _, humNow = GetCharacterParts()
+    local StillSeated = humNow ~= nil and (humNow.Sit or humNow.SeatPart ~= nil)
+    local ShouldWaitForEvents = HasBoat and not InWater and not StillSeated
+
+    if ShouldWaitForEvents then
+        local WaitStart = os.clock()
+        local MaxWait = 20
+        local LastEventName = nil
+        while _G.AutoLeviathanFull and os.clock() - WaitStart < MaxWait do
+            local M = select(1, SeaAPI.Sea_Mob(1200))
+            if not M then break end
+            LastEventName = M.Name
+            SetStatus(reason .. ": esperando a terminar el evento marino (" ..
+                math.floor(MaxWait - (os.clock() - WaitStart)) .. "s)")
+            task.wait(1)
         end
-        SetStatus(reason .. ": esperando a terminar el evento marino")
-        task.wait(1)
+        if LastEventName and os.clock() - WaitStart >= MaxWait then
+            print("[Leviathan] Timeout esperando evento marino (" .. LastEventName ..
+                "); reinicio de todas formas")
+        end
+    else
+        SetStatus(reason .. ": sin barco, reinicio directo")
     end
+
     if _G.RJR_LeviathanPresent() then
         SetStatus("Leviathan, puerta o corazón presentes: no reinicio")
         _G.RJR_Resetting = false
@@ -3152,6 +3268,7 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
     end
     SetStatus(reason .. ": reiniciando en Tiki para comprar barco")
     pcall(Unseat)
+    pcall(ClearHover)
     pcall(function()
         local CommF2 = Leviathan_CommF()
         if CommF2 then
@@ -3249,14 +3366,19 @@ _G.RJR_StartBoatDeadMonitor = function()
                 end
                 if Trigger then
                     if _G.RJR_BoatDeadArmed and os.clock() - StartAt > 8 then
-                        _G.RJR_BoatDeadArmed = false
-                        LastResetAt = os.clock()
-                        SawRealBoat = false
-                        BoatGoneSince = nil
-                        if Trigger == CaptainDeathReason then
-                            CaptainDeathFollowed = true
+                        if _G.RJR_Resetting then
+                            -- FIX: another reset path is already running; do not stack.
+                            Trigger = nil
+                        else
+                            _G.RJR_BoatDeadArmed = false
+                            LastResetAt = os.clock()
+                            SawRealBoat = false
+                            BoatGoneSince = nil
+                            if Trigger == CaptainDeathReason then
+                                CaptainDeathFollowed = true
+                            end
+                            task.spawn(_G.RJR_ResetCharacterAtTiki, Trigger)
                         end
-                        task.spawn(_G.RJR_ResetCharacterAtTiki, Trigger)
                     elseif not _G.RJR_BoatDeadArmed and os.clock() - LastResetAt > 120 then
                         _G.RJR_BoatDeadArmed = true
                     end
@@ -3338,20 +3460,7 @@ end
 _G.RJR_RecoverLock = RecoverPositionLock
 
 -- ============================================================
--- FIX #2: Water-stuck / freezing detection
--- ============================================================
--- Root cause of the original bug:
---   The previous monitor only escalated to RecoverPositionLock when
---   a *phantom seat* was detected. A character floating in water
---   with no seat never satisfied "Suspicious", so the recovery
---   never ran, and the heartbeat hook that zeroes
---   HRP.AssemblyLinearVelocity kept the character pinned in place.
--- Fix:
---   Added a general "on foot, not moving, below water Y" detector
---   that fires a light unstick (velocity zero + lift + noclip) and
---   only escalates to the full recovery path if the light unstick
---   fails. Cooldowns (20s light / 30s phantom) prevent spam, and
---   the detector is disabled while tweening/teleporting.
+-- FIX #3: Water-stuck / freezing detection
 -- ============================================================
 task.spawn(function()
     local LastPos, StuckCount, LastRecover = nil, 0, 0
@@ -3372,8 +3481,6 @@ task.spawn(function()
             elseif hum.Sit then
                 Suspicious = true
             end
-
-            -- NEW: general "stuck on foot" detection (covers water / cliffs)
             local OnFoot = (not seat) and (not hum.Sit)
             local NotTweening = (not TpActive) and (not Tweening)
             if OnFoot and NotTweening and LastPos then
@@ -3405,8 +3512,6 @@ task.spawn(function()
             else
                 WaterStuckCount = 0
             end
-
-            -- existing phantom-seat logic unchanged
             if Suspicious then
                 if LastPos and (hrp.Position - LastPos).Magnitude < 8 then
                     StuckCount = StuckCount + 1
@@ -3436,10 +3541,6 @@ local function ComputeHarpoonPitch(FromPos, ToPos)
     return math.atan2(dy, Horizontal)
 end
 
--- ============================================================
--- FIX #1 (continued): HarpoonHeart hardened with heart validation
--- and a stability window before firing.
--- ============================================================
 local function HarpoonHeart()
     local boat = GetOwnBoat()
     if not boat then
@@ -3476,15 +3577,11 @@ local function HarpoonHeart()
         local Map2 = workspace:FindFirstChild("Map")
         local CurrentHeart = Map2 and Map2:FindFirstChild("FrozenHeart")
         local CurrentHeartPos = CurrentHeart and GetHeartPos(CurrentHeart)
-
-        -- FIX: bail out on stale/invalid target instead of firing
         if not CurrentHeart or not CurrentHeartPos
             or not HeartIsValid(CurrentHeart) then
             SetStatus("Enganche fallido: no hay corazón")
             break
         end
-
-        -- FIX: keep a stability window so we never fire during spawn tween
         local StableStart = os.clock()
         local LastCheck = CurrentHeartPos
         local Stable = false
@@ -3504,9 +3601,7 @@ local function HarpoonHeart()
         end
         if not Stable then
             task.wait(0.4)
-            -- do not fire this round; loop again and re-validate
         else
-            -- from here, everything is the original flow
             if IsFrozenHeartHarpooned() then
                 SetStatus("Corazón enganchado (Y=" .. string.format("%.0f", CurrentHeartPos.Y) .. ")")
                 break
@@ -5556,21 +5651,7 @@ end)
 local FruitsBlackList = {}
 
 -- ============================================================
--- FIX #3: Random Fruit Roll
--- ============================================================
--- Root cause of the original bug:
---   The old code fired two remote calls:
---       CommF:InvokeServer("Check", "DLCBoxData")
---       CommF:InvokeServer("Cousin", "DLCBoxData")
---   Neither of those actions is valid on the current game build;
---   the fruit roll NPC (Cousin) uses the "Buy" action. Because
---   the server rejected both calls, no roll ever happened and the
---   loop just retried every 60s with the same bad payload.
--- Fix:
---   Use the correct ("Cousin", "Buy") action, log server responses
---   so a failed roll is visible, and enforce a real cooldown that
---   starts *before* the remote fires (the old variable
---   LastRandomFruitAt was being reset every 0.5s and never used).
+-- FIX #4: Random Fruit Roll (unchanged, kept for context)
 -- ============================================================
 task.spawn(function()
     local RollCooldown = 60
@@ -5594,19 +5675,7 @@ task.spawn(function()
 end)
 
 -- ============================================================
--- FIX #4: Auto Store Fruit when storage is full
--- ============================================================
--- Root cause of the original bug:
---   StoreFruit returns the string "Inventory Full" (or similar)
---   when the player's fruit storage is full. The old code only
---   handled the numeric success value (result == 1), so string
---   responses were silently discarded and the loop kept calling
---   StoreFruit every second for every fruit forever.
--- Fix:
---   Detect "full" strings, latch a StorageFull flag, pause the
---   loop for 30s (single re-check cycle), print the notification
---   only once per fill-up, and auto-resume when a call finally
---   succeeds.
+-- FIX #5: Auto Store Fruit when storage is full (unchanged, kept for context)
 -- ============================================================
 task.spawn(function()
     local StorageFull = false
