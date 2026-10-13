@@ -102,7 +102,9 @@ T, ModeDisplay = (function()
         ["dragon.leviathan"] = { en = "Dragonstorm vs Leviathan", es = "Dragonstorm contra el Leviathan", zh = "龙炮打利维坦" },
         ["dragon.leviathan.desc"] = { en = "Shoot Leviathan with Dragonstorm", es = "Dispara al Leviathan con Dragonstorm (funciona sin el modo de farmeo)", zh = "打利维坦时用 Dragonstorm 射击（不开刷海龙炮也能用）" },
         ["dragon.shots"] = { en = "Dragonstorm Shots Per Tick", es = "Disparos de Dragonstorm por tick", zh = "龙炮每tick射击数" },
-        ["dragon.shots.desc"] = { en = "Number of Dragonstorm shots fired each tick (1-10). Higher = more damage but riskier", es = "Disparos de Dragonstorm por tick (1-10). Más = más daño pero más riesgo", zh = "每个tick发射的龙炮子弹数 (1-10)，越多伤害越高但风险越大" },
+        ["dragon.shots.desc"] = { en = "Number of Dragonstorm shots fired each tick (1-20). Higher = more damage", es = "Disparos de Dragonstorm por tick (1-20). Más = más daño", zh = "每个tick发射的龙炮子弹数 (1-20)，越多伤害越高" },
+        ["dragon.speed"] = { en = "Dragonstorm Fire Delay", es = "Retraso de disparo Dragonstorm", zh = "龙炮射击间隔" },
+        ["dragon.speed.desc"] = { en = "Seconds between each Dragonstorm burst (0.01-1). Lower = faster attacks", es = "Segundos entre cada ráfaga de Dragonstorm (0.01-1). Menor = más rápido", zh = "每次龙炮连射的间隔秒数 (0.01-1)，越低越快" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -261,7 +263,8 @@ if _G.AutoKen == nil then _G.AutoKen = false end
 if _G.FastAttack == nil then _G.FastAttack = false end
 if _G.DragonGunFarm == nil then _G.DragonGunFarm = false end
 if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
-if _G.DragonShotsPerTick == nil then _G.DragonShotsPerTick = 1 end
+if _G.DragonShotsPerTick == nil then _G.DragonShotsPerTick = 5 end
+if _G.DragonFireDelay == nil then _G.DragonFireDelay = 0.03 end
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
 if _G.AutoFastMode == nil then _G.AutoFastMode = false end
@@ -567,6 +570,7 @@ local ConfigKeys = {
     "DragonGunFarm",
     "DragonGunLeviathan",
     "DragonShotsPerTick",
+    "DragonFireDelay",
     "RemoveFog",
     "AntiDracoAura",
     "AutoFastMode",
@@ -2590,7 +2594,7 @@ local function initDragon()
     return false
 end
 
--- fireShot sends exactly ONE hit part per shot (the original working format).
+-- fireShot sends hit parts per shot based on DragonHitMulti (damage multiplier).
 -- Accepts either a BasePart or an array; if an array is passed, the first
 -- BasePart in it is used, so legacy callers cannot break the signature.
 local function fireShot(pos, hit)
@@ -2628,7 +2632,13 @@ local function fireShot(pos, hit)
     debug.setupvalue(shootFunc, idx.u25, u25)
     debug.setupvalue(shootFunc, idx.u26, u26)
     Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
-    ShootGunEvent:FireServer(pos, { actualPart })
+    -- Build multi-hit table: each entry = separate damage hit on the server
+    local hitMulti = math.clamp(math.floor(tonumber(_G.DragonHitMulti) or 5), 1, 10)
+    local hitTable = table.create(hitMulti)
+    for i = 1, hitMulti do
+        hitTable[i] = actualPart
+    end
+    ShootGunEvent:FireServer(pos, hitTable)
     return true
 end
 
@@ -2803,7 +2813,7 @@ local function StartDragonAttack()
                     return
                 end
                 local ownerName = targetModel and targetModel.Name or target.Name
-                local shotsPerTick = math.clamp(tonumber(_G.DragonShotsPerTick) or 1, 1, 10)
+                local shotsPerTick = math.clamp(tonumber(_G.DragonShotsPerTick) or 5, 1, 20)
                 local fired = false
                 for _shotI = 1, shotsPerTick do
                     if fireShot(target.Position, target) then
@@ -2819,7 +2829,8 @@ local function StartDragonAttack()
                 lastDiag = os.clock()
                 warn("[Dragonstorm] error en bucle: " .. tostring(err))
             end
-            task.wait()
+            local fireDelay = math.clamp(tonumber(_G.DragonFireDelay) or 0.03, 0.01, 1)
+            task.wait(fireDelay)
         end
         DragonAttackRunning = false
     end)
@@ -3137,7 +3148,7 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     end
                     local target = getClosestSeaTarget()
                     if target then
-                        local shotsPerTick = math.clamp(tonumber(_G.DragonShotsPerTick) or 1, 1, 10)
+                        local shotsPerTick = math.clamp(tonumber(_G.DragonShotsPerTick) or 5, 1, 20)
                         for _shotI = 1, shotsPerTick do
                             fireShot(target.Position, target)
                         end
@@ -3153,7 +3164,8 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                 Haki_Auto()
             end
         end
-        task.wait(0.05)
+        local leviDelay = (_G.DragonGunLeviathan and math.clamp(tonumber(_G.DragonFireDelay) or 0.03, 0.01, 1)) or 0.05
+        task.wait(leviDelay)
     end
     AttackModel = nil
     AttackStandFn = nil
@@ -6329,13 +6341,28 @@ do
         Title = T("dragon.shots"),
         Description = T("dragon.shots.desc"),
         Default = tostring(_G.DragonShotsPerTick),
-        Placeholder = "1",
+        Placeholder = "5",
         Numeric = true,
         Finished = false,
         Callback = function(Value)
             local n = tonumber(Value)
             if n then
-                _G.DragonShotsPerTick = math.clamp(math.floor(n), 1, 10)
+                _G.DragonShotsPerTick = math.clamp(math.floor(n), 1, 20)
+                SaveConfig()
+            end
+        end,
+    })
+    CombatSection:AddInput("dragon.speed", {
+        Title = T("dragon.speed"),
+        Description = T("dragon.speed.desc"),
+        Default = tostring(_G.DragonFireDelay),
+        Placeholder = "0.03",
+        Numeric = true,
+        Finished = false,
+        Callback = function(Value)
+            local n = tonumber(Value)
+            if n then
+                _G.DragonFireDelay = math.clamp(n, 0.01, 1)
                 SaveConfig()
             end
         end,
