@@ -101,10 +101,12 @@ T, ModeDisplay = (function()
         ["dragon.farm.desc"] = { en = "Use Dragonstorm for sea events (not Leviathan)", es = "Usa Dragonstorm en los eventos marinos (no en el Leviathan)", zh = "海上事件用 Dragonstorm 打（利维坦不用）" },
         ["dragon.leviathan"] = { en = "Dragonstorm vs Leviathan", es = "Dragonstorm contra el Leviathan", zh = "龙炮打利维坦" },
         ["dragon.leviathan.desc"] = { en = "Shoot Leviathan with Dragonstorm", es = "Dispara al Leviathan con Dragonstorm (funciona sin el modo de farmeo)", zh = "打利维坦时用 Dragonstorm 射击（不开刷海龙炮也能用）" },
-        ["dragon.multipart"] = { en = "Multi-part hit (experimental)", es = "Impacto multiparte (experimental)", zh = "多部件命中（实验性）" },
-        ["dragon.multipart.desc"] = { en = "Send every visible part of the target. Damage may or may not increase — server-side unknown.", es = "Envía todas las partes visibles del objetivo. Puede o no aumentar el daño — desconocido del lado servidor.", zh = "向服务器发送目标的每个可见部件。是否增加伤害未知（取决于服务器）。" },
         ["dragon.rate"] = { en = "Dragonstorm fire interval (s)", es = "Intervalo de disparo Dragonstorm (s)", zh = "Dragonstorm 射击间隔（秒）" },
-        ["dragon.rate.desc"] = { en = "Minimum seconds between shots. 0.10 is safe; lower risks rejection.", es = "Segundos mínimos entre disparos. 0.10 es seguro; menos puede ser rechazado.", zh = "两次射击之间的最小秒数。0.10 安全；更低有被拒绝的风险。" },
+        ["dragon.rate.desc"] = { en = "Minimum seconds between cycles. 0.10 is safe; lower risks rejection.", es = "Segundos mínimos entre ciclos. 0.10 es seguro; menos puede ser rechazado.", zh = "两次循环之间的最小秒数。0.10 安全；更低有被拒绝的风险。" },
+        ["dragon.burst"] = { en = "Burst shots per cycle", es = "Disparos por ráfaga", zh = "每轮爆发射击数" },
+        ["dragon.burst.desc"] = { en = "Fire 1-3 shots back-to-back per cycle. Server may reject bursts; test before trusting.", es = "Dispara 1-3 veces seguidas por ciclo. El servidor puede rechazar ráfagas; prueba antes de confiar.", zh = "每轮连续发射 1-3 发。服务器可能拒绝连发；信任前请先测试。" },
+        ["dragon.burstgap"] = { en = "Burst gap (s)", es = "Separación entre ráfaga (s)", zh = "连发间隔（秒）" },
+        ["dragon.burstgap.desc"] = { en = "Delay between shots inside one burst (0.02-0.15)", es = "Retardo entre disparos de una ráfaga (0.02-0.15)", zh = "同一轮爆发中每发之间的延迟（0.02-0.15）" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -264,8 +266,12 @@ if _G.FastAttack == nil then _G.FastAttack = false end
 if _G.DragonGunFarm == nil then _G.DragonGunFarm = false end
 if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
 -- [DRAGONSTORM ENHANCED] new knobs
-if _G.DragonMultiPartHit == nil then _G.DragonMultiPartHit = false end
 if _G.DragonFireInterval == nil then _G.DragonFireInterval = 0.10 end
+if _G.DragonBurstCount == nil then _G.DragonBurstCount = 1 end
+if _G.DragonBurstGap == nil then _G.DragonBurstGap = 0.035 end
+-- Force-disable any previously-saved multi-part flag so a stale
+-- config cannot re-break Dragonstorm after this patch.
+_G.DragonMultiPartHit = nil
 -- [/DRAGONSTORM ENHANCED]
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
@@ -572,8 +578,9 @@ local ConfigKeys = {
     "DragonGunFarm",
     "DragonGunLeviathan",
     -- [DRAGONSTORM ENHANCED]
-    "DragonMultiPartHit",
     "DragonFireInterval",
+    "DragonBurstCount",
+    "DragonBurstGap",
     -- [/DRAGONSTORM ENHANCED]
     "RemoveFog",
     "AntiDracoAura",
@@ -708,6 +715,11 @@ do
     _G.BoatHeight = TravelNumber(_G.BoatHeight, _G.BoatLockY or 150, 30, 500)
     _G.PlayerTweenSpeed = TravelNumber(_G.PlayerTweenSpeed, 275, 50, 500)
     _G.BoatLockY = _G.BoatHeight
+    -- [DRAGONSTORM ENHANCED] clamp burst knobs on load
+    _G.DragonFireInterval = math.clamp(tonumber(_G.DragonFireInterval) or 0.10, 0.05, 1.0)
+    _G.DragonBurstCount   = math.clamp(math.floor(tonumber(_G.DragonBurstCount) or 1), 1, 3)
+    _G.DragonBurstGap     = math.clamp(tonumber(_G.DragonBurstGap) or 0.035, 0.02, 0.15)
+    -- [/DRAGONSTORM ENHANCED]
 end
 do
     local vu = game:GetService("VirtualUser")
@@ -2546,7 +2558,7 @@ local function Sea_EventRoot(Mob)
 end
 
 -- ============================================================
--- Dragonstorm (corrected)
+-- Dragonstorm (burst-enabled)
 -- ============================================================
 local ShootGunEvent = nil
 local Validator2 = nil
@@ -2617,13 +2629,15 @@ local function DragonStillHealthy()
 end
 -- [/DRAGONSTORM ENHANCED]
 
--- [DRAGONSTORM ENHANCED] rewritten fireShot:
---   * rate-limited
+-- [DRAGONSTORM ENHANCED] fireShot with burst support:
+--   * rate-limited (interval between cycles)
 --   * mutual exclusion
---   * optional multi-part hit list
 --   * auto-recovers from a stale shootFunc
---   * preserves the original (pos, part) single-hit signature when
---     DragonMultiPartHit is off
+--   * each shot is a SEPARATE Validator2 + ShootGunEvent pair.
+--     Multi-part (multiple parts in one call) was tested and the
+--     server silently drops damage — that path is not used.
+--     Burst = multiple single-part calls, which is the format the
+--     server accepts.
 local function fireShot(pos, hit)
     if not pos then return false end
     if not initDragon() then return false end
@@ -2633,7 +2647,7 @@ local function fireShot(pos, hit)
         return false
     end
 
-    -- Rate limit
+    -- Rate limit — interval between BURSTS, not between shots.
     local now = os.clock()
     local interval = _G.DragonFireInterval or 0.10
     if now - DragonLastFire < interval then
@@ -2643,80 +2657,79 @@ local function fireShot(pos, hit)
     DragonFireLock = true
     DragonLastFire = now
 
-    -- Build hit list
-    local parts = {}
+    -- Resolve to exactly ONE BasePart.
+    local part
     if typeof(hit) == "Instance" and hit:IsA("BasePart") then
-        parts[1] = hit
+        part = hit
+    elseif typeof(hit) == "Instance" and hit:IsA("Model") then
+        part = hit.PrimaryPart
+            or hit:FindFirstChild("Leviathan Segment")
+            or hit:FindFirstChild("HumanoidRootPart")
+            or hit:FindFirstChildWhichIsA("BasePart", true)
     elseif type(hit) == "table" then
         for _, p in ipairs(hit) do
             if typeof(p) == "Instance" and p:IsA("BasePart") then
-                parts[#parts + 1] = p
+                part = p
+                break
             end
         end
     end
-    if #parts == 0 and typeof(hit) == "Instance" and hit:IsA("Model") then
-        local primary = hit.PrimaryPart
-            or hit:FindFirstChild("HumanoidRootPart")
-            or hit:FindFirstChildWhichIsA("BasePart", true)
-        if primary then parts[1] = primary end
-    end
-    if #parts == 0 or not parts[1].Parent then
+    if not part or not part.Parent then
         DragonFireLock = false
         return false
     end
 
-    if _G.DragonMultiPartHit then
-        local model = parts[1]:FindFirstAncestorWhichIsA("Model")
-        if model then
-            local limit = math.max(1, math.min(_G.DragonMultiPartLimit or 12, 30))
-            local expanded = {}
-            for _, p in ipairs(model:GetDescendants()) do
-                if p:IsA("BasePart") and p.Transparency < 1 then
-                    expanded[#expanded + 1] = p
-                    if #expanded >= limit then break end
-                end
+    local burstCount = math.clamp(tonumber(_G.DragonBurstCount) or 1, 1, 3)
+    local burstGap   = math.clamp(tonumber(_G.DragonBurstGap)   or 0.035, 0.02, 0.15)
+
+    local anyFired = false
+    for i = 1, burstCount do
+        if not part.Parent then break end
+
+        local shotOK = pcall(function()
+            local u20 = debug.getupvalue(shootFunc, idx.u20)
+            local u21 = debug.getupvalue(shootFunc, idx.u21)
+            local u22 = debug.getupvalue(shootFunc, idx.u22)
+            local u23 = debug.getupvalue(shootFunc, idx.u23)
+            local u24 = debug.getupvalue(shootFunc, idx.u24)
+            local u25 = debug.getupvalue(shootFunc, idx.u25)
+            local u26 = debug.getupvalue(shootFunc, idx.u26)
+            if not (u20 and u21 and u22 and u23 and u24 and u25 and u26) then
+                error("upvalues missing")
             end
-            if #expanded > 0 then parts = expanded end
+            local u79 = u25 * u21
+            local u80 = (u24 * u21 + u25 * u20) % u22
+            u80 = (u80 * u22 + u79) % u23
+            u24 = math.floor(u80 / u22)
+            u25 = u80 - u24 * u22
+            u26 = u26 + 1
+            debug.setupvalue(shootFunc, idx.u24, u24)
+            debug.setupvalue(shootFunc, idx.u25, u25)
+            debug.setupvalue(shootFunc, idx.u26, u26)
+            Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
+            ShootGunEvent:FireServer(pos, { part })
+        end)
+
+        if shotOK then
+            anyFired = true
+            DragonShootRetries = 0
+        else
+            DragonShootRetries = DragonShootRetries + 1
+            if DragonShootRetries >= 3 then
+                DragonShootRetries = 0
+                dragonReady = false
+                shootFunc, idx = nil, {}
+                break
+            end
+        end
+
+        if i < burstCount then
+            task.wait(burstGap)
         end
     end
-
-    -- Seed computation (identical math to original)
-    local ok = pcall(function()
-        local u20 = debug.getupvalue(shootFunc, idx.u20)
-        local u21 = debug.getupvalue(shootFunc, idx.u21)
-        local u22 = debug.getupvalue(shootFunc, idx.u22)
-        local u23 = debug.getupvalue(shootFunc, idx.u23)
-        local u24 = debug.getupvalue(shootFunc, idx.u24)
-        local u25 = debug.getupvalue(shootFunc, idx.u25)
-        local u26 = debug.getupvalue(shootFunc, idx.u26)
-        if not (u20 and u21 and u22 and u23 and u24 and u25 and u26) then
-            error("upvalues missing")
-        end
-        local u79 = u25 * u21
-        local u80 = (u24 * u21 + u25 * u20) % u22
-        u80 = (u80 * u22 + u79) % u23
-        u24 = math.floor(u80 / u22)
-        u25 = u80 - u24 * u22
-        u26 = u26 + 1
-        debug.setupvalue(shootFunc, idx.u24, u24)
-        debug.setupvalue(shootFunc, idx.u25, u25)
-        debug.setupvalue(shootFunc, idx.u26, u26)
-        Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
-        ShootGunEvent:FireServer(pos, parts)
-    end)
 
     DragonFireLock = false
-    if not ok then
-        DragonShootRetries = DragonShootRetries + 1
-        if DragonShootRetries >= 3 then
-            DragonShootRetries = 0
-            dragonReady = false
-            shootFunc, idx = nil, {}
-        end
-        return false
-    end
-    DragonShootRetries = 0
-    return true
+    return anyFired
 end
 -- [/DRAGONSTORM ENHANCED]
 
@@ -2842,8 +2855,8 @@ end
 
 -- [DRAGONSTORM ENHANCED] Leviathan-only target resolver.
 -- Reuses the same hit-part rules as getClosestSeaTarget but only ever
--- returns the Leviathan. This is what stops Dragonstorm from wasting
--- shots on nearby Sharks / Piranhas during the boss fight.
+-- returns the Leviathan. This stops Dragonstorm from wasting shots
+-- on nearby Sharks / Piranhas during the boss fight.
 local function getLeviathanTarget()
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if not seaBeasts then return nil, nil end
@@ -3252,9 +3265,9 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     FightTarget = { CF = Stand, At = os.clock() }
                 end
                 -- [DRAGONSTORM ENHANCED] Leviathan branch:
-                --   * Uses getLeviathanTarget() so Dragonstorm can never
-                --     fire at a nearby sea event during the boss fight.
-                --   * Only fires if Dragonstorm is already the equipped tool,
+                --   * getLeviathanTarget() so Dragonstorm can never fire
+                --     at a nearby sea event during the boss fight.
+                --   * Only fires when Dragonstorm is already equipped,
                 --     which removes the equip/fire race that produced
                 --     rejected shots in the original code.
                 if _G.DragonGunLeviathan and CheckItem("Dragonstorm") then
@@ -3303,7 +3316,7 @@ SeaAPI.Leviathan_Stand = Leviathan_Stand
 SeaAPI.FightLeviathan = FightLeviathan
 SeaAPI.SeaEventOptions = SEA_EVENT_OPTIONS
 SeaAPI.NormalizeSelection = Sea_NormalizeSelection
--- [DRAGONSTORM ENHANCED] expose the new resolver + health check
+-- [DRAGONSTORM ENHANCED] expose the new resolvers
 SeaAPI.GetLeviathanTarget = getLeviathanTarget
 SeaAPI.GetClosestSeaTarget = getClosestSeaTarget
 -- [/DRAGONSTORM ENHANCED]
@@ -5786,20 +5799,6 @@ end)
 -- ============================================================
 -- Auto Store Fruits (fixed: no more spam when a fruit is full)
 -- ============================================================
--- Root cause of the previous spam:
---   The old LooksFull() looked for "full", "space", "no room",
---   "inventory limit" but the game actually returns
---   "You can only store 5 of each Blox Fruit." — none of the
---   old substrings matched. The loop therefore never paused, kept
---   firing StoreFruit on every fruit every second, and each call
---   produced its own red toast on screen.
--- Fix:
---   * Match the real server message ("can only store") plus a
---     couple of defensive fallbacks.
---   * Only one StoreFruit attempt per second (break after first).
---   * Blacklist the specific fruit name on the full response with
---     a timestamp, retrying that fruit once per RETRY_INTERVAL.
---   * Fall back to k.Name if the OriginalName attribute is missing.
 task.spawn(function()
     local RETRY_INTERVAL = 60
     local FullNotified = false
@@ -6458,16 +6457,7 @@ do
             end
         end,
     })
-    -- [DRAGONSTORM ENHANCED] new UI controls
-    CombatSection:AddToggle("dragon.multipart", {
-        Title = T("dragon.multipart"),
-        Description = T("dragon.multipart.desc"),
-        Default = _G.DragonMultiPartHit,
-        Callback = function(State)
-            _G.DragonMultiPartHit = State
-            SaveConfig()
-        end,
-    })
+    -- [DRAGONSTORM ENHANCED] fire-rate + burst controls
     CombatSection:AddInput("dragon.rate", {
         Title = T("dragon.rate"),
         Description = T("dragon.rate.desc"),
@@ -6479,6 +6469,36 @@ do
             local n = tonumber(Value)
             if n and n >= 0.05 and n <= 1.0 then
                 _G.DragonFireInterval = n
+                SaveConfig()
+            end
+        end,
+    })
+    CombatSection:AddInput("dragon.burst", {
+        Title = T("dragon.burst"),
+        Description = T("dragon.burst.desc"),
+        Default = tostring(_G.DragonBurstCount),
+        Placeholder = "1",
+        Numeric = true,
+        Finished = false,
+        Callback = function(Value)
+            local n = tonumber(Value)
+            if n then
+                _G.DragonBurstCount = math.clamp(math.floor(n), 1, 3)
+                SaveConfig()
+            end
+        end,
+    })
+    CombatSection:AddInput("dragon.burstgap", {
+        Title = T("dragon.burstgap"),
+        Description = T("dragon.burstgap.desc"),
+        Default = tostring(_G.DragonBurstGap),
+        Placeholder = "0.035",
+        Numeric = true,
+        Finished = false,
+        Callback = function(Value)
+            local n = tonumber(Value)
+            if n and n >= 0.02 and n <= 0.15 then
+                _G.DragonBurstGap = n
                 SaveConfig()
             end
         end,
