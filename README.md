@@ -101,12 +101,6 @@ T, ModeDisplay = (function()
         ["dragon.farm.desc"] = { en = "Use Dragonstorm for sea events (not Leviathan)", es = "Usa Dragonstorm en los eventos marinos (no en el Leviathan)", zh = "海上事件用 Dragonstorm 打（利维坦不用）" },
         ["dragon.leviathan"] = { en = "Dragonstorm vs Leviathan", es = "Dragonstorm contra el Leviathan", zh = "龙炮打利维坦" },
         ["dragon.leviathan.desc"] = { en = "Shoot Leviathan with Dragonstorm", es = "Dispara al Leviathan con Dragonstorm (funciona sin el modo de farmeo)", zh = "打利维坦时用 Dragonstorm 射击（不开刷海龙炮也能用）" },
-        ["dragon.burst"] = { en = "Dragonstorm Burst Shots", es = "Disparos por ráfaga Dragonstorm", zh = "龙炮单次连发数" },
-        ["dragon.burst.desc"] = { en = "Number of validated shots fired per burst (1-10). Multiplies damage per attack", es = "Disparos validados por ráfaga (1-10). Multiplica el daño por ataque", zh = "每次连发发射的验证子弹数 (1-10)，倍增攻击伤害" },
-        ["dragon.speed"] = { en = "Dragonstorm Fire Delay", es = "Retraso de disparo Dragonstorm", zh = "龙炮射击间隔" },
-        ["dragon.speed.desc"] = { en = "Seconds between attack bursts (0.02-0.5). Lower = faster firing speed", es = "Segundos entre ráfagas (0.02-0.5). Menor = mayor cadencia de disparo", zh = "连发之间的间隔秒数 (0.02-0.5)，越低射速越快" },
-        ["dragon.range"] = { en = "Dragonstorm Attack Range", es = "Rango de ataque Dragonstorm", zh = "龙炮攻击射程" },
-        ["dragon.range.desc"] = { en = "Targeting distance for sea monsters and Leviathan (500-3500 studs)", es = "Distancia de búsqueda para monstruos y Leviathan (500-3500 studs)", zh = "海怪与利维坦的索敌与命中距离 (500-3500 studs)" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -265,9 +259,6 @@ if _G.AutoKen == nil then _G.AutoKen = false end
 if _G.FastAttack == nil then _G.FastAttack = false end
 if _G.DragonGunFarm == nil then _G.DragonGunFarm = false end
 if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
-if _G.DragonShotsPerBurst == nil then _G.DragonShotsPerBurst = 3 end
-if _G.DragonFireDelay == nil then _G.DragonFireDelay = 0.05 end
-if _G.DragonAttackRange == nil then _G.DragonAttackRange = 2500 end
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
 if _G.AutoFastMode == nil then _G.AutoFastMode = false end
@@ -572,9 +563,6 @@ local ConfigKeys = {
     "FastAttack",
     "DragonGunFarm",
     "DragonGunLeviathan",
-    "DragonShotsPerBurst",
-    "DragonFireDelay",
-    "DragonAttackRange",
     "RemoveFog",
     "AntiDracoAura",
     "AutoFastMode",
@@ -1274,7 +1262,8 @@ local function Equip_Auto(Tool)
 end
 local function HasDragonstormEquipped()
     local char = LocalPlayer.Character
-    local tool = char and char:FindFirstChildOfClass("Tool")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local tool = hum and hum:FindFirstChildOfClass("Tool")
     return tool ~= nil and tool.Name == "Dragonstorm"
 end
 local function Skill_Auto(Key)
@@ -2545,15 +2534,12 @@ local function Sea_EventRoot(Mob)
 end
 
 -- ============================================================
--- Dragonstorm (Enhanced: Multi-Target, Multi-Burst, Anti-Desync)
+-- Dragonstorm (corrected)
 -- ============================================================
 local ShootGunEvent = nil
 local Validator2 = nil
 local shootFunc, idx, dragonReady = nil, {}, false
 local initDragonErrorReported = false
-local DragonAttackRunning = false
-local isShootingMutex = false
-local consecutiveShotErrors = 0
 
 local VALID_SEA_ENEMIES = {
     "Terrorshark", "Shark", "Piranha",
@@ -2562,21 +2548,8 @@ local VALID_SEA_ENEMIES = {
     "PirateBasic",
 }
 
-local function resolveDragonRemotes()
-    if not ShootGunEvent then
-        local modules = RS:FindFirstChild("Modules")
-        local net = modules and modules:FindFirstChild("Net")
-        ShootGunEvent = net and net:FindFirstChild("RE/ShootGunEvent")
-    end
-    if not Validator2 then
-        local remotes = RS:FindFirstChild("Remotes")
-        Validator2 = remotes and remotes:FindFirstChild("Validator2")
-    end
-    return (ShootGunEvent ~= nil and Validator2 ~= nil)
-end
-
-local function initDragon(force)
-    if dragonReady and not force and shootFunc and ShootGunEvent and Validator2 then
+local function initDragon()
+    if dragonReady then
         return true
     end
     local success, err = pcall(function()
@@ -2600,19 +2573,59 @@ local function initDragon(force)
         end
         error("funcion de disparo con firma 727595 no encontrada")
     end)
-    resolveDragonRemotes()
-    if success and shootFunc and ShootGunEvent and Validator2 then
+    if success and shootFunc then
         dragonReady = true
-        initDragonErrorReported = false
+        print("[Dragonstorm] initDragon OK")
         return true
     end
-    dragonReady = false
     if not initDragonErrorReported then
         initDragonErrorReported = true
-        warn("[Dragonstorm] initDragon fallo: " .. tostring(err or "remotes no disponibles"))
-        warn("[Dragonstorm] Reintentando inicializacion automaticamente.")
+        warn("[Dragonstorm] initDragon fallo: " .. tostring(err))
+        warn("[Dragonstorm] El juego probablemente actualizo CombatController. Reintentando cada 5 s.")
     end
     return false
+end
+
+-- fireShot sends exactly ONE hit part per shot (the original working format).
+-- Accepts either a BasePart or an array; if an array is passed, the first
+-- BasePart in it is used, so legacy callers cannot break the signature.
+local function fireShot(pos, hit)
+    if not shootFunc or not Validator2 or not ShootGunEvent then
+        return false
+    end
+    local actualPart
+    if typeof(hit) == "Instance" and hit:IsA("BasePart") then
+        actualPart = hit
+    elseif type(hit) == "table" then
+        for _, p in ipairs(hit) do
+            if typeof(p) == "Instance" and p:IsA("BasePart") then
+                actualPart = p
+                break
+            end
+        end
+    end
+    if not actualPart or not actualPart.Parent then
+        return false
+    end
+    local u20 = debug.getupvalue(shootFunc, idx.u20)
+    local u21 = debug.getupvalue(shootFunc, idx.u21)
+    local u22 = debug.getupvalue(shootFunc, idx.u22)
+    local u23 = debug.getupvalue(shootFunc, idx.u23)
+    local u24 = debug.getupvalue(shootFunc, idx.u24)
+    local u25 = debug.getupvalue(shootFunc, idx.u25)
+    local u26 = debug.getupvalue(shootFunc, idx.u26)
+    local u79 = u25 * u21
+    local u80 = (u24 * u21 + u25 * u20) % u22
+    u80 = (u80 * u22 + u79) % u23
+    u24 = math.floor(u80 / u22)
+    u25 = u80 - u24 * u22
+    u26 = u26 + 1
+    debug.setupvalue(shootFunc, idx.u24, u24)
+    debug.setupvalue(shootFunc, idx.u25, u25)
+    debug.setupvalue(shootFunc, idx.u26, u26)
+    Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
+    ShootGunEvent:FireServer(pos, { actualPart })
+    return true
 end
 
 local SeaBoatModelsCache, SeaBoatModelsAt
@@ -2635,267 +2648,107 @@ local function getAllPlayerBoatModels()
     return models
 end
 
-local function getEntityHitPart(model, isBoat, isLeviathan)
-    if not model or not model.Parent then return nil end
-    if isBoat then
-        return model:FindFirstChild("Engine")
-            or model.PrimaryPart
-            or model:FindFirstChild("VehicleSeat")
-            or model:FindFirstChildWhichIsA("BasePart", true)
-    end
-    if isLeviathan then
-        return model:FindFirstChild("HumanoidRootPart")
-            or model:FindFirstChild("RootPart")
-            or model:FindFirstChild("Leviathan Segment")
-            or model.PrimaryPart
-            or model:FindFirstChildWhichIsA("BasePart", true)
-    end
-    return model:FindFirstChild("HumanoidRootPart")
-        or model:FindFirstChild("RootPart")
-        or model.PrimaryPart
-        or model:FindFirstChild("Head")
-        or model:FindFirstChildWhichIsA("BasePart", true)
+local function targetOwnerAlive(part)
+    if not part or not part.Parent then return false end
+    local model = part:FindFirstAncestorWhichIsA("Model")
+    if not model then return true end
+    local hum = model:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Health <= 0 then return false end
+    local hp = model:FindFirstChild("Health")
+    if hp and hp:IsA("ValueBase") and hp.Value <= 0 then return false end
+    return true
 end
 
--- Collects all valid, distinct living enemy targets within range.
--- Returns: primaryPart, primaryModel, hitPartsArray, totalTargetsFound
-local function getSeaTargets(customRange)
+local AttackRange = 2500
+local SeaTargetCache, SeaTargetAt, SeaTargetModel
+
+-- Returns (part, model). Picks the exact server-valid hit part per entity:
+--   * Leviathan segment  -> "Leviathan Segment"
+--   * Sea Beast          -> "HumanoidRootPart" (fallback PrimaryPart)
+--   * Pirate boats       -> "Engine"
+--   * ground mobs        -> "HumanoidRootPart" (fallback first BasePart)
+local function getClosestSeaTarget()
+    local now = os.clock()
+    if SeaTargetCache and (now - SeaTargetAt) < 0.2 then
+        if targetOwnerAlive(SeaTargetCache) then
+            return SeaTargetCache, SeaTargetModel
+        end
+        SeaTargetCache, SeaTargetModel = nil, nil
+    end
     local char = LocalPlayer.Character
-    if not char then return nil, nil, {}, 0 end
+    if not char then return nil, nil end
     local myHRP = char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then return nil, nil, {}, 0 end
+    if not myHRP then return nil, nil end
     local myPos = myHRP.Position
-
-    local maxDist = customRange or tonumber(_G.DragonAttackRange) or 2500
-    local hitParts = {}
-    local seenModels = {}
-    local primaryPart, primaryModel = nil, nil
-    local bestDist = maxDist
-
-    local allowLeviathan = (_G.DragonGunLeviathan == true) or (_G.DragonGunFarm == true)
-    local allowSeaFarm = (_G.DragonGunFarm == true)
-
+    local best, bestModel, bestDist = nil, nil, AttackRange
     local playerBoats = getAllPlayerBoatModels()
     local selectionSet = Sea_SelectionSet()
 
-    -- 1. Scan SeaBeasts (Leviathan, Sea Beasts, Rumbling Waters)
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
-            if e:IsA("Model") and not seenModels[e] then
-                local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
-                local allowed = false
-                if isLeviathan then
-                    allowed = allowLeviathan
-                elseif allowSeaFarm then
-                    local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name] or "Sea Beast"
-                    allowed = (selectionSet == nil or selectionSet[configName] == true)
-                end
-
-                if allowed then
-                    local alive = false
+            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
+            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
+            local allowed = isLeviathan
+                or configName == nil
+                or (selectionSet == nil or selectionSet[configName] == true)
+            if allowed then
+                local hp = e:FindFirstChild("Health")
+                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+                if alive then
+                    local part
                     if isLeviathan then
-                        alive = not Leviathan_IsDead(e)
+                        part = e:FindFirstChild("Leviathan Segment")
+                    end
+                    part = part
+                        or e:FindFirstChild("HumanoidRootPart")
+                        or e.PrimaryPart
+                    if part and part:IsA("BasePart") then
+                        local d = (part.Position - myPos).Magnitude
+                        if d < bestDist then
+                            bestDist, best, bestModel = d, part, e
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local enemies = workspace:FindFirstChild("Enemies")
+    if enemies then
+        for _, e in ipairs(enemies:GetChildren()) do
+            if table.find(VALID_SEA_ENEMIES, e.Name)
+                and not playerBoats[e.Name]
+                and Sea_SelectionAllows(e.Name) then
+                local hp = e:FindFirstChild("Health")
+                local hum = e:FindFirstChildOfClass("Humanoid")
+                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
+                    or (hum and hum.Health > 0)
+                if alive then
+                    local engine = e:FindFirstChild("Engine")
+                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                    local part
+                    if isBoat then
+                        part = engine
                     else
-                        alive = Sea_MobStillAlive(e)
+                        part = e:FindFirstChild("HumanoidRootPart")
+                            or e:FindFirstChildWhichIsA("BasePart", true)
                     end
-
-                    if alive then
-                        local part = getEntityHitPart(e, false, isLeviathan)
-                        if part and part:IsA("BasePart") then
-                            local d = (part.Position - myPos).Magnitude
-                            if d <= maxDist then
-                                seenModels[e] = true
-                                table.insert(hitParts, part)
-                                if d < bestDist then
-                                    bestDist = d
-                                    primaryPart = part
-                                    primaryModel = e
-                                end
-                            end
+                    if part and part:IsA("BasePart") then
+                        local d = (part.Position - myPos).Magnitude
+                        if d < bestDist then
+                            bestDist, best, bestModel = d, part, e
                         end
                     end
                 end
             end
         end
     end
-
-    -- 2. Scan Enemies (Terrorshark, Shark, Piranha, Ghost Ship, Pirate Brigade)
-    if allowSeaFarm or (_G.DragonGunLeviathan and not primaryPart) then
-        local enemies = workspace:FindFirstChild("Enemies")
-        if enemies then
-            for _, e in ipairs(enemies:GetChildren()) do
-                if e:IsA("Model") and not seenModels[e] and not playerBoats[e.Name] then
-                    if table.find(VALID_SEA_ENEMIES, e.Name) and Sea_SelectionAllows(e.Name) then
-                        if Sea_MobStillAlive(e) then
-                            local engine = e:FindFirstChild("Engine")
-                            local isBoat = (engine ~= nil) and (e:FindFirstChild("VehicleSeat") ~= nil)
-                            local part = getEntityHitPart(e, isBoat, false)
-                            if part and part:IsA("BasePart") then
-                                local d = (part.Position - myPos).Magnitude
-                                if d <= maxDist then
-                                    seenModels[e] = true
-                                    table.insert(hitParts, part)
-                                    if d < bestDist then
-                                        bestDist = d
-                                        primaryPart = part
-                                        primaryModel = e
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    return primaryPart, primaryModel, hitParts, #hitParts
+    SeaTargetCache, SeaTargetAt, SeaTargetModel = best, now, bestModel
+    return best, bestModel
 end
 
--- Backward-compatible target finder
-local function getClosestSeaTarget()
-    local p, m = getSeaTargets()
-    return p, m
-end
-
--- Thread-safe, atomic single shot using verified PRNG sequence stepping.
--- hit: either BasePart or table of BaseParts (for multi-target AoE damage)
-local function fireSingleShot(pos, hit)
-    if not dragonReady then
-        if not initDragon() then return false end
-    end
-    if not shootFunc or not Validator2 or not ShootGunEvent then
-        if not resolveDragonRemotes() then return false end
-    end
-
-    local validParts = {}
-    if typeof(hit) == "Instance" and hit:IsA("BasePart") then
-        if hit.Parent then
-            table.insert(validParts, hit)
-        end
-    elseif type(hit) == "table" then
-        for _, p in ipairs(hit) do
-            if typeof(p) == "Instance" and p:IsA("BasePart") and p.Parent then
-                table.insert(validParts, p)
-            end
-        end
-    end
-
-    if #validParts == 0 then
-        return false
-    end
-
-    local targetPos = pos
-    if not (typeof(targetPos) == "Vector3") then
-        targetPos = validParts[1].Position
-    end
-
-    local ok, err = pcall(function()
-        local u20 = debug.getupvalue(shootFunc, idx.u20)
-        local u21 = debug.getupvalue(shootFunc, idx.u21)
-        local u22 = debug.getupvalue(shootFunc, idx.u22)
-        local u23 = debug.getupvalue(shootFunc, idx.u23)
-        local u24 = debug.getupvalue(shootFunc, idx.u24)
-        local u25 = debug.getupvalue(shootFunc, idx.u25)
-        local u26 = debug.getupvalue(shootFunc, idx.u26)
-
-        local u79 = u25 * u21
-        local u80 = (u24 * u21 + u25 * u20) % u22
-        u80 = (u80 * u22 + u79) % u23
-        u24 = math.floor(u80 / u22)
-        u25 = u80 - u24 * u22
-        u26 = u26 + 1
-
-        debug.setupvalue(shootFunc, idx.u24, u24)
-        debug.setupvalue(shootFunc, idx.u25, u25)
-        debug.setupvalue(shootFunc, idx.u26, u26)
-
-        Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
-        ShootGunEvent:FireServer(targetPos, validParts)
-    end)
-
-    return ok and (err == nil)
-end
-
--- Backward-compatible wrapper for fireShot
-local function fireShot(pos, hit)
-    return fireSingleShot(pos, hit)
-end
-
--- Unified, thread-safe Dragonstorm execution tick.
--- Dispatches multi-target hit arrays across rapid validated bursts.
-local function DragonAttackTick()
-    if isShootingMutex then
-        return false
-    end
-    isShootingMutex = true
-
-    local success, didHit = pcall(function()
-        if not (_G.DragonGunFarm or _G.DragonGunLeviathan) then
-            return false
-        end
-
-        local char = LocalPlayer.Character
-        if not char then return false end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return false end
-
-        -- Auto-equip Dragonstorm
-        if not HasDragonstormEquipped() then
-            Equip_Auto("Dragonstorm")
-            return false
-        end
-
-        local primaryPart, primaryModel, hitParts, targetCount = getSeaTargets()
-        if not primaryPart or targetCount == 0 then
-            return false
-        end
-
-        -- Multi-burst: sequential validated shots multiplying damage
-        local burstCount = math.clamp(math.floor(tonumber(_G.DragonShotsPerBurst) or 3), 1, 10)
-        local shotSuccess = false
-
-        for i = 1, burstCount do
-            if not primaryPart.Parent then
-                primaryPart, primaryModel, hitParts, targetCount = getSeaTargets()
-                if not primaryPart or targetCount == 0 then
-                    break
-                end
-            end
-
-            local ok = fireSingleShot(primaryPart.Position, hitParts)
-            if ok then
-                shotSuccess = true
-            else
-                break
-            end
-
-            if burstCount > 1 and i < burstCount then
-                task.wait(0.01)
-            end
-        end
-
-        return shotSuccess
-    end)
-
-    isShootingMutex = false
-
-    if not success or not didHit then
-        consecutiveShotErrors = consecutiveShotErrors + 1
-        if consecutiveShotErrors >= 6 then
-            -- Auto-resynchronize PRNG on repeated failure
-            dragonReady = false
-            initDragon(true)
-            consecutiveShotErrors = 0
-        end
-    else
-        consecutiveShotErrors = 0
-    end
-
-    return success and didHit
-end
-
+local DragonAttackRunning = false
 local function StartDragonAttack()
     if DragonAttackRunning then
         return
@@ -2912,12 +2765,51 @@ local function StartDragonAttack()
             end
             task.wait(5)
         end
-        print("[Dragonstorm] listo (sistema mejorado)")
-
-        while _G.DragonGunFarm or _G.DragonGunLeviathan do
-            DragonAttackTick()
-            local delayTime = math.clamp(tonumber(_G.DragonFireDelay) or 0.05, 0.02, 0.5)
-            task.wait(delayTime)
+        print("[Dragonstorm] listo")
+        local lastDiag = 0
+        while _G.DragonGunFarm do
+            local ok, err = pcall(function()
+                if not ShootGunEvent then
+                    local modules = RS:FindFirstChild("Modules")
+                    local net = modules and modules:FindFirstChild("Net")
+                    ShootGunEvent = net and net:FindFirstChild("RE/ShootGunEvent")
+                end
+                if not Validator2 then
+                    local remotes = RS:FindFirstChild("Remotes")
+                    Validator2 = remotes and remotes:FindFirstChild("Validator2")
+                end
+                if not ShootGunEvent or not Validator2 then
+                    return
+                end
+                local target, targetModel = getClosestSeaTarget()
+                if not target then
+                    if os.clock() - lastDiag > 2 then
+                        lastDiag = os.clock()
+                        print("[Dragonstorm] sin objetivo dentro de rango")
+                    end
+                    return
+                end
+                local char = LocalPlayer.Character
+                if not char then return end
+                local tool = char:FindFirstChildOfClass("Tool")
+                if not tool or tool.Name ~= "Dragonstorm" then
+                    if not IsOnBoat() then
+                        Equip_Auto("Dragonstorm")
+                    end
+                    return
+                end
+                local ownerName = targetModel and targetModel.Name or target.Name
+                local fired = fireShot(target.Position, target)
+                if not fired and os.clock() - lastDiag > 2 then
+                    lastDiag = os.clock()
+                    print("[Dragonstorm] disparo rechazado para " .. ownerName)
+                end
+            end)
+            if not ok and os.clock() - lastDiag > 2 then
+                lastDiag = os.clock()
+                warn("[Dragonstorm] error en bucle: " .. tostring(err))
+            end
+            task.wait()
         end
         DragonAttackRunning = false
     end)
@@ -3229,13 +3121,14 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     FightTarget = { CF = Stand, At = os.clock() }
                 end
                 if _G.DragonGunLeviathan and CheckItem("Dragonstorm") then
+                    initDragon()
                     if not HasDragonstormEquipped() then
                         Equip_Auto("Dragonstorm")
                     end
-                    if not DragonAttackRunning then
-                        StartDragonAttack()
+                    local target = getClosestSeaTarget()
+                    if target then
+                        fireShot(target.Position, target)
                     end
-                    DragonAttackTick()
                 else
                     local Distance = Stand and (Stand.Position - HRP.Position).Magnitude or 0
                     if Distance <= 80 then
@@ -3268,8 +3161,6 @@ SeaAPI.Leviathan_Stand = Leviathan_Stand
 SeaAPI.FightLeviathan = FightLeviathan
 SeaAPI.SeaEventOptions = SEA_EVENT_OPTIONS
 SeaAPI.NormalizeSelection = Sea_NormalizeSelection
-SeaAPI.DragonAttackTick = DragonAttackTick
-SeaAPI.GetSeaTargets = getSeaTargets
 do
     local RawSelection = _G.HuntSelectEvents
     local CleanSelection = Sea_NormalizeSelection(RawSelection)
@@ -6417,52 +6308,7 @@ do
             _G.DragonGunLeviathan = State
             SaveConfig()
             if State then
-                SeaAPI.StartDragonAttack()
-            end
-        end,
-    })
-    CombatSection:AddInput("dragon.burst", {
-        Title = T("dragon.burst"),
-        Description = T("dragon.burst.desc"),
-        Default = tostring(_G.DragonShotsPerBurst),
-        Placeholder = "3",
-        Numeric = true,
-        Finished = false,
-        Callback = function(Value)
-            local n = tonumber(Value)
-            if n then
-                _G.DragonShotsPerBurst = math.clamp(math.floor(n), 1, 10)
-                SaveConfig()
-            end
-        end,
-    })
-    CombatSection:AddInput("dragon.speed", {
-        Title = T("dragon.speed"),
-        Description = T("dragon.speed.desc"),
-        Default = tostring(_G.DragonFireDelay),
-        Placeholder = "0.05",
-        Numeric = true,
-        Finished = false,
-        Callback = function(Value)
-            local n = tonumber(Value)
-            if n then
-                _G.DragonFireDelay = math.clamp(n, 0.02, 0.5)
-                SaveConfig()
-            end
-        end,
-    })
-    CombatSection:AddInput("dragon.range", {
-        Title = T("dragon.range"),
-        Description = T("dragon.range.desc"),
-        Default = tostring(_G.DragonAttackRange),
-        Placeholder = "2500",
-        Numeric = true,
-        Finished = false,
-        Callback = function(Value)
-            local n = tonumber(Value)
-            if n then
-                _G.DragonAttackRange = math.clamp(math.floor(n), 500, 3500)
-                SaveConfig()
+                SeaAPI.InitDragon()
             end
         end,
     })
@@ -7307,7 +7153,7 @@ task.defer(function()
             _G.RJR_AutoFullToggle:Lock()
         end)
     end
-    if _G.DragonGunFarm or _G.DragonGunLeviathan then pcall(SeaAPI.StartDragonAttack) end
+    if _G.DragonGunFarm then pcall(SeaAPI.StartDragonAttack) end
     if _G.RemoveFog then pcall(DoRemoveFog) end
     if _G.AntiDracoAura then pcall(PerformanceAPI.ApplyAntiDracoAura) end
     if _G.AutoFastMode then pcall(PerformanceAPI.ApplyAutoFastMode) end
