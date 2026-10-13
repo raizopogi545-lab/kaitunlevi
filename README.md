@@ -2628,6 +2628,46 @@ local function fireShot(pos, hit)
     return true
 end
 
+-- ============================================================
+-- ENHANCED: fireShotMulti
+-- Fires the gun once per part in the list, dealing damage to every
+-- valid target. Runs sequentially so each shot gets a fresh seed and
+-- sequence number from Validator2. Adds a small delay between shots so
+-- the server does not collapse a burst into a single replayed event.
+-- Returns the number of successful shots.
+-- ============================================================
+local function fireShotMulti(parts, delayBetween)
+    if not shootFunc or not Validator2 or not ShootGunEvent then
+        return 0
+    end
+    delayBetween = delayBetween or 0.02
+    local validParts = {}
+    if type(parts) == "table" then
+        for _, p in ipairs(parts) do
+            if typeof(p) == "Instance" and p:IsA("BasePart") and p.Parent then
+                validParts[#validParts + 1] = p
+            end
+        end
+    elseif typeof(parts) == "Instance" and parts:IsA("BasePart") and parts.Parent then
+        validParts[1] = parts
+    end
+    local total = #validParts
+    if total == 0 then
+        return 0
+    end
+    local fired = 0
+    for i = 1, total do
+        local part = validParts[i]
+        if part.Parent and fireShot(part.Position, part) then
+            fired = fired + 1
+        end
+        if i < total and delayBetween > 0 then
+            task.wait(delayBetween)
+        end
+    end
+    return fired
+end
+
 local SeaBoatModelsCache, SeaBoatModelsAt
 local function getAllPlayerBoatModels()
     local now = os.clock()
@@ -2748,6 +2788,92 @@ local function getClosestSeaTarget()
     return best, bestModel
 end
 
+-- ============================================================
+-- ENHANCED: getAllSeaTargets
+-- Like getClosestSeaTarget, but returns EVERY valid target within range
+-- (all Leviathan segments + every selected sea event), sorted by distance.
+-- Used to spread a Dragonstorm burst over the whole cluster.
+-- ============================================================
+local function getAllSeaTargets(maxRange)
+    maxRange = maxRange or AttackRange
+    local char = LocalPlayer.Character
+    if not char then return {} end
+    local myHRP = char:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return {} end
+    local myPos = myHRP.Position
+    local targets = {}
+    local playerBoats = getAllPlayerBoatModels()
+    local selectionSet = Sea_SelectionSet()
+
+    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
+    if seaBeasts then
+        for _, e in ipairs(seaBeasts:GetChildren()) do
+            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
+            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
+            local allowed = isLeviathan
+                or configName == nil
+                or (selectionSet == nil or selectionSet[configName] == true)
+            if allowed then
+                local hp = e:FindFirstChild("Health")
+                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+                if alive then
+                    local part
+                    if isLeviathan then
+                        part = e:FindFirstChild("Leviathan Segment")
+                    end
+                    part = part
+                        or e:FindFirstChild("HumanoidRootPart")
+                        or e.PrimaryPart
+                    if part and part:IsA("BasePart") then
+                        local d = (part.Position - myPos).Magnitude
+                        if d <= maxRange then
+                            targets[#targets + 1] = { part = part, model = e, dist = d }
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local enemies = workspace:FindFirstChild("Enemies")
+    if enemies then
+        for _, e in ipairs(enemies:GetChildren()) do
+            if table.find(VALID_SEA_ENEMIES, e.Name)
+                and not playerBoats[e.Name]
+                and Sea_SelectionAllows(e.Name) then
+                local hp = e:FindFirstChild("Health")
+                local hum = e:FindFirstChildOfClass("Humanoid")
+                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
+                    or (hum and hum.Health > 0)
+                if alive then
+                    local engine = e:FindFirstChild("Engine")
+                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                    local part
+                    if isBoat then
+                        part = engine
+                    else
+                        part = e:FindFirstChild("HumanoidRootPart")
+                            or e:FindFirstChildWhichIsA("BasePart", true)
+                    end
+                    if part and part:IsA("BasePart") then
+                        local d = (part.Position - myPos).Magnitude
+                        if d <= maxRange then
+                            targets[#targets + 1] = { part = part, model = e, dist = d }
+                        end
+                    end
+                end
+            end
+        end
+    end
+    table.sort(targets, function(a, b) return a.dist < b.dist end)
+    return targets
+end
+
+-- Dragonstorm burst tuning
+local DRAGON_BURST_COOLDOWN = 0.10
+local MAX_DRAGON_TARGETS_PER_BURST = 16
+local LastDragonBurstAt = 0
+
 local DragonAttackRunning = false
 local function StartDragonAttack()
     if DragonAttackRunning then
@@ -2781,8 +2907,8 @@ local function StartDragonAttack()
                 if not ShootGunEvent or not Validator2 then
                     return
                 end
-                local target, targetModel = getClosestSeaTarget()
-                if not target then
+                local targets = getAllSeaTargets(AttackRange)
+                if #targets == 0 then
                     if os.clock() - lastDiag > 2 then
                         lastDiag = os.clock()
                         print("[Dragonstorm] sin objetivo dentro de rango")
@@ -2798,11 +2924,21 @@ local function StartDragonAttack()
                     end
                     return
                 end
-                local ownerName = targetModel and targetModel.Name or target.Name
-                local fired = fireShot(target.Position, target)
-                if not fired and os.clock() - lastDiag > 2 then
+                -- ENHANCED: burst fire, one shot per target.
+                local now = os.clock()
+                if now - LastDragonBurstAt < DRAGON_BURST_COOLDOWN then
+                    return
+                end
+                LastDragonBurstAt = now
+                local parts = {}
+                for i, t in ipairs(targets) do
+                    if i > MAX_DRAGON_TARGETS_PER_BURST then break end
+                    parts[#parts + 1] = t.part
+                end
+                local fired = fireShotMulti(parts, 0.015)
+                if fired == 0 and os.clock() - lastDiag > 2 then
                     lastDiag = os.clock()
-                    print("[Dragonstorm] disparo rechazado para " .. ownerName)
+                    print("[Dragonstorm] disparo rechazado (" .. #targets .. " objetivos)")
                 end
             end)
             if not ok and os.clock() - lastDiag > 2 then
@@ -3125,9 +3261,19 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     if not HasDragonstormEquipped() then
                         Equip_Auto("Dragonstorm")
                     end
-                    local target = getClosestSeaTarget()
-                    if target then
-                        fireShot(target.Position, target)
+                    -- ENHANCED: burst every Leviathan segment + any sea events in range.
+                    local now = os.clock()
+                    if now - LastDragonBurstAt >= DRAGON_BURST_COOLDOWN then
+                        LastDragonBurstAt = now
+                        local targets = getAllSeaTargets(AttackRange)
+                        if #targets > 0 then
+                            local parts = {}
+                            for i, t in ipairs(targets) do
+                                if i > MAX_DRAGON_TARGETS_PER_BURST then break end
+                                parts[#parts + 1] = t.part
+                            end
+                            fireShotMulti(parts, 0.015)
+                        end
                     end
                 else
                     local Distance = Stand and (Stand.Position - HRP.Position).Magnitude or 0
@@ -5638,22 +5784,8 @@ task.spawn(function()
 end)
 
 -- ============================================================
--- Auto Store Fruits (fixed: no more spam when a fruit is full)
+-- Auto Store Fruits
 -- ============================================================
--- Root cause of the previous spam:
---   The old LooksFull() looked for "full", "space", "no room",
---   "inventory limit" but the game actually returns
---   "You can only store 5 of each Blox Fruit." — none of the
---   old substrings matched. The loop therefore never paused, kept
---   firing StoreFruit on every fruit every second, and each call
---   produced its own red toast on screen.
--- Fix:
---   * Match the real server message ("can only store") plus a
---     couple of defensive fallbacks.
---   * Only one StoreFruit attempt per second (break after first).
---   * Blacklist the specific fruit name on the full response with
---     a timestamp, retrying that fruit once per RETRY_INTERVAL.
---   * Fall back to k.Name if the OriginalName attribute is missing.
 task.spawn(function()
     local RETRY_INTERVAL = 60
     local FullNotified = false
