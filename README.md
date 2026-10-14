@@ -111,6 +111,12 @@ T, ModeDisplay = (function()
         ["dragon.burstdelay.desc"] = { en = "Delay between shots inside one burst. 0 = same tick. 0.02 keeps the server happy.", es = "Retardo entre disparos dentro de una misma ráfaga. 0 = mismo tick. 0.02 mantiene contento al servidor.", zh = "同一轮连发内每发之间的间隔。0 为同一帧；0.02 对服务器更友好。" },
         ["dragon.multipartlimit"] = { en = "Multi-part max parts", es = "Máximo de partes (multiparte)", zh = "多部件命中上限" },
         ["dragon.multipartlimit.desc"] = { en = "Max visible parts sent per shot when Multi-part hit is on (1–30). Higher = more damage on big bosses like Leviathan.", es = "Máximo de partes visibles enviadas por disparo cuando el multiparte está activo (1-30). Más alto = más daño en jefes grandes como el Leviathan.", zh = "开启多部件命中时每发最多发送的可见部件数（1–30）。越高，对利维坦这类大型 Boss 伤害越大。" },
+        ["dragon.multitarget"] = { en = "Multi-Target (hit several)", es = "Multiobjetivo (varios a la vez)", zh = "多目标（同时打多个）" },
+        ["dragon.multitarget.desc"] = { en = "Each fire cycle shoots every nearby sea event / Leviathan segment. Every shot is a fully seed-validated individual shot.", es = "Cada ciclo dispara a todos los eventos cercanos / segmentos del Leviathan. Cada disparo es individual y validado por el seed.", zh = "每次触发同时攻击附近所有海上事件 / 利维坦节段。每发都是独立且通过 seed 验证的。" },
+        ["dragon.multitargetcount"] = { en = "Multi-Target max targets", es = "Máximo de objetivos por ciclo", zh = "每次最多攻击目标数" },
+        ["dragon.multitargetcount.desc"] = { en = "How many entities to hit per fire cycle (1–8). Combined with Burst, damage multiplies.", es = "Cuántas entidades atacar por ciclo (1-8). Se combina con la ráfaga para multiplicar el daño.", zh = "每次触发攻击的实体数量（1–8）。与连发结合，伤害成倍提升。" },
+        ["dragon.multitargetdelay"] = { en = "Delay between targets (s)", es = "Retardo entre objetivos (s)", zh = "目标之间的间隔（秒）" },
+        ["dragon.multitargetdelay.desc"] = { en = "Small pause between each target inside one cycle. 0.01 keeps the server from dropping shots.", es = "Pequeña pausa entre cada objetivo dentro de un ciclo. 0.01 evita que el servidor descarte disparos.", zh = "一轮多目标内每个目标之间的小停顿。0.01 可避免服务器丢包。" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -277,6 +283,11 @@ if _G.DragonMultiPartLimit  == nil then _G.DragonMultiPartLimit  = 12   end
 if _G.DragonBurstCount      == nil then _G.DragonBurstCount      = 3    end
 -- Delay between shots inside one burst (seconds). 0 = same tick.
 if _G.DragonBurstDelay      == nil then _G.DragonBurstDelay      = 0.02 end
+-- MULTI-TARGET: hit N different entities per fire cycle (each with its own valid seed)
+if _G.DragonMultiTarget      == nil then _G.DragonMultiTarget      = true end
+if _G.DragonMultiTargetCount == nil then _G.DragonMultiTargetCount = 3    end
+-- Delay between targets inside one multi-target cycle.
+if _G.DragonMultiTargetDelay == nil then _G.DragonMultiTargetDelay = 0.01 end
 -- [/DRAGONSTORM ENHANCED]
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
@@ -588,6 +599,9 @@ local ConfigKeys = {
     "DragonMultiPartLimit",
     "DragonBurstCount",
     "DragonBurstDelay",
+    "DragonMultiTarget",
+    "DragonMultiTargetCount",
+    "DragonMultiTargetDelay",
     -- [/DRAGONSTORM ENHANCED]
     "RemoveFog",
     "AntiDracoAura",
@@ -2560,7 +2574,7 @@ local function Sea_EventRoot(Mob)
 end
 
 -- ============================================================
--- Dragonstorm (corrected + burst fire)
+-- Dragonstorm (corrected + burst + multi-target)
 -- ============================================================
 local ShootGunEvent = nil
 local Validator2 = nil
@@ -2631,14 +2645,7 @@ local function DragonStillHealthy()
 end
 -- [/DRAGONSTORM ENHANCED]
 
--- [DRAGONSTORM ENHANCED] rewritten fireShot:
---   * rate-limited at the trigger level
---   * mutual exclusion
---   * optional multi-part hit list (configurable cap)
---   * BURST fire: N shots per trigger, each with its own Validator2 seed
---   * auto-recovers from a stale shootFunc
---   * preserves the original (pos, part) single-hit signature when
---     DragonMultiPartHit is off and DragonBurstCount == 1
+-- [DRAGONSTORM ENHANCED] rewritten fireShot (single target, burst fire)
 local function fireShot(pos, hit)
     if not pos then return false end
     if not initDragon() then return false end
@@ -2652,7 +2659,6 @@ local function fireShot(pos, hit)
         return false
     end
 
-    -- Trigger-level rate limit (applies to the whole burst, not per shot)
     local now = os.clock()
     local interval = _G.DragonFireInterval or 0.10
     if now - DragonLastFire < interval then
@@ -2662,7 +2668,6 @@ local function fireShot(pos, hit)
     DragonFireLock = true
     DragonLastFire = now
 
-    -- ---- Build the hit list (unchanged rules, just with a live cap) ----
     local parts = {}
     if typeof(hit) == "Instance" and hit:IsA("BasePart") then
         parts[1] = hit
@@ -2698,9 +2703,6 @@ local function fireShot(pos, hit)
                     }
                 end
             end
-            -- Sort by distance to the primary so the closest hits go first.
-            -- This makes the server-side "did you hit it?" check the most
-            -- likely to accept the whole list.
             table.sort(candidates, function(a, b) return a.d < b.d end)
             local expanded = {}
             for i = 1, math.min(#candidates, limit) do
@@ -2710,14 +2712,9 @@ local function fireShot(pos, hit)
         end
     end
 
-    -- ---- Burst parameters ----
     local burstCount = math.max(1, math.min(math.floor(_G.DragonBurstCount or 1), 5))
     local burstDelay = math.max(0, _G.DragonBurstDelay or 0)
 
-    -- ---- Fire the burst. Each iteration reads fresh upvalues, advances
-    --      the seed chain, and pairs one Validator2 call with one
-    --      ShootGunEvent call. This is the only safe way to fire multiple
-    --      shots without tripping the server-side seed check.
     local shotsFired = 0
     local ok = pcall(function()
         for burst = 1, burstCount do
@@ -2736,7 +2733,6 @@ local function fireShot(pos, hit)
                 error("upvalues missing")
             end
 
-            -- Seed-chain math (identical to the original single-shot path)
             local u79 = u25 * u21
             local u80 = (u24 * u21 + u25 * u20) % u22
             u80 = (u80 * u22 + u79) % u23
@@ -2760,6 +2756,122 @@ local function fireShot(pos, hit)
 
     DragonFireLock = false
     if not ok or shotsFired == 0 then
+        DragonShootRetries = DragonShootRetries + 1
+        if DragonShootRetries >= 3 then
+            DragonShootRetries = 0
+            dragonReady = false
+            shootFunc, idx = nil, {}
+        end
+        return false
+    end
+    DragonShootRetries = 0
+    return true
+end
+-- [/DRAGONSTORM ENHANCED]
+
+-- [DRAGONSTORM ENHANCED] Multi-target fire.
+-- Fires one legitimate shot per target, each with its own fresh seed
+-- chain and its own (pos, parts) pair — so the server accepts every one.
+local function fireShotMulti(targets)
+    if not targets or #targets == 0 then return false end
+    if not initDragon() then return false end
+    if not DragonStillHealthy() then
+        dragonReady = false
+        shootFunc, idx = nil, {}
+        return false
+    end
+    if not Validator2 or not ShootGunEvent
+        or not Validator2.Parent or not ShootGunEvent.Parent then
+        return false
+    end
+
+    local now = os.clock()
+    local interval = _G.DragonFireInterval or 0.10
+    if now - DragonLastFire < interval then return false end
+    if DragonFireLock then return false end
+    DragonFireLock = true
+    DragonLastFire = now
+
+    local burstCount = math.max(1, math.min(math.floor(_G.DragonBurstCount or 1), 5))
+    local burstDelay = math.max(0, _G.DragonBurstDelay or 0)
+    local targetDelay = math.max(0, _G.DragonMultiTargetDelay or 0.01)
+    local shotsFired = 0
+
+    for tIdx, target in ipairs(targets) do
+        if target.part and target.part.Parent then
+            local parts = { target.part }
+            if _G.DragonMultiPartHit then
+                local model = target.model
+                if model then
+                    local limit = math.max(1, math.min(_G.DragonMultiPartLimit or 12, 30))
+                    local origin = target.part.Position
+                    local candidates = {}
+                    for _, p in ipairs(model:GetDescendants()) do
+                        if p:IsA("BasePart") and p.Transparency < 1 then
+                            candidates[#candidates + 1] = {
+                                part = p,
+                                d = (p.Position - origin).Magnitude,
+                            }
+                        end
+                    end
+                    table.sort(candidates, function(a, b) return a.d < b.d end)
+                    local expanded = {}
+                    for i = 1, math.min(#candidates, limit) do
+                        expanded[i] = candidates[i].part
+                    end
+                    if #expanded > 0 then parts = expanded end
+                end
+            end
+
+            local ok = pcall(function()
+                for burst = 1, burstCount do
+                    if not target.part or not target.part.Parent then
+                        break
+                    end
+                    if not Validator2 or not Validator2.Parent
+                        or not ShootGunEvent or not ShootGunEvent.Parent then
+                        break
+                    end
+                    local u20 = debug.getupvalue(shootFunc, idx.u20)
+                    local u21 = debug.getupvalue(shootFunc, idx.u21)
+                    local u22 = debug.getupvalue(shootFunc, idx.u22)
+                    local u23 = debug.getupvalue(shootFunc, idx.u23)
+                    local u24 = debug.getupvalue(shootFunc, idx.u24)
+                    local u25 = debug.getupvalue(shootFunc, idx.u25)
+                    local u26 = debug.getupvalue(shootFunc, idx.u26)
+                    if not (u20 and u21 and u22 and u23 and u24 and u25 and u26) then
+                        error("upvalues missing")
+                    end
+
+                    local u79 = u25 * u21
+                    local u80 = (u24 * u21 + u25 * u20) % u22
+                    u80 = (u80 * u22 + u79) % u23
+                    u24 = math.floor(u80 / u22)
+                    u25 = u80 - u24 * u22
+                    u26 = u26 + 1
+
+                    debug.setupvalue(shootFunc, idx.u24, u24)
+                    debug.setupvalue(shootFunc, idx.u25, u25)
+                    debug.setupvalue(shootFunc, idx.u26, u26)
+
+                    Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
+                    ShootGunEvent:FireServer(target.part.Position, parts)
+                    shotsFired = shotsFired + 1
+
+                    if burstDelay > 0 and burst < burstCount then
+                        task.wait(burstDelay)
+                    end
+                end
+            end)
+
+            if tIdx < #targets and targetDelay > 0 then
+                task.wait(targetDelay)
+            end
+        end
+    end
+
+    DragonFireLock = false
+    if shotsFired == 0 then
         DragonShootRetries = DragonShootRetries + 1
         if DragonShootRetries >= 3 then
             DragonShootRetries = 0
@@ -2807,11 +2919,6 @@ end
 local AttackRange = 2500
 local SeaTargetCache, SeaTargetAt, SeaTargetModel
 
--- Returns (part, model). Picks the exact server-valid hit part per entity:
---   * Leviathan segment  -> "Leviathan Segment"
---   * Sea Beast          -> "HumanoidRootPart" (fallback PrimaryPart)
---   * Pirate boats       -> "Engine"
---   * ground mobs        -> "HumanoidRootPart" (fallback first BasePart)
 local function getClosestSeaTarget()
     local now = os.clock()
     if SeaTargetCache and (now - SeaTargetAt) < 0.2 then
@@ -2894,9 +3001,6 @@ local function getClosestSeaTarget()
 end
 
 -- [DRAGONSTORM ENHANCED] Leviathan-only target resolver.
--- Reuses the same hit-part rules as getClosestSeaTarget but only ever
--- returns the Leviathan. This is what stops Dragonstorm from wasting
--- shots on nearby Sharks / Piranhas during the boss fight.
 local function getLeviathanTarget()
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if not seaBeasts then return nil, nil end
@@ -2924,6 +3028,130 @@ local function getLeviathanTarget()
         end
     end
     return best, bestModel
+end
+
+-- [DRAGONSTORM ENHANCED] Multi-target resolvers.
+local function getMultipleSeaTargets(maxCount)
+    maxCount = math.max(1, math.min(maxCount or 3, 8))
+    local char = LocalPlayer.Character
+    if not char then return {} end
+    local myHRP = char:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return {} end
+    local myPos = myHRP.Position
+    local playerBoats = getAllPlayerBoatModels()
+    local selectionSet = Sea_SelectionSet()
+    local candidates = {}
+
+    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
+    if seaBeasts then
+        for _, e in ipairs(seaBeasts:GetChildren()) do
+            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
+            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
+            local allowed = isLeviathan
+                or configName == nil
+                or (selectionSet == nil or selectionSet[configName] == true)
+            if allowed then
+                local hp = e:FindFirstChild("Health")
+                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+                if alive then
+                    local part
+                    if isLeviathan then
+                        part = e:FindFirstChild("Leviathan Segment")
+                    end
+                    part = part
+                        or e:FindFirstChild("HumanoidRootPart")
+                        or e.PrimaryPart
+                    if part and part:IsA("BasePart") then
+                        local d = (part.Position - myPos).Magnitude
+                        if d < AttackRange then
+                            candidates[#candidates + 1] = {
+                                part = part, model = e, dist = d, isLV = isLeviathan,
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local enemies = workspace:FindFirstChild("Enemies")
+    if enemies then
+        for _, e in ipairs(enemies:GetChildren()) do
+            if table.find(VALID_SEA_ENEMIES, e.Name)
+                and not playerBoats[e.Name]
+                and Sea_SelectionAllows(e.Name) then
+                local hp = e:FindFirstChild("Health")
+                local hum = e:FindFirstChildOfClass("Humanoid")
+                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
+                    or (hum and hum.Health > 0)
+                if alive then
+                    local engine = e:FindFirstChild("Engine")
+                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                    local part
+                    if isBoat then
+                        part = engine
+                    else
+                        part = e:FindFirstChild("HumanoidRootPart")
+                            or e:FindFirstChildWhichIsA("BasePart", true)
+                    end
+                    if part and part:IsA("BasePart") then
+                        local d = (part.Position - myPos).Magnitude
+                        if d < AttackRange then
+                            candidates[#candidates + 1] = {
+                                part = part, model = e, dist = d, isLV = false,
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    table.sort(candidates, function(a, b)
+        if a.isLV and not b.isLV then return true end
+        if b.isLV and not a.isLV then return false end
+        return a.dist < b.dist
+    end)
+
+    local out = {}
+    for i = 1, math.min(#candidates, maxCount) do
+        out[i] = candidates[i]
+    end
+    return out
+end
+
+local function getMultipleLeviathanSegments(maxCount)
+    maxCount = math.max(1, math.min(maxCount or 3, 8))
+    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
+    if not seaBeasts then return {} end
+    local char = LocalPlayer.Character
+    if not char then return {} end
+    local myHRP = char:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return {} end
+    local myPos = myHRP.Position
+    local out = {}
+    for _, e in ipairs(seaBeasts:GetChildren()) do
+        if e.Name == "Leviathan Segment" or e.Name == "Leviathan" then
+            local hp = e:FindFirstChild("Health")
+            local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+            if alive then
+                local part = e:FindFirstChild("Leviathan Segment")
+                    or e:FindFirstChild("HumanoidRootPart")
+                    or e.PrimaryPart
+                if part and part:IsA("BasePart") then
+                    local d = (part.Position - myPos).Magnitude
+                    if d < AttackRange then
+                        out[#out + 1] = { part = part, model = e, dist = d }
+                    end
+                end
+            end
+        end
+    end
+    table.sort(out, function(a, b) return a.dist < b.dist end)
+    while #out > maxCount do
+        table.remove(out)
+    end
+    return out
 end
 -- [/DRAGONSTORM ENHANCED]
 
@@ -2966,6 +3194,24 @@ local function StartDragonAttack()
                 if not tool or tool.Name ~= "Dragonstorm" then
                     if not IsOnBoat() then
                         Equip_Auto("Dragonstorm")
+                    end
+                    return
+                end
+                -- [DRAGONSTORM ENHANCED] Multi-target path
+                if _G.DragonMultiTarget then
+                    local targets = getMultipleSeaTargets(_G.DragonMultiTargetCount or 3)
+                    if #targets == 0 then
+                        if os.clock() - lastDiag > 2 then
+                            lastDiag = os.clock()
+                            print("[Dragonstorm] sin objetivo dentro de rango")
+                        end
+                        return
+                    end
+                    local fired = fireShotMulti(targets)
+                    if not fired and os.clock() - lastDiag > 2 then
+                        lastDiag = os.clock()
+                        print("[Dragonstorm] ciclo multiobjetivo rechazado ("
+                            .. #targets .. " objetivos)")
                     end
                     return
                 end
@@ -3304,19 +3550,21 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     end
                     FightTarget = { CF = Stand, At = os.clock() }
                 end
-                -- [DRAGONSTORM ENHANCED] Leviathan branch:
-                --   * Uses getLeviathanTarget() so Dragonstorm can never
-                --     fire at a nearby sea event during the boss fight.
-                --   * Only fires if Dragonstorm is already the equipped tool,
-                --     which removes the equip/fire race that produced
-                --     rejected shots in the original code.
+                -- [DRAGONSTORM ENHANCED] Leviathan branch
                 if _G.DragonGunLeviathan and CheckItem("Dragonstorm") then
                     if HasDragonstormEquipped() then
-                        local lvPart, lvModel = getLeviathanTarget()
-                        if lvPart then
-                            local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
-                            local aimPos = aimPart and aimPart.Position or lvPart.Position
-                            fireShot(aimPos, lvPart)
+                        if _G.DragonMultiTarget then
+                            local segs = getMultipleLeviathanSegments(_G.DragonMultiTargetCount or 3)
+                            if #segs > 0 then
+                                fireShotMulti(segs)
+                            end
+                        else
+                            local lvPart, lvModel = getLeviathanTarget()
+                            if lvPart then
+                                local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
+                                local aimPos = aimPart and aimPart.Position or lvPart.Position
+                                fireShot(aimPos, lvPart)
+                            end
                         end
                     else
                         if not IsOnBoat() then
@@ -3356,9 +3604,11 @@ SeaAPI.Leviathan_Stand = Leviathan_Stand
 SeaAPI.FightLeviathan = FightLeviathan
 SeaAPI.SeaEventOptions = SEA_EVENT_OPTIONS
 SeaAPI.NormalizeSelection = Sea_NormalizeSelection
--- [DRAGONSTORM ENHANCED] expose the new resolver + health check
+-- [DRAGONSTORM ENHANCED]
 SeaAPI.GetLeviathanTarget = getLeviathanTarget
 SeaAPI.GetClosestSeaTarget = getClosestSeaTarget
+SeaAPI.GetMultipleSeaTargets = getMultipleSeaTargets
+SeaAPI.GetMultipleLeviathanSegments = getMultipleLeviathanSegments
 -- [/DRAGONSTORM ENHANCED]
 do
     local RawSelection = _G.HuntSelectEvents
@@ -6563,6 +6813,45 @@ do
             local n = tonumber(Value)
             if n then
                 _G.DragonMultiPartLimit = math.clamp(math.floor(n), 1, 30)
+                SaveConfig()
+            end
+        end,
+    })
+    CombatSection:AddToggle("dragon.multitarget", {
+        Title = T("dragon.multitarget"),
+        Description = T("dragon.multitarget.desc"),
+        Default = _G.DragonMultiTarget,
+        Callback = function(State)
+            _G.DragonMultiTarget = State
+            SaveConfig()
+        end,
+    })
+    CombatSection:AddInput("dragon.multitargetcount", {
+        Title = T("dragon.multitargetcount"),
+        Description = T("dragon.multitargetcount.desc"),
+        Default = tostring(_G.DragonMultiTargetCount),
+        Placeholder = "3",
+        Numeric = true,
+        Finished = false,
+        Callback = function(Value)
+            local n = tonumber(Value)
+            if n then
+                _G.DragonMultiTargetCount = math.clamp(math.floor(n), 1, 8)
+                SaveConfig()
+            end
+        end,
+    })
+    CombatSection:AddInput("dragon.multitargetdelay", {
+        Title = T("dragon.multitargetdelay"),
+        Description = T("dragon.multitargetdelay.desc"),
+        Default = tostring(_G.DragonMultiTargetDelay),
+        Placeholder = "0.01",
+        Numeric = true,
+        Finished = false,
+        Callback = function(Value)
+            local n = tonumber(Value)
+            if n and n >= 0 and n <= 0.2 then
+                _G.DragonMultiTargetDelay = n
                 SaveConfig()
             end
         end,
