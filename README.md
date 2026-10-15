@@ -2206,13 +2206,6 @@ local function fireShot(pos, hit)
         return false
     end
 
-    local now = os.clock()
-    local interval = _G.DragonFireInterval or 0.30
-    if now - DragonLastFire < interval then return false end
-    if DragonFireLock then return false end
-    DragonFireLock = true
-    DragonLastFire = now
-
     -- Resolve primary hit part
     local primary
     if typeof(hit) == "Instance" and hit:IsA("BasePart") then
@@ -2230,7 +2223,6 @@ local function fireShot(pos, hit)
             or hit:FindFirstChildWhichIsA("BasePart", true)
     end
     if not primary or not primary.Parent then
-        DragonFireLock = false
         return false
     end
 
@@ -2251,7 +2243,6 @@ local function fireShot(pos, hit)
         and type(u25) == "number" and type(u26) == "number") then
         dragonReady = false
         shootFunc, idx = nil, {}
-        DragonFireLock = false
         return false
     end
 
@@ -2298,13 +2289,11 @@ local function fireShot(pos, hit)
                 DragonShootRetries = 0
                 dragonReady = false
                 shootFunc, idx = nil, {}
-                DragonFireLock = false
                 return false
             end
         end
     end
 
-    DragonFireLock = false
     return anyOk
 end
 
@@ -2410,6 +2399,77 @@ local function getClosestSeaTarget()
     return best, bestModel
 end
 
+-- ============================================================
+-- getAllSeaTargets — ENHANCED MULTI-TARGET SCANNER
+-- ------------------------------------------------------------
+-- Returns a list of all valid sea event targets within range.
+-- This allows the Dragonstorm to hit multiple enemies at once.
+-- ============================================================
+local function getAllSeaTargets()
+    local targets = {}
+    local char = LocalPlayer.Character
+    if not char then return targets end
+    local myHRP = char:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return targets end
+    local myPos = myHRP.Position
+    local playerBoats = getAllPlayerBoatModels()
+    local selectionSet = Sea_SelectionSet()
+    local Range = 2500
+
+    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
+    if seaBeasts then
+        for _, e in ipairs(seaBeasts:GetChildren()) do
+            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
+            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
+            local allowed = isLeviathan or configName == nil
+                or (selectionSet == nil or selectionSet[configName] == true)
+            if allowed then
+                local hp = e:FindFirstChild("Health")
+                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+                if alive then
+                    local part
+                    if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
+                    part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
+                    if part and part:IsA("BasePart") then
+                        local d = (part.Position - myPos).Magnitude
+                        if d < Range then
+                            table.insert(targets, {part = part, model = e, dist = d, isLeviathan = isLeviathan})
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local enemies = workspace:FindFirstChild("Enemies")
+    if enemies then
+        for _, e in ipairs(enemies:GetChildren()) do
+            if table.find(VALID_SEA_ENEMIES, e.Name)
+                and not playerBoats[e.Name]
+                and Sea_SelectionAllows(e.Name) then
+                local hp = e:FindFirstChild("Health")
+                local hum = e:FindFirstChildOfClass("Humanoid")
+                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
+                    or (hum and hum.Health > 0)
+                if alive then
+                    local engine = e:FindFirstChild("Engine")
+                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                    local part
+                    if isBoat then part = engine
+                    else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
+                    if part and part:IsA("BasePart") then
+                        local d = (part.Position - myPos).Magnitude
+                        if d < Range then
+                            table.insert(targets, {part = part, model = e, dist = d})
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return targets
+end
+
 local function getLeviathanTarget()
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if not seaBeasts then return nil, nil end
@@ -2467,29 +2527,39 @@ local function StartDragonAttack()
                     if not IsOnBoat() then Equip_Auto("Dragonstorm") end
                     return
                 end
-                local target, targetModel = getLeviathanTarget()
-                if not target then
-                    target, targetModel = getClosestSeaTarget()
-                end
-                if not target then
+                
+                local now = os.clock()
+                local interval = _G.DragonFireInterval or 0.30
+                if now - DragonLastFire < interval then return end
+                DragonLastFire = now
+                
+                local targets = getAllSeaTargets()
+                if #targets == 0 then
                     if os.clock() - lastDiag > 2 then
                         lastDiag = os.clock()
                         print("[Dragonstorm] sin objetivo dentro de rango")
                     end
                     return
                 end
-                local fired = fireShot(target.Position, target)
-                if not fired and os.clock() - lastDiag > 2 then
-                    lastDiag = os.clock()
-                    print("[Dragonstorm] disparo rechazado para "
-                        .. (targetModel and targetModel.Name or target.Name))
+                
+                -- Sort targets by distance (closest first)
+                table.sort(targets, function(a, b) return a.dist < b.dist end)
+                
+                -- Fire at up to N closest targets
+                local MaxTargets = 5 -- Limit to avoid overwhelming the server
+                for i = 1, math.min(#targets, MaxTargets) do
+                    local target = targets[i]
+                    if target.part and target.part.Parent then
+                        fireShot(target.part.Position, target.part)
+                        task.wait(0.05) -- Small delay between targets
+                    end
                 end
             end)
             if not ok and os.clock() - lastDiag > 2 then
                 lastDiag = os.clock()
                 warn("[Dragonstorm] error en bucle: " .. tostring(err))
             end
-            task.wait(_G.DragonFireInterval or 0.30)
+            task.wait(0.05) -- Check frequently, rate limit handles actual firing
         end
         DragonAttackRunning = false
     end)
@@ -2768,11 +2838,16 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                 end
                 if _G.DragonGunLeviathan and CheckItem("Dragonstorm") then
                     if HasDragonstormEquipped() then
-                        local lvPart, lvModel = getLeviathanTarget()
-                        if lvPart then
-                            local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
-                            local aimPos = aimPart and aimPart.Position or lvPart.Position
-                            fireShot(aimPos, lvPart)
+                        local now = os.clock()
+                        local interval = _G.DragonFireInterval or 0.30
+                        if now - DragonLastFire >= interval then
+                            DragonLastFire = now
+                            local lvPart, lvModel = getLeviathanTarget()
+                            if lvPart then
+                                local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
+                                local aimPos = aimPart and aimPart.Position or lvPart.Position
+                                fireShot(aimPos, lvPart)
+                            end
                         end
                     else
                         if not IsOnBoat() then Equip_Auto("Dragonstorm") end
@@ -5006,29 +5081,12 @@ task.spawn(function()
     end
 end)
 local FruitsBlackList = {}
-task.spawn(function()
-    local RollCooldown = 60
-    local LastRollAt = 0
-    while true do
-        task.wait(1)
-        if _G.AutoRandomFruit and HRP and HD and HD.Health > 0 then
-            if os.clock() - LastRollAt >= RollCooldown then
-                LastRollAt = os.clock()
-                local ok, result = pcall(function()
-                    return CommF:InvokeServer("Cousin", "Buy")
-                end)
-                if not ok then
-                    print("[AutoRandomFruit] InvokeServer fallo:", tostring(result))
-                elseif type(result) == "string" then
-                    print("[AutoRandomFruit] respuesta:", result)
-                end
-            end
-        end
-    end
-end)
+-- [FIXED] Auto Store Fruit Spam Issue
+-- Added a global StorageFull cooldown and only attempts one fruit per second to prevent spam.
 task.spawn(function()
     local RETRY_INTERVAL = 60
-    local FullNotified = false
+    local StorageFull = false
+    local StorageFullAt = 0
     local function IsFullMessage(res)
         if type(res) ~= "string" then return false end
         local low = res:lower()
@@ -5036,40 +5094,43 @@ task.spawn(function()
             or low:find("inventory full", 1, true) ~= nil
             or low:find("storage full", 1, true) ~= nil
             or low:find("no room", 1, true) ~= nil
+            or low:find("maximum", 1, true) ~= nil
     end
     while task.wait(1) do
         if _G.AutoStoreFruits and HRP and HD and HD.Health > 0 then
-            local now = os.clock()
-            local attempted = false
-            local Containers = { LocalPlayer.Backpack, Character }
-            for _, container in ipairs(Containers) do
-                if container and not attempted then
-                    for _, k in ipairs(container:GetChildren()) do
-                        if k:IsA("Tool") and string.find(k.Name, "Fruit", 1, true) then
-                            local originalName = k:GetAttribute("OriginalName") or k.Name
-                            local lastTried = FruitsBlackList[originalName]
-                            if not lastTried or (now - lastTried) > RETRY_INTERVAL then
-                                local ok, result = pcall(function()
-                                    return CommF:InvokeServer("StoreFruit", originalName, k)
-                                end)
-                                attempted = true
-                                if ok and IsFullMessage(result) then
-                                    FruitsBlackList[originalName] = now
-                                    if not FullNotified then
-                                        FullNotified = true
-                                        print("[AutoStoreFruits] Storage limit reached for "
-                                            .. tostring(originalName)
-                                            .. "; will retry in " .. RETRY_INTERVAL .. "s")
+            if StorageFull and os.clock() - StorageFullAt < RETRY_INTERVAL then
+                -- Skip trying to store because storage is known to be full
+            else
+                StorageFull = false
+                local attempted = false
+                local Containers = { LocalPlayer.Backpack, Character }
+                for _, container in ipairs(Containers) do
+                    if container and not attempted then
+                        for _, k in ipairs(container:GetChildren()) do
+                            if k:IsA("Tool") and string.find(k.Name, "Fruit", 1, true) then
+                                local originalName = k:GetAttribute("OriginalName") or k.Name
+                                local lastTried = FruitsBlackList[originalName]
+                                local now = os.clock()
+                                if not lastTried or (now - lastTried) > RETRY_INTERVAL then
+                                    local ok, result = pcall(function()
+                                        return CommF:InvokeServer("StoreFruit", originalName, k)
+                                    end)
+                                    attempted = true
+                                    if ok and IsFullMessage(result) then
+                                        FruitsBlackList[originalName] = now
+                                        StorageFull = true
+                                        StorageFullAt = now
+                                        print("[AutoStoreFruits] Storage limit reached; pausing attempts for " .. RETRY_INTERVAL .. "s")
                                     end
+                                    break -- Break inner loop, only try one fruit per second
                                 end
-                                break
                             end
                         end
                     end
                 end
             end
         else
-            FullNotified = false
+            StorageFull = false
         end
     end
 end)
