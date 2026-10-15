@@ -94,7 +94,7 @@ T, ModeDisplay = (function()
         ["dragon.rate"] = { en = "Burst interval (s)", es = "Intervalo entre ráfagas (s)", zh = "齐射间隔（秒）" },
         ["dragon.rate.desc"] = { en = "Seconds between bursts. 0.30 is safe; lower risks rejection.", es = "Segundos entre ráfagas. 0.30 es seguro; menos puede ser rechazado.", zh = "两轮齐射之间的秒数。0.30 安全；更低有被拒绝的风险。" },
         ["dragon.shots"] = { en = "Shots per burst", es = "Disparos por ráfaga", zh = "每轮射击次数" },
-        ["dragon.shots.desc"] = { en = "How many shots per burst (1-10). Shots are fired one frame apart so the server registers each one. 3 = triple damage.", es = "Cuántos disparos por ráfaga (1-10). Se disparan con un frame de separación para que el servidor los registre. 3 = triple daño.", zh = "每轮打几发（1-10）。每发之间隔一帧，让服务器逐一登记。3 发 = 3 倍伤害。" },
+        ["dragon.shots.desc"] = { en = "How many shots per burst (1-10). Shots are fired in the same frame so the server registers them all as separate events. 3 = triple damage.", es = "Cuántos disparos por ráfaga (1-10). Se disparan en el mismo frame para que el servidor los registre todos como eventos separados. 3 = triple daño.", zh = "每轮打几发（1-10）。所有发在同一帧内发出，让服务器逐一登记。3 发 = 3 倍伤害。" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -2172,10 +2172,7 @@ local function ensureDragonRemotes()
     return ShootGunEvent ~= nil and Validator2 ~= nil
 end
 
--- FIXED health check: the previous version never actually inspected
--- the boolean returned by the pcall body, so a stale shootFunc that
--- no longer had numeric upvalues would sail through and then every
--- subsequent shot would silently fail.
+-- Health check for the cached shootFunc / PRNG upvalues.
 local function DragonStillHealthy()
     if not shootFunc or not Validator2 or not ShootGunEvent then return false end
     local ok, healthy = pcall(function()
@@ -2187,10 +2184,18 @@ local function DragonStillHealthy()
     return true
 end
 
--- fireShot: fires `_G.DragonShotsPerBurst` shots at the same target.
--- Shots are spaced by exactly one frame (task.wait()) so the server
--- registers each one as a separate event and applies damage N times.
--- If the server rejects bursts, lower ShotsPerBurst or raise the interval.
+-- ============================================================
+-- fireShot — ENHANCED SIMULTANEOUS MULTI-HIT
+-- ------------------------------------------------------------
+-- Fires `_G.DragonShotsPerBurst` shots at the SAME target in the
+-- SAME frame (no task.wait between them). The PRNG / validator
+-- state is advanced locally in a single synchronous pass and
+-- committed once, so all N tokens are precomputed before any
+-- remote is fired. Roblox batches the FireServer calls into the
+-- same network tick, so the server receives N legitimate shots
+-- (each with a distinct seq token) back-to-back and applies
+-- damage N times nearly simultaneously.
+-- ============================================================
 local function fireShot(pos, hit)
     if not pos then return false end
     if not initDragon() then return false end
@@ -2233,39 +2238,57 @@ local function fireShot(pos, hit)
     if shots < 1 then shots = 1 end
     if shots > 10 then shots = 10 end
 
+    -- Read the PRNG / validator state ONCE.
+    local u20 = debug.getupvalue(shootFunc, idx.u20)
+    local u21 = debug.getupvalue(shootFunc, idx.u21)
+    local u22 = debug.getupvalue(shootFunc, idx.u22)
+    local u23 = debug.getupvalue(shootFunc, idx.u23)
+    local u24 = debug.getupvalue(shootFunc, idx.u24)
+    local u25 = debug.getupvalue(shootFunc, idx.u25)
+    local u26 = debug.getupvalue(shootFunc, idx.u26)
+    if not (type(u20) == "number" and type(u21) == "number" and type(u22) == "number"
+        and type(u23) == "number" and type(u24) == "number"
+        and type(u25) == "number" and type(u26) == "number") then
+        dragonReady = false
+        shootFunc, idx = nil, {}
+        DragonFireLock = false
+        return false
+    end
+
+    -- Precompute N validator tokens by advancing the PRNG locally.
+    -- Each token carries a distinct seq number, so the server sees
+    -- N legitimate shots instead of one replayed one.
+    local tokens = table.create(shots)
+    for i = 1, shots do
+        local u79 = u25 * u21
+        local u80 = (u24 * u21 + u25 * u20) % u22
+        u80 = (u80 * u22 + u79) % u23
+        u24 = math.floor(u80 / u22)
+        u25 = u80 - u24 * u22
+        u26 = u26 + 1
+        tokens[i] = {
+            token = math.floor(u80 / u23 * 16777215),
+            seq   = u26,
+        }
+    end
+
+    -- Commit the final PRNG state atomically.
+    debug.setupvalue(shootFunc, idx.u24, u24)
+    debug.setupvalue(shootFunc, idx.u25, u25)
+    debug.setupvalue(shootFunc, idx.u26, u26)
+
+    -- Fire every shot in the SAME frame (no task.wait between them).
+    -- Roblox queues the FireServer calls and sends them in one network
+    -- tick, so the server receives N shots back-to-back and applies
+    -- damage N times nearly simultaneously.
     local anyOk = false
     for i = 1, shots do
         if not primary.Parent then break end
-
+        local t = tokens[i]
         local ok = pcall(function()
-            local u20 = debug.getupvalue(shootFunc, idx.u20)
-            local u21 = debug.getupvalue(shootFunc, idx.u21)
-            local u22 = debug.getupvalue(shootFunc, idx.u22)
-            local u23 = debug.getupvalue(shootFunc, idx.u23)
-            local u24 = debug.getupvalue(shootFunc, idx.u24)
-            local u25 = debug.getupvalue(shootFunc, idx.u25)
-            local u26 = debug.getupvalue(shootFunc, idx.u26)
-            if not (type(u20) == "number" and type(u21) == "number" and type(u22) == "number"
-                and type(u23) == "number" and type(u24) == "number"
-                and type(u25) == "number" and type(u26) == "number") then
-                error("upvalues missing")
-            end
-
-            local u79 = u25 * u21
-            local u80 = (u24 * u21 + u25 * u20) % u22
-            u80 = (u80 * u22 + u79) % u23
-            u24 = math.floor(u80 / u22)
-            u25 = u80 - u24 * u22
-            u26 = u26 + 1
-
-            debug.setupvalue(shootFunc, idx.u24, u24)
-            debug.setupvalue(shootFunc, idx.u25, u25)
-            debug.setupvalue(shootFunc, idx.u26, u26)
-
-            Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
+            Validator2:FireServer(t.token, t.seq)
             ShootGunEvent:FireServer(pos, { primary })
         end)
-
         if ok then
             anyOk = true
             DragonShootRetries = 0
@@ -2278,12 +2301,6 @@ local function fireShot(pos, hit)
                 DragonFireLock = false
                 return false
             end
-        end
-
-        -- Yield exactly one frame between shots so the server registers
-        -- each one as a separate ShootGunEvent, giving N-times damage.
-        if i < shots then
-            task.wait()
         end
     end
 
