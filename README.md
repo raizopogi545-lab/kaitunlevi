@@ -91,10 +91,8 @@ T, ModeDisplay = (function()
         ["dragon.farm.desc"] = { en = "Use Dragonstorm for sea events (not Leviathan)", es = "Usa Dragonstorm en los eventos marinos (no en el Leviathan)", zh = "海上事件用 Dragonstorm 打（利维坦不用）" },
         ["dragon.leviathan"] = { en = "Dragonstorm vs Leviathan", es = "Dragonstorm contra el Leviathan", zh = "龙炮打利维坦" },
         ["dragon.leviathan.desc"] = { en = "Shoot Leviathan with Dragonstorm", es = "Dispara al Leviathan con Dragonstorm (funciona sin el modo de farmeo)", zh = "打利维坦时用 Dragonstorm 射击（不开刷海龙炮也能用）" },
-        ["dragon.rate"] = { en = "Burst interval (s)", es = "Intervalo entre ráfagas (s)", zh = "齐射间隔（秒）" },
-        ["dragon.rate.desc"] = { en = "Seconds between bursts. 0.15 default; lower risks rejection.", es = "Segundos entre ráfagas. 0.15 por defecto; menos puede ser rechazado.", zh = "两轮齐射之间的秒数。默认 0.15；更低有被拒绝的风险。" },
         ["dragon.shots"] = { en = "Shots per burst", es = "Disparos por ráfaga", zh = "每轮射击次数" },
-        ["dragon.shots.desc"] = { en = "How many shots per burst (1-25). All shots fire in the same frame so the server registers them as separate events.", es = "Cuántos disparos por ráfaga (1-25). Se disparan en el mismo frame para que el servidor los registre como eventos separados.", zh = "每轮打几发（1-25）。所有发在同一帧内发出，让服务器逐一登记。" },
+        ["dragon.shots.desc"] = { en = "How many shots per burst (1-25). All shots fire in the same frame. Higher = more damage per 0.25s cycle.", es = "Cuántos disparos por ráfaga (1-25). Todos se disparan en el mismo frame. Más = más daño cada 0.25 s.", zh = "每轮打几发（1-25）。同一帧全部发出。越高 = 每 0.25 秒伤害越高。" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -251,14 +249,13 @@ if _G.AutoKen == nil then _G.AutoKen = false end
 if _G.FastAttack == nil then _G.FastAttack = false end
 if _G.DragonGunFarm == nil then _G.DragonGunFarm = false end
 if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
--- [DRAGONSTORM MULTI-SHOT ENHANCED]
-if _G.DragonShotsPerBurst == nil then _G.DragonShotsPerBurst = 5 end
-if _G.DragonFireInterval == nil then _G.DragonFireInterval = 0.15 end
+-- [DRAGONSTORM ENHANCED — FIXED 0.25s INTERVAL]
+if _G.DragonShotsPerBurst == nil then _G.DragonShotsPerBurst = 8 end
+_G.DragonFireInterval = 0.25 -- HARDCODED: do not change
 if _G.DragonMultiParts == nil then _G.DragonMultiParts = true end
-if _G.DragonMaxTargets == nil then _G.DragonMaxTargets = 8 end
+if _G.DragonMaxTargets == nil then _G.DragonMaxTargets = 12 end
 if _G.DragonMaxSegments == nil then _G.DragonMaxSegments = 6 end
-if _G.DragonCrossDelay == nil then _G.DragonCrossDelay = 0.015 end
--- [/DRAGONSTORM MULTI-SHOT ENHANCED]
+-- [/DRAGONSTORM ENHANCED]
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
 if _G.AutoFastMode == nil then _G.AutoFastMode = false end
@@ -554,8 +551,8 @@ local ConfigKeys = {
     "Mode", "SilentAim", "Language", "FollowTarget", "SelectWeapon",
     "SkillMelee", "SkillSword", "SkillFruit", "SkillGun",
     "FastAttack", "DragonGunFarm", "DragonGunLeviathan",
-    "DragonShotsPerBurst", "DragonFireInterval",
-    "DragonMultiParts", "DragonMaxTargets", "DragonMaxSegments", "DragonCrossDelay",
+    "DragonShotsPerBurst",
+    "DragonMultiParts", "DragonMaxTargets", "DragonMaxSegments",
     "RemoveFog", "AntiDracoAura", "AutoFastMode", "FPSBoost",
     "AutoBuso", "AutoKen", "AutoV3", "AutoV4",
     "BoatSpeed", "BoatHeight", "PlayerTweenSpeed", "CruiseReturn",
@@ -613,6 +610,7 @@ local function LoadConfig()
     end)
 end
 LoadConfig()
+_G.DragonFireInterval = 0.25
 pcall(function()
     if collectgarbage then
         collectgarbage("setpause", 100)
@@ -1594,6 +1592,599 @@ _G.RJR_StartKenLoop = function()
     end)
 end
 _G.RJR_StartKenLoop()
+
+-- ============================================================
+-- Sea Event ESP + HP Bars (MOBILE FRIENDLY)
+-- Toggle: touch button lower-left, OR press J, OR call
+--         _G.RJR_ESP.SetEnabled(true/false)
+-- ============================================================
+do
+    local ESP_Players = game:GetService("Players")
+    local ESP_RunService = game:GetService("RunService")
+    local ESP_UIS = game:GetService("UserInputService")
+    local ESP_Workspace = game:GetService("Workspace")
+    local ESP_LocalPlayer = ESP_Players.LocalPlayer
+
+    _G.RJR_ESP_Enabled       = _G.RJR_ESP_Enabled ~= false
+    _G.RJR_ESP_ShowList      = _G.RJR_ESP_ShowList ~= false
+    _G.RJR_ESP_MaxDistance   = tonumber(_G.RJR_ESP_MaxDistance) or 5000
+    _G.RJR_ESP_ShowLeviathan = _G.RJR_ESP_ShowLeviathan ~= false
+    _G.RJR_ESP_Hotkey        = _G.RJR_ESP_Hotkey or Enum.KeyCode.J
+
+    local IsTouchDevice = ESP_UIS.TouchEnabled and not ESP_UIS.KeyboardEnabled
+    local ESP_Scale = IsTouchDevice and 1.35 or 1.0
+    local ListScale = IsTouchDevice and 1.25 or 1.0
+
+    local SEA_MOBS = {
+        ["Terrorshark"] = true, ["Shark"] = true, ["Piranha"] = true,
+        ["Fish Crew Member"] = true, ["Haunted Crew Member"] = true,
+        ["FishBoat"] = true, ["PirateBrigade"] = true,
+        ["PirateGrandBrigade"] = true, ["PirateBasic"] = true,
+    }
+    local LEVIATHAN_NAMES = {
+        ["Leviathan"] = true, ["Leviathan Segment"] = true,
+    }
+
+    local Holder = ESP_Workspace:FindFirstChild("RJR_ESP_Holder")
+    if Holder then Holder:Destroy() end
+    Holder = Instance.new("Folder")
+    Holder.Name = "RJR_ESP_Holder"
+    Holder.Parent = ESP_Workspace
+
+    local Pool, Active = {}, {}
+
+    local function AcquireBillboard()
+        local bb = table.remove(Pool)
+        if bb and not bb.Parent then return bb end
+        bb = Instance.new("BillboardGui")
+        bb.Name = "RJR_ESP_BB"
+        bb.AlwaysOnTop = true
+        bb.Size = UDim2.new(0, math.floor(210 * ESP_Scale), 0, math.floor(68 * ESP_Scale))
+        bb.StudsOffset = Vector3.new(0, 6, 0)
+        bb.LightInfluence = 0
+        bb.MaxDistance = _G.RJR_ESP_MaxDistance
+
+        local frame = Instance.new("Frame")
+        frame.Name = "Container"
+        frame.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+        frame.BackgroundTransparency = 0.2
+        frame.BorderSizePixel = 0
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.Parent = bb
+        local cr = Instance.new("UICorner"); cr.CornerRadius = UDim.new(0, 6); cr.Parent = frame
+        local st = Instance.new("UIStroke")
+        st.Name = "Stroke"
+        st.Color = Color3.fromRGB(255, 60, 60)
+        st.Thickness = IsTouchDevice and 2.2 or 1.5
+        st.Parent = frame
+
+        local n = Instance.new("TextLabel")
+        n.Name = "Name"
+        n.BackgroundTransparency = 1
+        n.Position = UDim2.new(0, 8, 0, 3)
+        n.Size = UDim2.new(1, -16, 0, math.floor(16 * ESP_Scale))
+        n.Font = Enum.Font.GothamBold
+        n.TextSize = math.floor(13 * ESP_Scale)
+        n.TextColor3 = Color3.fromRGB(255, 255, 255)
+        n.TextXAlignment = Enum.TextXAlignment.Left
+        n.Text = "?"
+        n.Parent = frame
+
+        local hp = Instance.new("TextLabel")
+        hp.Name = "HPText"
+        hp.BackgroundTransparency = 1
+        hp.Position = UDim2.new(0, 8, 0, math.floor(19 * ESP_Scale))
+        hp.Size = UDim2.new(0.6, -8, 0, math.floor(14 * ESP_Scale))
+        hp.Font = Enum.Font.Gotham
+        hp.TextSize = math.floor(11 * ESP_Scale)
+        hp.TextColor3 = Color3.fromRGB(210, 210, 220)
+        hp.TextXAlignment = Enum.TextXAlignment.Left
+        hp.Text = "0 / 0"
+        hp.Parent = frame
+
+        local dps = Instance.new("TextLabel")
+        dps.Name = "DPS"
+        dps.BackgroundTransparency = 1
+        dps.Position = UDim2.new(0.6, 0, 0, math.floor(19 * ESP_Scale))
+        dps.Size = UDim2.new(0.4, -8, 0, math.floor(14 * ESP_Scale))
+        dps.Font = Enum.Font.GothamBold
+        dps.TextSize = math.floor(11 * ESP_Scale)
+        dps.TextColor3 = Color3.fromRGB(255, 200, 60)
+        dps.TextXAlignment = Enum.TextXAlignment.Right
+        dps.Text = ""
+        dps.Parent = frame
+
+        local barBg = Instance.new("Frame")
+        barBg.Name = "BarBg"
+        barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        barBg.BorderSizePixel = 0
+        barBg.Position = UDim2.new(0, 8, 0, math.floor(36 * ESP_Scale))
+        barBg.Size = UDim2.new(1, -16, 0, math.floor(9 * ESP_Scale))
+        barBg.Parent = frame
+        local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 4); bc.Parent = barBg
+
+        local fill = Instance.new("Frame")
+        fill.Name = "BarFill"
+        fill.BackgroundColor3 = Color3.fromRGB(80, 220, 80)
+        fill.BorderSizePixel = 0
+        fill.Size = UDim2.new(1, 0, 1, 0)
+        fill.Parent = barBg
+        local fc = Instance.new("UICorner"); fc.CornerRadius = UDim.new(0, 4); fc.Parent = fill
+
+        local d = Instance.new("TextLabel")
+        d.Name = "Dist"
+        d.BackgroundTransparency = 1
+        d.Position = UDim2.new(0, 8, 0, math.floor(48 * ESP_Scale))
+        d.Size = UDim2.new(1, -16, 0, math.floor(14 * ESP_Scale))
+        d.Font = Enum.Font.Gotham
+        d.TextSize = math.floor(10 * ESP_Scale)
+        d.TextColor3 = Color3.fromRGB(170, 170, 190)
+        d.TextXAlignment = Enum.TextXAlignment.Left
+        d.Text = ""
+        d.Parent = frame
+
+        return bb
+    end
+
+    local function ReleaseBillboard(bb)
+        if not bb then return end
+        bb.Parent = nil
+        bb.Adornee = nil
+        if #Pool < 50 then table.insert(Pool, bb)
+        else bb:Destroy() end
+    end
+
+    local function GetHP(model)
+        if not model or not model.Parent then return nil, nil end
+        local hum = model:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health > 0 then return hum.Health, math.max(hum.MaxHealth, 1) end
+        local hp = model:FindFirstChild("Health")
+        if hp and hp:IsA("ValueBase") then
+            local mx = model:FindFirstChild("MaxHealth")
+            local maxV = (mx and mx:IsA("ValueBase") and mx.Value) or hp.Value
+            if maxV <= 0 then maxV = 1 end
+            return hp.Value, maxV
+        end
+        return nil, nil
+    end
+
+    local function GetRoot(model)
+        if not model or not model.Parent then return nil end
+        return model:FindFirstChild("Leviathan Segment")
+            or model:FindFirstChild("HumanoidRootPart")
+            or model:FindFirstChild("RootPart")
+            or model:FindFirstChild("Head")
+            or model.PrimaryPart
+            or model:FindFirstChildWhichIsA("BasePart", true)
+    end
+
+    local function IsValidTarget(model)
+        if not model or not model.Parent then return false end
+        local n = model.Name
+        if SEA_MOBS[n] then return true end
+        if _G.RJR_ESP_ShowLeviathan and LEVIATHAN_NAMES[n] then return true end
+        return false
+    end
+
+    local function HPColor(pct)
+        if pct > 0.6 then return Color3.fromRGB(80, 220, 80)
+        elseif pct > 0.3 then return Color3.fromRGB(240, 200, 60)
+        else return Color3.fromRGB(230, 70, 70) end
+    end
+
+    local ListGui, ListFrame, ListTitle
+    local ListRows = {}
+    local MAX_ROWS = IsTouchDevice and 6 or 10
+    local ROW_H = math.floor(22 * ListScale)
+
+    local function BuildListGui()
+        if ListGui and ListGui.Parent then return end
+        local vp = ESP_Workspace.CurrentCamera and ESP_Workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+        local panelW = math.floor((IsTouchDevice and 250 or 278) * ListScale)
+        local panelX = -panelW - 12
+
+        ListGui = Instance.new("ScreenGui")
+        ListGui.Name = "RJR_SeaEventESP_List"
+        ListGui.ResetOnSpawn = false
+        ListGui.IgnoreGuiInset = true
+        ListGui.DisplayOrder = 5
+
+        ListFrame = Instance.new("Frame")
+        ListFrame.Name = "Panel"
+        ListFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+        ListFrame.BackgroundTransparency = 0.15
+        ListFrame.BorderSizePixel = 0
+        ListFrame.Position = UDim2.new(1, panelX, 0, 12)
+        ListFrame.Size = UDim2.new(0, panelW, 0, 40)
+        ListFrame.Parent = ListGui
+        local cr = Instance.new("UICorner"); cr.CornerRadius = UDim.new(0, 10); cr.Parent = ListFrame
+        local st = Instance.new("UIStroke")
+        st.Color = Color3.fromRGB(120, 200, 255)
+        st.Thickness = 1.5
+        st.Transparency = 0.2
+        st.Parent = ListFrame
+
+        ListTitle = Instance.new("TextLabel")
+        ListTitle.BackgroundTransparency = 1
+        ListTitle.Position = UDim2.new(0, 10, 0, 4)
+        ListTitle.Size = UDim2.new(1, -20, 0, math.floor(18 * ListScale))
+        ListTitle.Font = Enum.Font.GothamBold
+        ListTitle.TextSize = math.floor(13 * ListScale)
+        ListTitle.TextColor3 = Color3.fromRGB(120, 200, 255)
+        ListTitle.TextXAlignment = Enum.TextXAlignment.Left
+        ListTitle.Text = "Sea Event ESP"
+        ListTitle.Parent = ListFrame
+
+        for i = 1, MAX_ROWS do
+            local row = Instance.new("Frame")
+            row.Name = "Row" .. i
+            row.BackgroundTransparency = 1
+            row.Position = UDim2.new(0, 8, 0, 24 + (i - 1) * ROW_H)
+            row.Size = UDim2.new(1, -16, 0, ROW_H - 2)
+            row.Visible = false
+            row.Parent = ListFrame
+
+            local nm = Instance.new("TextLabel")
+            nm.Name = "Name"
+            nm.BackgroundTransparency = 1
+            nm.Position = UDim2.new(0, 0, 0, 0)
+            nm.Size = UDim2.new(0.42, 0, 1, 0)
+            nm.Font = Enum.Font.Gotham
+            nm.TextSize = math.floor(11 * ListScale)
+            nm.TextColor3 = Color3.fromRGB(240, 240, 250)
+            nm.TextXAlignment = Enum.TextXAlignment.Left
+            nm.Text = ""
+            nm.Parent = row
+
+            local barBg = Instance.new("Frame")
+            barBg.Name = "BarBg"
+            barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            barBg.BorderSizePixel = 0
+            barBg.Position = UDim2.new(0.43, 4, 0.3, 0)
+            barBg.Size = UDim2.new(0.32, 0, 0.4, 0)
+            barBg.Parent = row
+            local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 3); bc.Parent = barBg
+
+            local fill = Instance.new("Frame")
+            fill.Name = "BarFill"
+            fill.BackgroundColor3 = Color3.fromRGB(80, 220, 80)
+            fill.BorderSizePixel = 0
+            fill.Size = UDim2.new(1, 0, 1, 0)
+            fill.Parent = barBg
+            local fc = Instance.new("UICorner"); fc.CornerRadius = UDim.new(0, 3); fc.Parent = fill
+
+            local hpVal = Instance.new("TextLabel")
+            hpVal.Name = "HPVal"
+            hpVal.BackgroundTransparency = 1
+            hpVal.Position = UDim2.new(0.76, 4, 0, 0)
+            hpVal.Size = UDim2.new(0.24, -4, 1, 0)
+            hpVal.Font = Enum.Font.Gotham
+            hpVal.TextSize = math.floor(10 * ListScale)
+            hpVal.TextColor3 = Color3.fromRGB(190, 190, 210)
+            hpVal.TextXAlignment = Enum.TextXAlignment.Right
+            hpVal.Text = ""
+            hpVal.Parent = row
+
+            ListRows[i] = { row = row, name = nm, fill = fill, hpVal = hpVal }
+        end
+
+        ListGui.Parent = ESP_LocalPlayer:WaitForChild("PlayerGui")
+    end
+
+    local function DestroyListGui()
+        if ListGui then pcall(function() ListGui:Destroy() end) end
+        ListGui, ListFrame, ListTitle = nil, nil, nil
+        ListRows = {}
+    end
+
+    -- Mobile toggle button
+    local ToggleGui, ToggleBtn, ToggleLbl
+    local function BuildToggleButton()
+        if ToggleGui and ToggleGui.Parent then return end
+        ToggleGui = Instance.new("ScreenGui")
+        ToggleGui.Name = "RJR_ESP_Toggle"
+        ToggleGui.ResetOnSpawn = false
+        ToggleGui.IgnoreGuiInset = true
+        ToggleGui.DisplayOrder = 999
+
+        ToggleBtn = Instance.new("TextButton")
+        ToggleBtn.Name = "Btn"
+        ToggleBtn.Size = UDim2.fromOffset(IsTouchDevice and 70 or 60, IsTouchDevice and 70 or 60)
+        ToggleBtn.Position = UDim2.new(0, 16, 1, -(IsTouchDevice and 130 or 100))
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+        ToggleBtn.BackgroundTransparency = 0.05
+        ToggleBtn.AutoButtonColor = false
+        ToggleBtn.Text = ""
+        ToggleBtn.Parent = ToggleGui
+        local cr = Instance.new("UICorner"); cr.CornerRadius = UDim.new(1, 0); cr.Parent = ToggleBtn
+        local st = Instance.new("UIStroke")
+        st.Thickness = 2
+        st.Color = Color3.fromRGB(120, 200, 255)
+        st.Parent = ToggleBtn
+
+        ToggleLbl = Instance.new("TextLabel")
+        ToggleLbl.BackgroundTransparency = 1
+        ToggleLbl.Size = UDim2.new(1, 0, 1, 0)
+        ToggleLbl.Font = Enum.Font.GothamBold
+        ToggleLbl.TextSize = math.floor((IsTouchDevice and 12 or 11))
+        ToggleLbl.TextColor3 = Color3.fromRGB(240, 240, 245)
+        ToggleLbl.Text = "ESP\nON"
+        ToggleLbl.Parent = ToggleBtn
+
+        local dragging, moved, dragStart, startPos = false, false, nil, nil
+        ToggleBtn.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                moved = false
+                dragStart = Vector2.new(input.Position.X, input.Position.Y)
+                startPos = ToggleBtn.Position
+            end
+        end)
+        ESP_UIS.InputChanged:Connect(function(input)
+            if not dragging then return end
+            if input.UserInputType == Enum.UserInputType.MouseMovement
+                or input.UserInputType == Enum.UserInputType.Touch then
+                local cur = Vector2.new(input.Position.X, input.Position.Y)
+                local delta = cur - dragStart
+                if delta.Magnitude > 10 then moved = true end
+                if moved and startPos then
+                    ToggleBtn.Position = UDim2.new(
+                        startPos.X.Scale, startPos.X.Offset + delta.X,
+                        startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+                end
+            end
+        end)
+        ESP_UIS.InputEnded:Connect(function(input)
+            if not dragging then return end
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+                if not moved then
+                    _G.RJR_ESP_Enabled = not _G.RJR_ESP_Enabled
+                    ToggleLbl.Text = _G.RJR_ESP_Enabled and "ESP\nON" or "ESP\nOFF"
+                    st.Color = _G.RJR_ESP_Enabled
+                        and Color3.fromRGB(120, 200, 255)
+                        or Color3.fromRGB(90, 90, 100)
+                end
+            end
+        end)
+
+        ToggleGui.Parent = ESP_LocalPlayer:WaitForChild("PlayerGui")
+    end
+
+    local function SyncToggleVisual()
+        if not (ToggleGui and ToggleGui.Parent) then return end
+        if ToggleLbl then
+            ToggleLbl.Text = _G.RJR_ESP_Enabled and "ESP\nON" or "ESP\nOFF"
+        end
+        local st = ToggleBtn and ToggleBtn:FindFirstChildOfClass("UIStroke")
+        if st then
+            st.Color = _G.RJR_ESP_Enabled
+                and Color3.fromRGB(120, 200, 255)
+                or Color3.fromRGB(90, 90, 100)
+        end
+    end
+
+    BuildToggleButton()
+
+    -- DPS tracking
+    local DPS = {}
+    local function UpdateDPS(model, hp)
+        local now = os.clock()
+        local d = DPS[model]
+        if not d then
+            DPS[model] = { prevHP = hp, prevTime = now, smoothed = 0 }
+            return 0
+        end
+        local dt = now - d.prevTime
+        if dt < 0.05 then return d.smoothed end
+        local drop = d.prevHP - hp
+        if drop < 0 then drop = 0 end
+        local raw = drop / dt
+        local alpha = 0.35
+        d.smoothed = d.smoothed * (1 - alpha) + raw * alpha
+        d.prevHP = hp
+        d.prevTime = now
+        if d.smoothed < 1 then d.smoothed = 0 end
+        return d.smoothed
+    end
+
+    local function CollectTargets()
+        local out = {}
+        local char = ESP_LocalPlayer.Character
+        local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+        if not myRoot then return out end
+        local myPos = myRoot.Position
+
+        local folders = {
+            ESP_Workspace:FindFirstChild("Enemies"),
+            ESP_Workspace:FindFirstChild("SeaBeasts"),
+        }
+        for _, folder in ipairs(folders) do
+            if folder then
+                for _, model in ipairs(folder:GetChildren()) do
+                    if IsValidTarget(model) then
+                        local root = GetRoot(model)
+                        if root and root.Parent then
+                            local hp, maxhp = GetHP(model)
+                            if hp and hp > 0 then
+                                local dist = (root.Position - myPos).Magnitude
+                                if dist <= _G.RJR_ESP_MaxDistance then
+                                    out[#out + 1] = {
+                                        model = model, root = root,
+                                        hp = hp, maxhp = maxhp, dist = dist,
+                                        name = model.Name,
+                                    }
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        table.sort(out, function(a, b) return a.dist < b.dist end)
+        return out
+    end
+
+    local LastUpdate = 0
+    local UPDATE_INTERVAL = 0.1
+
+    local function UpdateESP()
+        if not _G.RJR_ESP_Enabled then
+            for _, data in pairs(Active) do
+                if data.billboard then ReleaseBillboard(data.billboard) end
+            end
+            Active = {}
+            DPS = {}
+            DestroyListGui()
+            SyncToggleVisual()
+            return
+        end
+
+        local targets = CollectTargets()
+        local seen = {}
+
+        for _, t in ipairs(targets) do
+            seen[t.model] = true
+            local entry = Active[t.model]
+            if not entry then
+                local bb = AcquireBillboard()
+                bb.Adornee = t.root
+                bb.Parent = Holder
+                bb.MaxDistance = _G.RJR_ESP_MaxDistance
+                entry = { billboard = bb, lastRoot = t.root }
+                Active[t.model] = entry
+            end
+            if entry.lastRoot ~= t.root then
+                entry.lastRoot = t.root
+                entry.billboard.Adornee = t.root
+            end
+
+            local dps = UpdateDPS(t.model, t.hp)
+
+            local bb = entry.billboard
+            local frame = bb:FindFirstChild("Container")
+            if frame then
+                local nameLabel = frame:FindFirstChild("Name")
+                local hpText = frame:FindFirstChild("HPText")
+                local dpsText = frame:FindFirstChild("DPS")
+                local distLabel = frame:FindFirstChild("Dist")
+                local barBg = frame:FindFirstChild("BarBg")
+                local stroke = frame:FindFirstChild("Stroke")
+
+                if nameLabel then nameLabel.Text = t.name end
+                if hpText then hpText.Text = string.format("%.0f / %.0f", t.hp, t.maxhp) end
+                if dpsText then
+                    if dps > 1 then
+                        dpsText.Text = string.format("-%.0f/s", dps)
+                        dpsText.TextColor3 = Color3.fromRGB(255, 200, 60)
+                    else
+                        dpsText.Text = "no hits"
+                        dpsText.TextColor3 = Color3.fromRGB(150, 150, 160)
+                    end
+                end
+                if distLabel then
+                    distLabel.Text = string.format("Dist: %.0f", t.dist)
+                end
+                if barBg then
+                    local fill = barBg:FindFirstChild("BarFill")
+                    if fill then
+                        local pct = math.clamp(t.hp / t.maxhp, 0, 1)
+                        fill.Size = UDim2.new(pct, 0, 1, 0)
+                        fill.BackgroundColor3 = HPColor(pct)
+                    end
+                end
+                if stroke then
+                    local isLevi = LEVIATHAN_NAMES[t.name]
+                    if isLevi then
+                        stroke.Color = Color3.fromRGB(180, 80, 255)
+                    elseif dps > 100 then
+                        stroke.Color = Color3.fromRGB(255, 220, 60)
+                    else
+                        stroke.Color = Color3.fromRGB(255, 60, 60)
+                    end
+                end
+            end
+        end
+
+        for model, data in pairs(Active) do
+            if not seen[model] then
+                if data.billboard then ReleaseBillboard(data.billboard) end
+                Active[model] = nil
+                DPS[model] = nil
+            end
+        end
+
+        if _G.RJR_ESP_ShowList and #targets > 0 then
+            if not ListFrame or not ListFrame.Parent then BuildListGui() end
+            local shown = math.min(#targets, MAX_ROWS)
+            for i = 1, MAX_ROWS do
+                local rowData = ListRows[i]
+                if not rowData then break end
+                if i <= shown then
+                    local t = targets[i]
+                    rowData.row.Visible = true
+                    rowData.name.Text = t.name
+                    local pct = math.clamp(t.hp / t.maxhp, 0, 1)
+                    rowData.fill.Size = UDim2.new(pct, 0, 1, 0)
+                    rowData.fill.BackgroundColor3 = HPColor(pct)
+                    rowData.hpVal.Text = string.format("%.0f", t.hp)
+                else
+                    rowData.row.Visible = false
+                end
+            end
+            if ListTitle then
+                ListTitle.Text = string.format("Sea Event ESP (%d)", #targets)
+            end
+            ListFrame.Size = UDim2.new(0, math.floor((IsTouchDevice and 250 or 278) * ListScale), 0, 26 + shown * ROW_H)
+        else
+            if ListFrame then DestroyListGui() end
+        end
+
+        SyncToggleVisual()
+    end
+
+    ESP_RunService.Heartbeat:Connect(function()
+        local now = os.clock()
+        if now - LastUpdate < UPDATE_INTERVAL then return end
+        LastUpdate = now
+        pcall(UpdateESP)
+    end)
+
+    ESP_UIS.InputBegan:Connect(function(input, processed)
+        if processed then return end
+        if input.KeyCode == _G.RJR_ESP_Hotkey then
+            _G.RJR_ESP_Enabled = not _G.RJR_ESP_Enabled
+            SyncToggleVisual()
+        end
+    end)
+
+    _G.RJR_ESP = {
+        SetEnabled     = function(v) _G.RJR_ESP_Enabled = v == true end,
+        SetList        = function(v) _G.RJR_ESP_ShowList = v == true end,
+        SetMaxDistance = function(n) _G.RJR_ESP_MaxDistance = tonumber(n) or 5000 end,
+        SetLeviathan   = function(v) _G.RJR_ESP_ShowLeviathan = v == true end,
+        SetHotkey      = function(k) _G.RJR_ESP_Hotkey = k end,
+        Toggle         = function() _G.RJR_ESP_Enabled = not _G.RJR_ESP_Enabled end,
+        Destroy        = function()
+            _G.RJR_ESP_Enabled = false
+            for _, data in pairs(Active) do
+                if data.billboard then ReleaseBillboard(data.billboard) end
+            end
+            Active, DPS = {}, {}
+            DestroyListGui()
+            if ToggleGui then pcall(function() ToggleGui:Destroy() end) end
+            if Holder then Holder:Destroy() end
+        end,
+    }
+
+    print("[ESP] Loaded. Touch toggle button = lower-left. Hotkey J also works.")
+end
+-- ============================================================
+-- End ESP
+-- ============================================================
+
 local function GetCannons(boat)
     local cannons = {}
     if boat then
@@ -2120,6 +2711,8 @@ local DragonLastFire     = 0
 local DragonFireLock     = false
 local DragonShootRetries = 0
 
+local FIXED_INTERVAL = 0.25 -- never changes
+
 local VALID_SEA_ENEMIES = {
     "Terrorshark", "Shark", "Piranha",
     "Fish Crew Member", "Haunted Crew Member",
@@ -2156,7 +2749,6 @@ local function initDragon()
     if not initDragonErrorReported then
         initDragonErrorReported = true
         warn("[Dragonstorm] initDragon fallo: " .. tostring(err))
-        warn("[Dragonstorm] El juego probablemente actualizo CombatController. Reintentando cada 5 s.")
     end
     return false
 end
@@ -2185,21 +2777,9 @@ local function DragonStillHealthy()
     return true
 end
 
--- ============================================================
--- fireShot — FIXED MULTI-PART via per-shot round-robin
--- ------------------------------------------------------------
--- IMPORTANT: The server ONLY accepts the payload `{ singlePart }`.
--- Sending `{p1, p2, ...}` gets the whole shot REJECTED (silent fail,
--- zero damage). That was the bug in the previous version.
---
--- FIX: keep the payload format identical to the original working
--- version — always `{ part }` with exactly ONE part — and instead
--- distribute the N shots of a burst across the target's hitbox
--- parts (round-robin). Result:
---   * MultiParts OFF → every shot hits primary (original behaviour)
---   * MultiParts ON  → shots cycle through up to 8 parts, so the
---     burst as a whole covers the whole hitbox with N valid hits.
--- ============================================================
+-- fireShot — fires N shots at a target in the same frame.
+-- Payload format = { singlePart } — server-safe.
+-- MultiParts ON = round-robin across the target's hitbox parts.
 local function fireShot(pos, hit, extraParts)
     if not pos then return false end
     if not initDragon() then return false end
@@ -2210,7 +2790,6 @@ local function fireShot(pos, hit, extraParts)
         return false
     end
 
-    -- Resolve primary hit part
     local primary
     if typeof(hit) == "Instance" and hit:IsA("BasePart") then
         primary = hit
@@ -2230,8 +2809,6 @@ local function fireShot(pos, hit, extraParts)
         return false
     end
 
-    -- Build the rotation list of parts to hit across the burst.
-    -- Always starts with the primary so a single-shot burst is safe.
     local partsList = { primary }
     if extraParts and type(extraParts) == "table" and _G.DragonMultiParts ~= false then
         local cap = 8
@@ -2244,11 +2821,10 @@ local function fireShot(pos, hit, extraParts)
         end
     end
 
-    local shots = math.floor(tonumber(_G.DragonShotsPerBurst) or 5)
+    local shots = math.floor(tonumber(_G.DragonShotsPerBurst) or 8)
     if shots < 1 then shots = 1 end
     if shots > 25 then shots = 25 end
 
-    -- Read the PRNG / validator state ONCE.
     local u20 = debug.getupvalue(shootFunc, idx.u20)
     local u21 = debug.getupvalue(shootFunc, idx.u21)
     local u22 = debug.getupvalue(shootFunc, idx.u22)
@@ -2264,7 +2840,6 @@ local function fireShot(pos, hit, extraParts)
         return false
     end
 
-    -- Precompute N validator tokens by advancing the PRNG locally.
     local tokens = table.create(shots)
     for i = 1, shots do
         local u79 = u25 * u21
@@ -2278,26 +2853,19 @@ local function fireShot(pos, hit, extraParts)
             seq   = u26,
         }
     end
-
-    -- Commit the final PRNG state atomically.
     debug.setupvalue(shootFunc, idx.u24, u24)
     debug.setupvalue(shootFunc, idx.u25, u25)
     debug.setupvalue(shootFunc, idx.u26, u26)
 
-    -- Fire every shot in the SAME frame.
-    -- Each shot uses ONE part from partsList (round-robin) so the
-    -- payload format is IDENTICAL to the original working version.
     local anyOk = false
     local pCount = #partsList
     for i = 1, shots do
-        -- Re-fetch the target part each iteration in case it despawned
         local chosen = partsList[((i - 1) % pCount) + 1]
         if not chosen or not chosen.Parent then
             chosen = primary
             if not chosen or not chosen.Parent then break end
         end
         local t = tokens[i]
-        -- SINGLE-part payload — matches the original known-working format
         local payload = { chosen }
         local ok = pcall(function()
             Validator2:FireServer(t.token, t.seq)
@@ -2316,7 +2884,6 @@ local function fireShot(pos, hit, extraParts)
             end
         end
     end
-
     return anyOk
 end
 
@@ -2338,25 +2905,13 @@ local function getAllPlayerBoatModels()
     return models
 end
 
-local function targetOwnerAlive(part)
-    if not part or not part.Parent then return false end
-    local model = part:FindFirstAncestorWhichIsA("Model")
-    if not model then return true end
-    local hum = model:FindFirstChildOfClass("Humanoid")
-    if hum and hum.Health <= 0 then return false end
-    local hp = model:FindFirstChild("Health")
-    if hp and hp:IsA("ValueBase") and hp.Value <= 0 then return false end
-    return true
-end
-
 local AttackRange = 2500
 local SeaTargetCache, SeaTargetAt, SeaTargetModel
 
 local function getClosestSeaTarget()
     local now = os.clock()
     if SeaTargetCache and (now - SeaTargetAt) < 0.2 then
-        if targetOwnerAlive(SeaTargetCache) then return SeaTargetCache, SeaTargetModel end
-        SeaTargetCache, SeaTargetModel = nil, nil
+        return SeaTargetCache, SeaTargetModel
     end
     local char = LocalPlayer.Character
     if not char then return nil, nil end
@@ -2422,6 +2977,8 @@ local function getClosestSeaTarget()
     return best, bestModel
 end
 
+-- getAllSeaTargets — returns EVERY valid sea event in range.
+-- This is what enables multi-hit on 3+ sea beasts simultaneously.
 local function getAllSeaTargets()
     local targets = {}
     local char = LocalPlayer.Character
@@ -2436,21 +2993,21 @@ local function getAllSeaTargets()
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
-            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
-            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
-            local allowed = isLeviathan or configName == nil
-                or (selectionSet == nil or selectionSet[configName] == true)
-            if allowed then
-                local hp = e:FindFirstChild("Health")
-                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
-                if alive then
-                    local part
-                    if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
-                    part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
-                    if part and part:IsA("BasePart") then
-                        local d = (part.Position - myPos).Magnitude
-                        if d < Range then
-                            table.insert(targets, {part = part, model = e, dist = d, isLeviathan = isLeviathan})
+            -- skip Leviathan here — handled separately
+            if e.Name ~= "Leviathan Segment" and e.Name ~= "Leviathan" then
+                local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
+                local allowed = configName == nil
+                    or (selectionSet == nil or selectionSet[configName] == true)
+                if allowed then
+                    local hp = e:FindFirstChild("Health")
+                    local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+                    if alive then
+                        local part = e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
+                        if part and part:IsA("BasePart") then
+                            local d = (part.Position - myPos).Magnitude
+                            if d < Range then
+                                table.insert(targets, {part = part, model = e, dist = d})
+                            end
                         end
                     end
                 end
@@ -2517,9 +3074,139 @@ local function getLeviathanTarget()
 end
 
 -- ============================================================
--- GetHitPartsForTarget — collect hitbox BaseParts on a model.
--- Only parts that belong to the SAME model are returned, so the
--- round-robin list never crosses into another entity.
+-- GetAllLeviathanTargets — SEGMENT PRIORITY
+-- ------------------------------------------------------------
+-- The Leviathan spawns as 3 "Leviathan Segment" models. The main
+-- "Leviathan" body only takes real damage AFTER the 3 segments
+-- are dead. So:
+--   1. If any alive "Leviathan Segment" exists → return ONLY segments.
+--   2. If NO segments are alive → fall back to the main "Leviathan" body.
+-- ============================================================
+local function LeviathanSegmentAlive(model)
+    if not model or not model.Parent then return false end
+    local hp = model:FindFirstChild("Health")
+    if hp and hp:IsA("ValueBase") then
+        return hp.Value > 0
+    end
+    local hum = model:FindFirstChildOfClass("Humanoid")
+    if hum then return hum.Health > 0 end
+    return true -- assume alive if no HP info
+end
+
+local function getAllLeviathanTargets()
+    local segments = {}
+    local body = nil
+    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
+    if not seaBeasts then return segments end
+    local char = LocalPlayer.Character
+    if not char then return segments end
+    local myHRP = char:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return segments end
+    local myPos = myHRP.Position
+
+    for _, e in ipairs(seaBeasts:GetChildren()) do
+        if e.Name == "Leviathan Segment" then
+            if LeviathanSegmentAlive(e) then
+                local part = e:FindFirstChild("Leviathan Segment")
+                    or e:FindFirstChild("HumanoidRootPart")
+                    or e.PrimaryPart
+                    or e:FindFirstChildWhichIsA("BasePart", true)
+                if part and part:IsA("BasePart") and part.Parent then
+                    local d = (part.Position - myPos).Magnitude
+                    if d < AttackRange then
+                        segments[#segments + 1] = { part = part, model = e, dist = d, isSegment = true }
+                    end
+                end
+            end
+        elseif e.Name == "Leviathan" then
+            if LeviathanSegmentAlive(e) then
+                local part = e:FindFirstChild("HumanoidRootPart")
+                    or e.PrimaryPart
+                    or e:FindFirstChildWhichIsA("BasePart", true)
+                if part and part:IsA("BasePart") and part.Parent then
+                    local d = (part.Position - myPos).Magnitude
+                    if d < AttackRange then
+                        body = { part = part, model = e, dist = d, isSegment = false }
+                    end
+                end
+            end
+        end
+    end
+
+    -- Sort segments by distance
+    table.sort(segments, function(a, b) return a.dist < b.dist end)
+
+    -- Priority: segments first. Only if none are alive, use the body.
+    if #segments > 0 then
+        return segments
+    end
+    if body then
+        return { body }
+    end
+    return {}
+end
+
+local DragonAttackRunning = false
+local function StartDragonAttack()
+    if DragonAttackRunning then return end
+    DragonAttackRunning = true
+    task.spawn(function()
+        while not dragonReady do
+            initDragon()
+            if dragonReady then break end
+            task.wait(5)
+        end
+        print("[Dragonstorm] listo (fixed 0.25s interval)")
+        local lastDiag = 0
+        while _G.DragonGunFarm do
+            local ok, err = pcall(function()
+                ensureDragonRemotes()
+                if not ShootGunEvent or not Validator2 then return end
+                local char = LocalPlayer.Character
+                if not char then return end
+                local tool = char:FindFirstChildOfClass("Tool")
+                if not tool or tool.Name ~= "Dragonstorm" then
+                    if not IsOnBoat() then Equip_Auto("Dragonstorm") end
+                    return
+                end
+
+                local now = os.clock()
+                if now - DragonLastFire < FIXED_INTERVAL then return end
+                DragonLastFire = now
+
+                -- Hit all sea events simultaneously in one tick
+                local targets = getAllSeaTargets()
+                if #targets == 0 then
+                    if os.clock() - lastDiag > 2 then
+                        lastDiag = os.clock()
+                        print("[Dragonstorm] no target in range")
+                    end
+                    return
+                end
+                table.sort(targets, function(a, b) return a.dist < b.dist end)
+
+                local MaxTargets = math.clamp(tonumber(_G.DragonMaxTargets) or 12, 1, 16)
+                for i = 1, math.min(#targets, MaxTargets) do
+                    local target = targets[i]
+                    if target.part and target.part.Parent then
+                        local extraParts = GetHitPartsForTarget(target.model, target.part)
+                        fireShot(target.part.Position, target.part, extraParts)
+                        -- NO task.wait between targets → all fire in one tick
+                    end
+                end
+            end)
+            if not ok and os.clock() - lastDiag > 2 then
+                lastDiag = os.clock()
+                warn("[Dragonstorm] loop error: " .. tostring(err))
+            end
+            task.wait(0.05)
+        end
+        DragonAttackRunning = false
+    end)
+end
+
+-- ============================================================
+-- GetHitPartsForTarget
 -- ============================================================
 local function GetHitPartsForTarget(model, primaryPart)
     local parts = {}
@@ -2551,105 +3238,6 @@ local function GetHitPartsForTarget(model, primaryPart)
         end
     end
     return parts
-end
-
--- ============================================================
--- getAllLeviathanTargets — every live Leviathan segment in range
--- ============================================================
-local function getAllLeviathanTargets()
-    local targets = {}
-    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
-    if not seaBeasts then return targets end
-    local char = LocalPlayer.Character
-    if not char then return targets end
-    local myHRP = char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then return targets end
-    local myPos = myHRP.Position
-    for _, e in ipairs(seaBeasts:GetChildren()) do
-        if e.Name == "Leviathan Segment" or e.Name == "Leviathan" then
-            local hp = e:FindFirstChild("Health")
-            local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
-            if alive then
-                local part = e:FindFirstChild("Leviathan Segment")
-                    or e:FindFirstChild("HumanoidRootPart")
-                    or e.PrimaryPart
-                if part and part:IsA("BasePart") then
-                    local d = (part.Position - myPos).Magnitude
-                    if d < AttackRange then
-                        targets[#targets + 1] = { part = part, model = e, dist = d }
-                    end
-                end
-            end
-        end
-    end
-    table.sort(targets, function(a, b) return a.dist < b.dist end)
-    return targets
-end
-
-local DragonAttackRunning = false
-local function StartDragonAttack()
-    if DragonAttackRunning then return end
-    DragonAttackRunning = true
-    task.spawn(function()
-        local WarnedOnce = false
-        while not dragonReady do
-            initDragon()
-            if dragonReady then break end
-            if not WarnedOnce then
-                WarnedOnce = true
-                warn("[Dragonstorm] No se pudo inicializar. Reintentando cada 5 s.")
-            end
-            task.wait(5)
-        end
-        print("[Dragonstorm] listo")
-        local lastDiag = 0
-        while _G.DragonGunFarm do
-            local ok, err = pcall(function()
-                ensureDragonRemotes()
-                if not ShootGunEvent or not Validator2 then return end
-                local char = LocalPlayer.Character
-                if not char then return end
-                local tool = char:FindFirstChildOfClass("Tool")
-                if not tool or tool.Name ~= "Dragonstorm" then
-                    if not IsOnBoat() then Equip_Auto("Dragonstorm") end
-                    return
-                end
-                
-                local now = os.clock()
-                local interval = _G.DragonFireInterval or 0.15
-                if now - DragonLastFire < interval then return end
-                DragonLastFire = now
-                
-                local targets = getAllSeaTargets()
-                if #targets == 0 then
-                    if os.clock() - lastDiag > 2 then
-                        lastDiag = os.clock()
-                        print("[Dragonstorm] sin objetivo dentro de rango")
-                    end
-                    return
-                end
-                
-                table.sort(targets, function(a, b) return a.dist < b.dist end)
-                
-                local MaxTargets = math.clamp(tonumber(_G.DragonMaxTargets) or 8, 1, 12)
-                local CrossDelay = tonumber(_G.DragonCrossDelay) or 0.015
-                for i = 1, math.min(#targets, MaxTargets) do
-                    local target = targets[i]
-                    if target.part and target.part.Parent then
-                        local extraParts = GetHitPartsForTarget(target.model, target.part)
-                        fireShot(target.part.Position, target.part, extraParts)
-                        if i < MaxTargets then task.wait(CrossDelay) end
-                    end
-                end
-            end)
-            if not ok and os.clock() - lastDiag > 2 then
-                lastDiag = os.clock()
-                warn("[Dragonstorm] error en bucle: " .. tostring(err))
-            end
-            task.wait(0.05)
-        end
-        DragonAttackRunning = false
-    end)
 end
 -- ============================================================
 -- End Dragonstorm
@@ -2926,24 +3514,21 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                 if _G.DragonGunLeviathan and CheckItem("Dragonstorm") then
                     if HasDragonstormEquipped() then
                         local now = os.clock()
-                        local interval = _G.DragonFireInterval or 0.15
-                        if now - DragonLastFire >= interval then
+                        if now - DragonLastFire >= FIXED_INTERVAL then
                             DragonLastFire = now
-                            -- Prefer hitting ALL Leviathan segments at once
+                            -- Segment-priority targeting (3 segments first, then body)
                             local segments = getAllLeviathanTargets()
                             if #segments > 0 then
                                 local MaxSeg = math.clamp(tonumber(_G.DragonMaxSegments) or 6, 1, 10)
-                                local CrossDelay = tonumber(_G.DragonCrossDelay) or 0.015
                                 for i = 1, math.min(#segments, MaxSeg) do
                                     local seg = segments[i]
                                     if seg.part and seg.part.Parent then
                                         local extraParts = GetHitPartsForTarget(seg.model, seg.part)
                                         fireShot(seg.part.Position, seg.part, extraParts)
-                                        if i < MaxSeg then task.wait(CrossDelay) end
+                                        -- NO wait → fire all in one tick
                                     end
                                 end
                             else
-                                -- Fallback: single closest segment
                                 local lvPart, lvModel = getLeviathanTarget()
                                 if lvPart then
                                     local extraParts = GetHitPartsForTarget(lvModel, lvPart)
@@ -3213,7 +3798,7 @@ local function RecoverPositionLock(reason)
             end
         end
         end)
-        if not ok then print("[Leviathan] RecoverPositionLock: error, se libera el flag") end
+        if not ok then print("[Leviathan] RecoverPositionLock: error") end
         RecoverLock.running = false
     end)
 end
@@ -4670,19 +5255,22 @@ local function CreateInfoUI()
     local dragOffset = Vector2.zero
     local UIS = game:GetService("UserInputService")
     InfoUIFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             local mp = Vector2.new(input.Position.X, input.Position.Y)
             dragOffset = mp - InfoUIFrame.AbsolutePosition
         end
     end)
     UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
     UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch) then
             local mp = Vector2.new(input.Position.X, input.Position.Y)
             local newPos = mp - dragOffset
             InfoUIFrame.Position = UDim2.new(0, newPos.X, 0, newPos.Y)
@@ -5219,7 +5807,7 @@ task.spawn(function()
                                         FruitsBlackList[originalName] = now
                                         StorageFull = true
                                         StorageFullAt = now
-                                        print("[AutoStoreFruits] Storage limit reached; pausing attempts for " .. RETRY_INTERVAL .. "s")
+                                        print("[AutoStoreFruits] Storage limit reached; pausing for " .. RETRY_INTERVAL .. "s")
                                     end
                                     break
                                 end
@@ -5771,7 +6359,7 @@ do
         Title = T("dragon.shots"),
         Description = T("dragon.shots.desc"),
         Default = tostring(_G.DragonShotsPerBurst),
-        Placeholder = "5",
+        Placeholder = "8",
         Numeric = true,
         Finished = false,
         Callback = function(Value)
@@ -5782,31 +6370,16 @@ do
             end
         end,
     })
-    CombatSection:AddInput("dragon.rate", {
-        Title = T("dragon.rate"),
-        Description = T("dragon.rate.desc"),
-        Default = tostring(_G.DragonFireInterval),
-        Placeholder = "0.15",
-        Numeric = true,
-        Finished = false,
-        Callback = function(Value)
-            local n = tonumber(Value)
-            if n and n >= 0.02 and n <= 2.0 then
-                _G.DragonFireInterval = n
-                SaveConfig()
-            end
-        end,
-    })
     CombatSection:AddInput("dragon.maxtargets", {
         Title = "Max Sea Targets / Burst",
-        Description = "How many different sea-event targets to hit per burst cycle (1-12).",
+        Description = "How many sea events to hit simultaneously per burst cycle (1-16). All fire in the same tick.",
         Default = tostring(_G.DragonMaxTargets),
-        Placeholder = "8",
+        Placeholder = "12",
         Numeric = true,
         Finished = false,
         Callback = function(Value)
             local n = tonumber(Value)
-            if n and n >= 1 and n <= 12 then
+            if n and n >= 1 and n <= 16 then
                 _G.DragonMaxTargets = math.floor(n)
                 SaveConfig()
             end
@@ -5814,7 +6387,7 @@ do
     })
     CombatSection:AddInput("dragon.maxsegments", {
         Title = "Max Leviathan Segments / Burst",
-        Description = "How many Leviathan segments to hit per burst cycle (1-10).",
+        Description = "How many Leviathan segments to hit per burst cycle (1-10). Segments are prioritized over the main body.",
         Default = tostring(_G.DragonMaxSegments),
         Placeholder = "6",
         Numeric = true,
@@ -5829,7 +6402,7 @@ do
     })
     CombatSection:AddToggle("dragon.multiparts", {
         Title = "Multi-Part Spread",
-        Description = "Distributes the shots of a burst across the target's hitbox parts (round-robin). Each shot still uses the safe single-part payload format — this is what makes it work.",
+        Description = "Distributes the shots of a burst across the target's hitbox parts (round-robin). Each shot still uses the safe single-part payload.",
         Default = _G.DragonMultiParts ~= false,
         Callback = function(State)
             _G.DragonMultiParts = State and true or false
@@ -6060,19 +6633,12 @@ do
                 do
                     local titleStr = title or "Auto Leviathan"
                     local embedColor
-                    if titleStr:find("Leviathan", 1, true) then
-                        embedColor = 0x9C27B0
-                    elseif titleStr:find("Corazón", 1, true) or titleStr:find("Heart", 1, true) then
-                        embedColor = 0x1E88E5
-                    elseif titleStr:find("Soborno", 1, true) or titleStr:find("Bribe", 1, true) then
-                        embedColor = 0xFB8C00
-                    elseif titleStr:find("Jugadores", 1, true) or titleStr:find("Players", 1, true) then
-                        embedColor = 0xE53935
-                    else
-                        embedColor = 0x32CD32
-                    end
-                    local fields = {}
-                    local descriptions = {}
+                    if titleStr:find("Leviathan", 1, true) then embedColor = 0x9C27B0
+                    elseif titleStr:find("Corazón", 1, true) or titleStr:find("Heart", 1, true) then embedColor = 0x1E88E5
+                    elseif titleStr:find("Soborno", 1, true) or titleStr:find("Bribe", 1, true) then embedColor = 0xFB8C00
+                    elseif titleStr:find("Jugadores", 1, true) or titleStr:find("Players", 1, true) then embedColor = 0xE53935
+                    else embedColor = 0x32CD32 end
+                    local fields, descriptions = {}, {}
                     for line in (content or ""):gmatch("[^\n]+") do
                         local k, v = line:match("^(.-):%s*(.*)$")
                         if k and v and v ~= "" then
@@ -6081,21 +6647,16 @@ do
                                 value = v:gsub("^%s*(.-)%s*$", "%1"),
                                 inline = true,
                             }
-                        else
-                            descriptions[#descriptions + 1] = line
-                        end
+                        else descriptions[#descriptions + 1] = line end
                     end
                     if #fields == 0 then
                         fields = { { name = " ", value = table.concat(descriptions, "\n"), inline = false } }
                     end
-                    local userFields = {
-                        { name = T("wh.field.user"), value = LocalPlayer.Name, inline = true },
-                        { name = T("wh.field.display"), value = LocalPlayer.DisplayName, inline = true },
-                        { name = T("wh.field.uid"), value = string.format("[%d](https://www.roblox.com/users/%d/profile)", LocalPlayer.UserId, LocalPlayer.UserId), inline = true },
-                    }
                     local finalFields = {}
                     for _, f in ipairs(fields) do finalFields[#finalFields + 1] = f end
-                    for _, f in ipairs(userFields) do finalFields[#finalFields + 1] = f end
+                    finalFields[#finalFields + 1] = { name = T("wh.field.user"), value = LocalPlayer.Name, inline = true }
+                    finalFields[#finalFields + 1] = { name = T("wh.field.display"), value = LocalPlayer.DisplayName, inline = true }
+                    finalFields[#finalFields + 1] = { name = T("wh.field.uid"), value = string.format("[%d](https://www.roblox.com/users/%d/profile)", LocalPlayer.UserId, LocalPlayer.UserId), inline = true }
                     local SenderName = (_G.WebhookUsername and _G.WebhookUsername ~= "") and _G.WebhookUsername or "Auto Leviathan"
                     payload = {
                         username = SenderName,
@@ -6127,9 +6688,7 @@ do
                 end
                 local code = resp and (resp.StatusCode or resp.statusCode or resp.Status or resp.status)
                 ok = code == nil or code == 200 or code == 204
-                if not ok then
-                    print("[Webhook] envio fallido HTTP " .. tostring(code))
-                end
+                if not ok then print("[Webhook] envio fallido HTTP " .. tostring(code)) end
             end)
             WebhookSendLock = false
             if onDone then onDone(ok) end
@@ -6165,11 +6724,8 @@ do
                     elseif key:find("Leviathan") ~= nil and key:find("Heart") ~= nil then
                         HeartT = tostring(v)
                     elseif key:find("Scroll") ~= nil then
-                        if ScrollT == "" then
-                            ScrollT = key .. ": " .. tostring(v)
-                        else
-                            ScrollT = ScrollT .. ", " .. key .. ": " .. tostring(v)
-                        end
+                        if ScrollT == "" then ScrollT = key .. ": " .. tostring(v)
+                        else ScrollT = ScrollT .. ", " .. key .. ": " .. tostring(v) end
                     end
                 end
             end
@@ -6311,11 +6867,7 @@ do
         end
     end)
     task.spawn(function()
-        local PrevBribeReady = nil
-        local PrevLeviathan = false
-        local PrevHeartSpawn = false
-        local PrevHeartGot = false
-        local PrevLowPlayers = false
+        local PrevBribeReady, PrevLeviathan, PrevHeartSpawn, PrevHeartGot, PrevLowPlayers = nil, false, false, false, false
         while true do
             task.wait(1)
             if _G.AutoWebhook and _G.WebhookURL and _G.WebhookURL ~= "" then
@@ -6488,7 +7040,7 @@ do
         BallGui.Enabled = ballEnabled ~= false
         local Ball = Instance.new("TextButton")
         Ball.Name = "Orb"
-        Ball.Size = UDim2.fromOffset(52, 52)
+        Ball.Size = UDim2.fromOffset(IsMobile and 66 or 52, IsMobile and 66 or 52)
         if _G.RJR_BallPos then
             Ball.Position = UDim2.fromOffset(_G.RJR_BallPos.X, _G.RJR_BallPos.Y)
         else
@@ -6499,7 +7051,7 @@ do
         Ball.AutoButtonColor = false
         Ball.Text = "RJR"
         Ball.Font = Enum.Font.GothamBold
-        Ball.TextSize = 15
+        Ball.TextSize = IsMobile and 16 or 15
         Ball.TextColor3 = Color3.fromRGB(240, 240, 245)
         Ball.Parent = BallGui
         local Corner = Instance.new("UICorner")
@@ -6545,7 +7097,8 @@ do
         end
         local dragging, moved, dragLast, movedDist = false, false, nil, 0
         Ball.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
                 moved = false
                 dragLast = nil
@@ -6554,7 +7107,8 @@ do
         end)
         UserInputService.InputChanged:Connect(function(input)
             if not dragging then return end
-            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            if input.UserInputType == Enum.UserInputType.MouseMovement
+                or input.UserInputType == Enum.UserInputType.Touch then
                 local now = Vector2.new(input.Position.X, input.Position.Y)
                 local step = Vector2.zero
                 if dragLast then step = now - dragLast end
@@ -6579,7 +7133,8 @@ do
         end)
         UserInputService.InputEnded:Connect(function(input)
             if not dragging then return end
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = false
                 if moved then
                     local pos = Ball.Position
