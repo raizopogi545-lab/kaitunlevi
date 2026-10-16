@@ -262,10 +262,8 @@ if _G.AutoKen == nil then _G.AutoKen = false end
 if _G.FastAttack == nil then _G.FastAttack = false end
 if _G.DragonGunFarm == nil then _G.DragonGunFarm = false end
 if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
--- [DRAGONSTORM MULTI-SHOT]
 if _G.DragonShotsPerBurst == nil then _G.DragonShotsPerBurst = 3 end
 if _G.DragonFireInterval == nil then _G.DragonFireInterval = 0.30 end
--- [DRAGONSTORM MULTI-TARGET]
 if _G.DragonMultiTarget == nil then _G.DragonMultiTarget = true end
 if _G.DragonMaxTargetsPerBurst == nil then _G.DragonMaxTargetsPerBurst = 10 end
 if _G.RemoveFog == nil then _G.RemoveFog = false end
@@ -287,12 +285,10 @@ if _G.SoloSeaFarm == nil then _G.SoloSeaFarm = false end
 if _G.RespawnRebuy == nil then _G.RespawnRebuy = false end
 if _G.CruiseReturn == nil then _G.CruiseReturn = true end
 if _G.HuntSelectEvents == nil then _G.HuntSelectEvents = {} end
--- [ESP DEFAULTS]
 if _G.SeaEventESP == nil then _G.SeaEventESP = false end
 if _G.SeaEventESPMaxRange == nil then _G.SeaEventESPMaxRange = 5000 end
 if _G.SeaEventESPShowHP == nil then _G.SeaEventESPShowHP = true end
 if _G.SeaEventESPShowDistance == nil then _G.SeaEventESPShowDistance = true end
--- [/ESP DEFAULTS]
 if _G.WebhookURL == nil then _G.WebhookURL = "" end
 if _G.WebhookUsername == nil then _G.WebhookUsername = "Auto Leviathan" end
 if _G.AutoWebhook == nil then _G.AutoWebhook = false end
@@ -2201,9 +2197,6 @@ local function DragonStillHealthy()
     return true
 end
 
--- ============================================================
--- fireShot — SIMULTANEOUS MULTI-HIT (SAME FRAME)
--- ============================================================
 local function fireShot(pos, hit)
     if not pos then return false end
     if not initDragon() then return false end
@@ -2397,9 +2390,6 @@ local function getClosestSeaTarget()
     return best, bestModel
 end
 
--- ============================================================
--- getAllSeaTargets — MULTI-TARGET SCANNER
--- ============================================================
 local function getAllSeaTargets()
     local targets = {}
     local char = LocalPlayer.Character
@@ -2539,12 +2529,6 @@ local function StartDragonAttack()
 
                 table.sort(targets, function(a, b) return a.dist < b.dist end)
 
-                -- [SIMULTANEOUS MULTI-HIT]
-                -- Fire at every target in the SAME frame so that all spawning
-                -- sea events are hit together. This is the fix for "pag sabay
-                -- nag spawn" - previously we used task.wait(0.05) between each
-                -- target, which was too slow and made the burst look buggy.
-                -- Only clamp with DragonMaxTargetsPerBurst for safety.
                 local maxTargets
                 if _G.DragonMultiTarget == false then
                     maxTargets = 1
@@ -2914,6 +2898,9 @@ end
 
 -- ============================================================
 -- [ESP] Sea Event ESP (BillboardGui based, no external deps)
+-- ------------------------------------------------------------
+-- HP FIX: GetHealthOf now tries every possible HP source and
+-- returns the EXACT current / max values (no rounding to k).
 -- ============================================================
 do
     local ESP = {}
@@ -2973,18 +2960,102 @@ do
         return RootGui
     end
 
+    -- ========================================================
+    -- [HP FIX]
+    -- Reads the EXACT current and max HP from every plausible
+    -- source, in this priority order:
+    --   1. Humanoid.Health / Humanoid.MaxHealth  (live, scaled)
+    --   2. Health ValueBase + MaxHealth sibling
+    --   3. Health ValueBase + MaxHp / MaxHP / HealthMax sibling
+    --   4. Health ValueBase + numeric attribute MaxHealth
+    --   5. Health ValueBase (max = current, so it shows X/X)
+    -- No rounding, no floor-to-nearest-thousand.
+    -- ========================================================
+    local MAX_HP_SIBLING_NAMES = {
+        "MaxHealth", "MaxHp", "MaxHP", "HealthMax",
+        "TotalHealth", "TotalHp", "TotalHP", "MaxHitpoints", "MaxHPValue",
+    }
+    local MAX_HP_ATTR_NAMES = {
+        "MaxHealth", "MaxHp", "MaxHP", "HealthMax", "TotalHealth",
+    }
+
+    local function ReadNumber(v)
+        if type(v) == "number" then return v end
+        if typeof(v) == "Instance" and v:IsA("ValueBase") then
+            local ok, n = pcall(function() return v.Value end)
+            if ok and type(n) == "number" then return n end
+        end
+        return nil
+    end
+
     local function GetHealthOf(model)
+        -- 1. Humanoid is the most authoritative source: it is what
+        --    the game uses for the on-screen HP bar, so it will
+        --    show the exact values like 15400/15400.
         local hum = model:FindFirstChildOfClass("Humanoid")
-        if hum and hum.Health and hum.MaxHealth and hum.MaxHealth > 0 then
-            return hum.Health, hum.MaxHealth
+        if hum then
+            local h = tonumber(hum.Health)
+            local mh = tonumber(hum.MaxHealth)
+            if h and mh and mh > 0 then
+                return h, mh
+            elseif h and not mh then
+                -- Humanoid without MaxHealth: still show current
+                return h, h
+            end
         end
+        -- 2. Health ValueBase + best sibling / attribute for max
         local hp = model:FindFirstChild("Health")
-        if hp and hp:IsA("ValueBase") then
-            local mx = model:FindFirstChild("MaxHealth")
-            local maxv = (mx and mx:IsA("ValueBase")) and mx.Value or hp.Value
-            return hp.Value, maxv
+        local cur = ReadNumber(hp)
+        if cur == nil then
+            -- try attributes on the model
+            for _, a in ipairs(MAX_HP_ATTR_NAMES) do
+                local v = model:GetAttribute(a)
+                if type(v) == "number" and v > 0 then return v, v end
+            end
+            return nil, nil
         end
-        return nil, nil
+        local maxv = nil
+        for _, name in ipairs(MAX_HP_SIBLING_NAMES) do
+            local node = model:FindFirstChild(name)
+            local n = ReadNumber(node)
+            if n and n > 0 then
+                maxv = n
+                break
+            end
+        end
+        if not maxv then
+            for _, a in ipairs(MAX_HP_ATTR_NAMES) do
+                local v = model:GetAttribute(a)
+                if type(v) == "number" and v > 0 then
+                    maxv = v
+                    break
+                end
+            end
+        end
+        if not maxv then
+            -- also check the Health itself for a "Max" attribute
+            if hp and typeof(hp) == "Instance" then
+                for _, a in ipairs(MAX_HP_ATTR_NAMES) do
+                    local ok, v = pcall(function() return hp:GetAttribute(a) end)
+                    if ok and type(v) == "number" and v > 0 then
+                        maxv = v
+                        break
+                    end
+                end
+            end
+        end
+        if not maxv then maxv = cur end
+        return cur, maxv
+    end
+
+    -- Format numbers EXACTLY, no thousand separators, no k/M
+    local function FormatHP(n)
+        if type(n) ~= "number" then return "?" end
+        if n ~= n or n == math.huge or n == -math.huge then return "?" end
+        if n == math.floor(n) then
+            return string.format("%d", n)
+        end
+        return string.format("%.1f", n)
     end
 
     local function FindAnchorPart(model)
@@ -3005,7 +3076,7 @@ do
         local gui = Instance.new("BillboardGui")
         gui.Name = "RJR_ESP_" .. tostring(math.random(1, 1e9))
         gui.Adornee = anchor
-        gui.Size = UDim2.new(0, 220, 0, 52)
+        gui.Size = UDim2.new(0, 240, 0, 56)
         gui.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
         gui.AlwaysOnTop = true
         gui.LightInfluence = 0
@@ -3016,7 +3087,7 @@ do
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Name = "NameLabel"
         nameLabel.BackgroundTransparency = 1
-        nameLabel.Size = UDim2.new(1, 0, 0, 20)
+        nameLabel.Size = UDim2.new(1, 0, 0, 22)
         nameLabel.Position = UDim2.new(0, 0, 0, 0)
         nameLabel.Font = Enum.Font.GothamBold
         nameLabel.TextSize = 15
@@ -3033,10 +3104,10 @@ do
         local hpLabel = Instance.new("TextLabel")
         hpLabel.Name = "HpLabel"
         hpLabel.BackgroundTransparency = 1
-        hpLabel.Size = UDim2.new(1, 0, 0, 16)
-        hpLabel.Position = UDim2.new(0, 0, 0, 20)
+        hpLabel.Size = UDim2.new(1, 0, 0, 18)
+        hpLabel.Position = UDim2.new(0, 0, 0, 22)
         hpLabel.Font = Enum.Font.Gotham
-        hpLabel.TextSize = 13
+        hpLabel.TextSize = 14
         hpLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
         hpLabel.TextStrokeTransparency = 0
         hpLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
@@ -3047,8 +3118,8 @@ do
         local distLabel = Instance.new("TextLabel")
         distLabel.Name = "DistLabel"
         distLabel.BackgroundTransparency = 1
-        distLabel.Size = UDim2.new(1, 0, 0, 14)
-        distLabel.Position = UDim2.new(0, 0, 0, 34)
+        distLabel.Size = UDim2.new(1, 0, 0, 16)
+        distLabel.Position = UDim2.new(0, 0, 0, 40)
         distLabel.Font = Enum.Font.Gotham
         distLabel.TextSize = 12
         distLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
@@ -3113,10 +3184,10 @@ do
 
         if _G.SeaEventESPShowHP then
             local hp, maxHp = GetHealthOf(model)
-            if hp then
-                data.hpLabel.Text = string.format("HP: %s/%s",
-                    tostring(math.floor(hp)),
-                    tostring(math.floor(maxHp or hp)))
+            if hp ~= nil then
+                local curTxt = FormatHP(hp)
+                local maxTxt = FormatHP(maxHp or hp)
+                data.hpLabel.Text = "HP: " .. curTxt .. "/" .. maxTxt
             else
                 data.hpLabel.Text = ""
             end
@@ -3169,6 +3240,7 @@ do
     end)
     ESP.Update = UpdateESP
     ESP.Detach = DetachESP
+    ESP.GetHealthOf = GetHealthOf
     _G.RJR_SeaEventESP = ESP
 end
 -- ============================================================
@@ -6096,7 +6168,6 @@ do
             SaveConfig()
         end,
     })
-    -- [ESP UI]
     local ESPSection = Tabs.Perf:AddSection(T("sec.esp"))
     SectionKeys[#SectionKeys + 1] = { element = ESPSection, key = "sec.esp" }
     ESPSection:AddToggle("esp.toggle", {
