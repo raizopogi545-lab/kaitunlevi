@@ -92,9 +92,9 @@ T, ModeDisplay = (function()
         ["dragon.leviathan"] = { en = "Dragonstorm vs Leviathan", es = "Dragonstorm contra el Leviathan", zh = "龙炮打利维坦" },
         ["dragon.leviathan.desc"] = { en = "Shoot Leviathan with Dragonstorm", es = "Dispara al Leviathan con Dragonstorm (funciona sin el modo de farmeo)", zh = "打利维坦时用 Dragonstorm 射击（不开刷海龙炮也能用）" },
         ["dragon.rate"] = { en = "Burst interval (s)", es = "Intervalo entre ráfagas (s)", zh = "齐射间隔（秒）" },
-        ["dragon.rate.desc"] = { en = "Seconds between bursts. 0.30 is safe; lower risks rejection.", es = "Segundos entre ráfagas. 0.30 es seguro; menos puede ser rechazado.", zh = "两轮齐射之间的秒数。0.30 安全；更低有被拒绝的风险。" },
+        ["dragon.rate.desc"] = { en = "Seconds between bursts. 0.15 default; lower risks rejection.", es = "Segundos entre ráfagas. 0.15 por defecto; menos puede ser rechazado.", zh = "两轮齐射之间的秒数。默认 0.15；更低有被拒绝的风险。" },
         ["dragon.shots"] = { en = "Shots per burst", es = "Disparos por ráfaga", zh = "每轮射击次数" },
-        ["dragon.shots.desc"] = { en = "How many shots per burst (1-10). Shots are fired in the same frame so the server registers them all as separate events. 3 = triple damage.", es = "Cuántos disparos por ráfaga (1-10). Se disparan en el mismo frame para que el servidor los registre todos como eventos separados. 3 = triple daño.", zh = "每轮打几发（1-10）。所有发在同一帧内发出，让服务器逐一登记。3 发 = 3 倍伤害。" },
+        ["dragon.shots.desc"] = { en = "How many shots per burst (1-25). All shots fire in the same frame so the server registers them as separate events.", es = "Cuántos disparos por ráfaga (1-25). Se disparan en el mismo frame para que el servidor los registre como eventos separados.", zh = "每轮打几发（1-25）。所有发在同一帧内发出，让服务器逐一登记。" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -2186,12 +2186,19 @@ local function DragonStillHealthy()
 end
 
 -- ============================================================
--- fireShot — ENHANCED MULTI-HIT / MULTI-PART
+-- fireShot — FIXED MULTI-PART via per-shot round-robin
 -- ------------------------------------------------------------
--- Fires `_G.DragonShotsPerBurst` shots at the SAME target in the
--- SAME frame. Each shot carries MULTIPLE hit parts so the server
--- applies damage on every part in the payload.
--- Backwards compatible: `extraParts` is optional.
+-- IMPORTANT: The server ONLY accepts the payload `{ singlePart }`.
+-- Sending `{p1, p2, ...}` gets the whole shot REJECTED (silent fail,
+-- zero damage). That was the bug in the previous version.
+--
+-- FIX: keep the payload format identical to the original working
+-- version — always `{ part }` with exactly ONE part — and instead
+-- distribute the N shots of a burst across the target's hitbox
+-- parts (round-robin). Result:
+--   * MultiParts OFF → every shot hits primary (original behaviour)
+--   * MultiParts ON  → shots cycle through up to 8 parts, so the
+--     burst as a whole covers the whole hitbox with N valid hits.
 -- ============================================================
 local function fireShot(pos, hit, extraParts)
     if not pos then return false end
@@ -2223,15 +2230,16 @@ local function fireShot(pos, hit, extraParts)
         return false
     end
 
-    -- Build the parts payload (primary + extras). Always at least one part.
-    local partsPayload = { primary }
+    -- Build the rotation list of parts to hit across the burst.
+    -- Always starts with the primary so a single-shot burst is safe.
+    local partsList = { primary }
     if extraParts and type(extraParts) == "table" and _G.DragonMultiParts ~= false then
         local cap = 8
         for _, p in ipairs(extraParts) do
-            if #partsPayload >= cap then break end
+            if #partsList >= cap then break end
             if typeof(p) == "Instance" and p:IsA("BasePart")
                 and p.Parent and p ~= primary then
-                partsPayload[#partsPayload + 1] = p
+                partsList[#partsList + 1] = p
             end
         end
     end
@@ -2276,14 +2284,24 @@ local function fireShot(pos, hit, extraParts)
     debug.setupvalue(shootFunc, idx.u25, u25)
     debug.setupvalue(shootFunc, idx.u26, u26)
 
-    -- Fire every shot in the SAME frame (no task.wait between them).
+    -- Fire every shot in the SAME frame.
+    -- Each shot uses ONE part from partsList (round-robin) so the
+    -- payload format is IDENTICAL to the original working version.
     local anyOk = false
+    local pCount = #partsList
     for i = 1, shots do
-        if not primary.Parent then break end
+        -- Re-fetch the target part each iteration in case it despawned
+        local chosen = partsList[((i - 1) % pCount) + 1]
+        if not chosen or not chosen.Parent then
+            chosen = primary
+            if not chosen or not chosen.Parent then break end
+        end
         local t = tokens[i]
+        -- SINGLE-part payload — matches the original known-working format
+        local payload = { chosen }
         local ok = pcall(function()
             Validator2:FireServer(t.token, t.seq)
-            ShootGunEvent:FireServer(pos, partsPayload)
+            ShootGunEvent:FireServer(pos, payload)
         end)
         if ok then
             anyOk = true
@@ -2499,8 +2517,9 @@ local function getLeviathanTarget()
 end
 
 -- ============================================================
--- GetHitPartsForTarget — collect every hittable BasePart on a model
--- Prioritised names first, then any other BasePart (capped at 8).
+-- GetHitPartsForTarget — collect hitbox BaseParts on a model.
+-- Only parts that belong to the SAME model are returned, so the
+-- round-robin list never crosses into another entity.
 -- ============================================================
 local function GetHitPartsForTarget(model, primaryPart)
     local parts = {}
@@ -2510,7 +2529,7 @@ local function GetHitPartsForTarget(model, primaryPart)
         "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart",
     }
     local seen = {}
-    if primaryPart then
+    if primaryPart and primaryPart.Parent then
         parts[#parts + 1] = primaryPart
         seen[primaryPart] = true
     end
@@ -5164,8 +5183,6 @@ task.spawn(function()
     end
 end)
 local FruitsBlackList = {}
--- [FIXED] Auto Store Fruit Spam Issue
--- Added a global StorageFull cooldown and only attempts one fruit per second to prevent spam.
 task.spawn(function()
     local RETRY_INTERVAL = 60
     local StorageFull = false
@@ -5182,7 +5199,6 @@ task.spawn(function()
     while task.wait(1) do
         if _G.AutoStoreFruits and HRP and HD and HD.Health > 0 then
             if StorageFull and os.clock() - StorageFullAt < RETRY_INTERVAL then
-                -- Skip trying to store because storage is known to be full
             else
                 StorageFull = false
                 local attempted = false
@@ -5205,7 +5221,7 @@ task.spawn(function()
                                         StorageFullAt = now
                                         print("[AutoStoreFruits] Storage limit reached; pausing attempts for " .. RETRY_INTERVAL .. "s")
                                     end
-                                    break -- Break inner loop, only try one fruit per second
+                                    break
                                 end
                             end
                         end
@@ -5812,8 +5828,8 @@ do
         end,
     })
     CombatSection:AddToggle("dragon.multiparts", {
-        Title = "Multi-Part Payload",
-        Description = "Send every hitbox part of a target in one shot for extra damage.",
+        Title = "Multi-Part Spread",
+        Description = "Distributes the shots of a burst across the target's hitbox parts (round-robin). Each shot still uses the safe single-part payload format — this is what makes it work.",
         Default = _G.DragonMultiParts ~= false,
         Callback = function(State)
             _G.DragonMultiParts = State and true or false
