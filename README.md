@@ -2578,6 +2578,8 @@ end
 -- End Dragonstorm
 -- ============================================================
 
+-- [FIXED] FightSeaEvent: always TP to the mob even when DragonGunFarm is on,
+-- so the character actually leaves the boat when a sea event appears.
 local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
     local start = os.clock()
     local function CurrentStand()
@@ -2611,7 +2613,7 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
         local Stand = CurrentStand()
         if Stand then
             local _, hrpNow = GetCharacterParts()
-            if hrpNow and (Stand.Position - hrpNow.Position).Magnitude > 10 and not _G.DragonGunFarm then
+            if hrpNow and (Stand.Position - hrpNow.Position).Magnitude > 10 then
                 _tp(CurrentStand, function()
                     return (not _G.AutoLeviathanFull) or (not Mob or not Mob.Parent)
                         or (not Sea_MobStillAlive(Mob)) or (ShouldBreak and ShouldBreak())
@@ -2912,9 +2914,7 @@ do
 end
 end
 
--- ============================================================
 -- [SEA EVENT PANEL] Draggable on-screen list (replaces ESP)
--- ============================================================
 do
     local PanelAPI = {}
     local Active = setmetatable({}, { __mode = "k" })
@@ -3110,7 +3110,6 @@ do
         local mobile = IsMobile()
         local baseW = mobile and 260 or 300
         local baseH = mobile and 240 or 280
-
         PanelFrame = Instance.new("Frame")
         PanelFrame.Name = "SeaEventPanel"
         PanelFrame.Size = UDim2.fromOffset(baseW, baseH)
@@ -3128,7 +3127,6 @@ do
         stroke.Thickness = 1.5
         stroke.Transparency = 0.2
         stroke.Parent = PanelFrame
-
         local titleBar = Instance.new("Frame")
         titleBar.Name = "TitleBar"
         titleBar.Size = UDim2.new(1, 0, 0, mobile and 30 or 28)
@@ -3139,7 +3137,6 @@ do
         local tc = Instance.new("UICorner")
         tc.CornerRadius = UDim.new(0, 10)
         tc.Parent = titleBar
-
         TitleLabel = Instance.new("TextLabel")
         TitleLabel.BackgroundTransparency = 1
         TitleLabel.Size = UDim2.new(1, -72, 1, 0)
@@ -3150,7 +3147,6 @@ do
         TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
         TitleLabel.Text = "Sea Events (0)"
         TitleLabel.Parent = titleBar
-
         local closeBtn = Instance.new("TextButton")
         closeBtn.Size = UDim2.fromOffset(mobile and 28 or 22, mobile and 28 or 22)
         closeBtn.Position = UDim2.new(1, mobile and -32 or -26, 0.5, mobile and -14 or -11)
@@ -3171,7 +3167,6 @@ do
             SaveConfig()
             PanelAPI.Hide()
         end)
-
         local collapseBtn = Instance.new("TextButton")
         collapseBtn.Size = UDim2.fromOffset(mobile and 28 or 22, mobile and 28 or 22)
         collapseBtn.Position = UDim2.new(1, mobile and -64 or -52, 0.5, mobile and -14 or -11)
@@ -3187,7 +3182,6 @@ do
         local cc2 = Instance.new("UICorner")
         cc2.CornerRadius = UDim.new(1, 0)
         cc2.Parent = collapseBtn
-
         ScrollingFrame = Instance.new("ScrollingFrame")
         ScrollingFrame.Name = "Rows"
         ScrollingFrame.Size = UDim2.new(1, -8, 1, -(mobile and 34 or 32))
@@ -3210,7 +3204,6 @@ do
         layout.Padding = UDim.new(0, 3)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
         layout.Parent = ScrollingFrame
-
         local dragging, dragStart, startPos = false, nil, nil
         titleBar.InputBegan:Connect(function(i)
             if i.UserInputType == Enum.UserInputType.MouseButton1
@@ -3245,7 +3238,6 @@ do
                 PanelFrame.Position = UDim2.fromOffset(math.floor(nx), math.floor(ny))
             end
         end)
-
         local collapsed = false
         local expandedH = baseH
         collapseBtn.MouseButton1Click:Connect(function()
@@ -3269,7 +3261,6 @@ do
         local c = Instance.new("UICorner")
         c.CornerRadius = UDim.new(0, 6)
         c.Parent = row
-
         local nameLbl = Instance.new("TextLabel")
         nameLbl.BackgroundTransparency = 1
         nameLbl.Size = UDim2.new(1, -70, 0, 16)
@@ -3280,7 +3271,6 @@ do
         nameLbl.TextXAlignment = Enum.TextXAlignment.Left
         nameLbl.Text = DISPLAY_NAMES[model.Name] or model.Name
         nameLbl.Parent = row
-
         local distLbl = Instance.new("TextLabel")
         distLbl.BackgroundTransparency = 1
         distLbl.Size = UDim2.fromOffset(60, 16)
@@ -3291,7 +3281,6 @@ do
         distLbl.TextXAlignment = Enum.TextXAlignment.Right
         distLbl.Text = ""
         distLbl.Parent = row
-
         local hpLbl = Instance.new("TextLabel")
         hpLbl.BackgroundTransparency = 1
         hpLbl.Size = UDim2.new(1, -12, 0, 12)
@@ -3302,7 +3291,6 @@ do
         hpLbl.TextXAlignment = Enum.TextXAlignment.Left
         hpLbl.Text = ""
         hpLbl.Parent = row
-
         local barBg = Instance.new("Frame")
         barBg.Size = UDim2.new(1, -12, 0, 5)
         barBg.Position = UDim2.new(0, 6, 1, -8)
@@ -3320,7 +3308,6 @@ do
         local fc = Instance.new("UICorner")
         fc.CornerRadius = UDim.new(0, 2)
         fc.Parent = barFill
-
         return {
             frame = row, nameLabel = nameLbl, hpLabel = hpLbl,
             distLabel = distLbl, barFill = barFill, barBg = barBg,
@@ -3339,14 +3326,12 @@ do
         end
         BuildPanel()
         if not ScrollingFrame then return end
-
         local char = LocalPlayer.Character
         if not char then return end
         local hrp = char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local myPos = hrp.Position
         local range = tonumber(_G.SeaEventESPMaxRange) or 5000
-
         local found = {}
         local function process(model)
             if not model or not model.Parent then return end
@@ -3367,9 +3352,7 @@ do
         if SeaBeasts then for _, m in ipairs(SeaBeasts:GetChildren()) do process(m) end end
         local Enemies = workspace:FindFirstChild("Enemies")
         if Enemies then for _, m in ipairs(Enemies:GetChildren()) do process(m) end end
-
         table.sort(found, function(a, b) return a.dist < b.dist end)
-
         local seen = {}
         for i, entry in ipairs(found) do
             local m = entry.model
@@ -3424,7 +3407,6 @@ do
             pcall(Update)
         end
     end)
-
     PanelAPI.Update = Update
     PanelAPI.Hide = function()
         if PanelFrame then pcall(function() PanelFrame:Destroy() end) end
@@ -3436,9 +3418,6 @@ do
     end
     _G.RJR_SeaEventPanel = PanelAPI
 end
--- ============================================================
--- End Sea Event Panel
--- ============================================================
 
 _G.RJR_BoatDeadArmed = true
 _G.RJR_BoatDeadMonitorRunning = false
