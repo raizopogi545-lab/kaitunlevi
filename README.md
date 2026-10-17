@@ -146,7 +146,7 @@ T, ModeDisplay = (function()
         ["sec.travel"] = { en = "Travel Settings", es = "Ajustes de navegación", zh = "航行设置" },
         ["sel.weapon"] = { en = "Select Weapon", es = "Seleccionar arma", zh = "选择武器" },
         ["silent.aim"] = { en = "Silent aim (skills)", es = "Apuntado asistido (silent aim)", zh = "静默瞄准（技能）" },
-        ["silent.aim.desc"] = { en = "Skills are aimed at the current mob or Leviathan, ignoring camera and mouse", es = "Las habilidades apuntan al mob o al Leviathan, ignorando camara y raton", zh = "技能自动瞄准当前怪物或利维坦，忽略视角和鼠标" },
+        ["silent.aim.desc"] = { en = "Skills are aimed at the current mob or Leviathan, ignoring camera and mouse. The camera is NOT locked - you can still rotate freely.", es = "Las habilidades apuntan al mob o al Leviathan, ignorando camara y raton. La camara NO se bloquea, puedes girar libremente.", zh = "技能自动瞄准当前怪物或利维坦，忽略视角和鼠标。相机不会被锁定，可自由旋转视角。" },
         ["skill.fruit"] = { en = "Skill Keys Fruit", es = "Teclas de habilidad (fruta)", zh = "技能按键 Fruit" },
         ["skill.gun"] = { en = "Skill Keys Gun", es = "Teclas de habilidad (pistola)", zh = "技能按键 Gun" },
         ["skill.melee"] = { en = "Skill Keys Melee", es = "Teclas de habilidad (puños)", zh = "技能按键 Melee" },
@@ -2897,13 +2897,11 @@ end
 end
 
 -- ============================================================
--- [ESP] Sea Event ESP — REWRITTEN (Recursive HP + Top-of-Head)
+-- [ESP] Sea Event ESP (BillboardGui, recursive HP, top-of-head)
 -- ============================================================
 do
     local ESP = {}
     local Active = setmetatable({}, { __mode = "k" })
-    -- Cache max HP per model so sea beasts (whose max isn't a direct
-    -- sibling of Health) never lose it once we discover it.
     local ModelMaxHP = setmetatable({}, { __mode = "k" })
     local RootGui = nil
     local ESPCurrentMax = _G.SeaEventESPMaxRange or 5000
@@ -2958,18 +2956,6 @@ do
         return RootGui
     end
 
-    -- ============================================================
-    -- HP DETECTION (deep, cached, exact)
-    -- ------------------------------------------------------------
-    -- The old version only checked a direct sibling of `Health`.
-    -- Sea Beasts keep their max HP in a nested container so the
-    -- value was lost. This version:
-    --   1. Tries Humanoid (Health / MaxHealth).
-    --   2. Tries any Health ValueBase found DIRECTLY or nested.
-    --   3. Searches every descendant for a max-HP named value.
-    --   4. Searches model + Health instance attributes.
-    --   5. Caches the discovered max per model so it never drops.
-    -- ============================================================
     local MAX_HP_NAMES = {
         "MaxHealth", "MaxHp", "MaxHP", "HealthMax",
         "TotalHealth", "TotalHp", "TotalHP", "MaxHitpoints",
@@ -3011,7 +2997,6 @@ do
     end
 
     local function GetHealthOf(model)
-        -- 1. Humanoid (most authoritative; the value the game shows on HP bars)
         local hum = FindFirstHumanoidDeep(model)
         if hum then
             local h = tonumber(hum.Health)
@@ -3021,15 +3006,11 @@ do
                 return h, mh
             end
         end
-
-        -- 2. Find a Health ValueBase (direct or nested)
         local hp = model:FindFirstChild("Health")
         if not (hp and hp:IsA("ValueBase")) then
             hp = FindFirstDeep(model, "Health", "ValueBase")
         end
-
         if not hp then
-            -- 3. Fallback to a model attribute holding current HP
             for _, a in ipairs({"Health", "Hp", "HP"}) do
                 local v = model:GetAttribute(a)
                 if type(v) == "number" and v >= 0 then
@@ -3046,11 +3027,8 @@ do
             end
             return nil, nil
         end
-
         local cur = ReadNum(hp)
         if cur == nil then return nil, nil end
-
-        -- 4. Search for max HP: sibling, then descendant, then attribute
         local maxv = nil
         local parent = hp.Parent
         if parent then
@@ -3085,8 +3063,6 @@ do
                 if type(v) == "number" and v > 0 then maxv = v break end
             end
         end
-
-        -- 5. Cache / recall
         if maxv and maxv > 0 then
             ModelMaxHP[model] = maxv
         elseif ModelMaxHP[model] then
@@ -3112,13 +3088,6 @@ do
             or model:FindFirstChildWhichIsA("BasePart", true)
     end
 
-    -- ========================================================
-    -- TOP-OF-HEAD OFFSET
-    -- Compute the height difference between the anchor part and
-    -- the top of the model's bounding box. This makes the label
-    -- float ABOVE the head for both tiny sharks and giant sea
-    -- beasts, instead of hugging the anchor part.
-    -- ========================================================
     local function GetTopOffset(model, anchor)
         if not model or not anchor or not anchor.Parent then return 6 end
         local ok, cf, size = pcall(function()
@@ -3135,7 +3104,6 @@ do
     local function AttachESP(model, anchor)
         if Active[model] then return end
         if not anchor or not anchor.Parent then return end
-
         local color = GetColor(model.Name)
         local root = EnsureRootGui()
 
@@ -3248,7 +3216,6 @@ do
         end
         data.gui.MaxDistance = ESPCurrentMax
 
-        -- Float above the model's head
         local topOff = GetTopOffset(model, data.anchor)
         data.gui.StudsOffsetWorldSpace = Vector3.new(0, topOff, 0)
 
@@ -5274,6 +5241,15 @@ task.spawn(function()
         SailNoclipOn = on
     end
 end)
+-- ============================================================
+-- [CAMERA LOCK REMOVED]
+-- The previous RJR_AimCamera BindToRenderStep forced the camera to
+-- point at the current target every frame. That froze your view
+-- while attacking sea events or the Leviathan. It has been removed
+-- so you can freely rotate the camera during combat.
+-- The projectile-redirecting SilentAim namecall hook below is
+-- still active, so skills/attacks still hit the correct target.
+-- ============================================================
 local RJR_SilentAimTarget = (function()
     local TargetPos, At = nil, 0
     local function RootOf(model)
@@ -5321,20 +5297,6 @@ local RJR_SilentAimTarget = (function()
         return best
     end
 end)()
-RunService:BindToRenderStep("RJR_AimCamera", Enum.RenderPriority.Camera.Value + 1, function()
-    if not (_G.AutoLeviathanFull and _G.SilentAim and AttackModel) then return end
-    local aimPos = RJR_SilentAimTarget()
-    local cam = workspace.CurrentCamera
-    local _, hrpAim = GetCharacterParts()
-    if not aimPos or not cam or not hrpAim then return end
-    local flat = Vector3.new(aimPos.X - hrpAim.Position.X, 0, aimPos.Z - hrpAim.Position.Z)
-    if flat.Magnitude < 1 then return end
-    local dir = flat.Unit
-    pcall(function()
-        cam.CFrame = CFrame.lookAt(hrpAim.Position - dir * 13 + Vector3.new(0, 7, 0),
-            hrpAim.Position + dir * 30 + Vector3.new(0, 3, 0))
-    end)
-end)
 pcall(function()
     local mt = getrawmetatable(game)
     local oldNamecall = mt.__namecall
