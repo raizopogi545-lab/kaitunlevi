@@ -94,7 +94,7 @@ T, ModeDisplay = (function()
         ["dragon.rate"] = { en = "Burst interval (s)", es = "Intervalo entre ráfagas (s)", zh = "齐射间隔（秒）" },
         ["dragon.rate.desc"] = { en = "Seconds between bursts. 0.30 is safe; lower risks rejection.", es = "Segundos entre ráfagas. 0.30 es seguro; menos puede ser rechazado.", zh = "两轮齐射之间的秒数。0.30 安全；更低有被拒绝的风险。" },
         ["dragon.shots"] = { en = "Shots per burst", es = "Disparos por ráfaga", zh = "每轮射击次数" },
-        ["dragon.shots.desc"] = { en = "How many shots per burst (1-10). Shots are fired in the same frame so the server registers them all as separate events. 3 = triple damage.", es = "Cuántos disparos por ráfaga (1-10). Se disparan en el mismo frame para que el servidor los registre todos como eventos separados. 3 = triple daño.", zh = "每轮打几发（1-10）。所有发在同一帧内发出，让服务器逐一登记。3 发 = 3 倍伤害。" },
+        ["dragon.shots.desc"] = { en = "How many shots per burst (1-10).", es = "Cuántos disparos por ráfaga (1-10).", zh = "每轮打几发（1-10）。" },
         ["dragon.multitarget"] = { en = "Multi-Hit All Sea Events", es = "Golpear todos los eventos a la vez", zh = "同时攻击所有海上事件" },
         ["dragon.multitarget.desc"] = { en = "Fire at every spawning sea event in the same frame (simultaneous multi-hit)", es = "Dispara a todos los eventos marinos en el mismo frame (multi-golpe simultáneo)", zh = "同一帧打全部刷新的海上事件（同时多目标）" },
         ["dragon.maxtargets"] = { en = "Max targets per burst", es = "Máx. objetivos por ráfaga", zh = "每轮最大目标数" },
@@ -128,25 +128,25 @@ T, ModeDisplay = (function()
         ["notify.title"] = { en = "RJR Hub Notify", es = "RJR Hub | Aviso", zh = "RJR Hub 通知" },
         ["notstarted"] = { en = "Off", es = "Desactivado", zh = "未开启" },
         ["player.tween.speed"] = { en = "Player Tween Speed", es = "Velocidad de desplazamiento", zh = "玩家 Tween 速度" },
-        ["player.tween.speed.desc"] = { en = "Player travel speed on foot to boats and sea-event targets (50–500). Applies to teleports and the combat hover", es = "Velocidad a pie al ir al barco y a los eventos marinos (50-500). Afecta a los teletransportes y a la suspensión en combate", zh = "步行前往船和海上事件目标的移动速度（50–500），作用于传送与战斗悬浮" },
+        ["player.tween.speed.desc"] = { en = "Player travel speed on foot to boats and sea-event targets (50–500).", es = "Velocidad a pie al ir al barco y a los eventos marinos (50-500).", zh = "步行前往船和海上事件目标的移动速度（50–500）。" },
         ["refresh.btn"] = { en = "Refresh Player List", es = "Actualizar lista de jugadores", zh = "刷新玩家列表" },
         ["remove.fog"] = { en = "Remove Fog", es = "Quitar la niebla", zh = "移除雾" },
         ["remove.fog.desc"] = { en = "Removes the fog layer (LightingLayers)", es = "Elimina la capa de niebla (LightingLayers) para ver mejor", zh = "删除雾层 LightingLayers，视野清晰" },
         ["reset.data"] = { en = "Reset Data", es = "Reiniciar datos", zh = "重置数据" },
         ["respawn.rebuy"] = { en = "Respawn Rebuy", es = "Recomprar al reaparecer", zh = "重生买船" },
-        ["respawn.rebuy.desc"] = { en = "Respawns at Tiki when the boat is destroyed or missing (follower included). The follower also dies with the captain so both rebuy together. Never respawns while the Leviathan, its gate or its heart are present", es = "Reaparece en Tiki si el barco se destruye o desaparece (tambien el compañero). El compañero tambien muere con el capitan para recomprar los dos juntos. Nunca reaparece con el Leviathan, su puerta o su corazon presentes", zh = "船被毁或消失时重生回Tiki买船（队员同样生效）；队员会随队长一起死亡，好一起买船；利维坦/利维坦之门/心脏出现时绝不重生" },
+        ["respawn.rebuy.desc"] = { en = "Respawns at Tiki when the boat is destroyed or missing (follower included).", es = "Reaparece en Tiki si el barco se destruye o desaparece (tambien el compañero).", zh = "船被毁或消失时重生回Tiki买船（队员同样生效）。" },
         ["sec.combat"] = { en = "Combat Settings", es = "Ajustes de combate", zh = "战斗设置" },
         ["sec.haki"] = { en = "Haki & Race", es = "Haki y raza", zh = "霸气与种族" },
         ["sec.hunt"] = { en = "Hunt Settings", es = "Ajustes de caza", zh = "狩猎设置" },
         ["sec.main"] = { en = "Main", es = "Principal", zh = "主功能" },
         ["sec.mode"] = { en = "Mode", es = "Modo", zh = "模式" },
         ["sec.performance"] = { en = "Performance & Effects", es = "Rendimiento y efectos", zh = "性能与特效" },
-        ["sec.esp"] = { en = "Sea Event ESP", es = "ESP de eventos marinos", zh = "海上事件 ESP" },
+        ["sec.esp"] = { en = "Sea Event Panel", es = "Panel de eventos marinos", zh = "海上事件面板" },
         ["sec.team"] = { en = "Teammates", es = "Compañeros", zh = "队友" },
         ["sec.travel"] = { en = "Travel Settings", es = "Ajustes de navegación", zh = "航行设置" },
         ["sel.weapon"] = { en = "Select Weapon", es = "Seleccionar arma", zh = "选择武器" },
         ["silent.aim"] = { en = "Silent aim (skills)", es = "Apuntado asistido (silent aim)", zh = "静默瞄准（技能）" },
-        ["silent.aim.desc"] = { en = "Skills are aimed at the current mob or Leviathan, ignoring camera and mouse", es = "Las habilidades apuntan al mob o al Leviathan, ignorando camara y raton", zh = "技能自动瞄准当前怪物或利维坦，忽略视角和鼠标" },
+        ["silent.aim.desc"] = { en = "Skills are aimed at the current mob or Leviathan. The camera is NOT locked - you can rotate freely.", es = "Las habilidades apuntan al mob o al Leviathan. La camara NO se bloquea.", zh = "技能自动瞄准当前怪物或利维坦。相机不会被锁定。" },
         ["skill.fruit"] = { en = "Skill Keys Fruit", es = "Teclas de habilidad (fruta)", zh = "技能按键 Fruit" },
         ["skill.gun"] = { en = "Skill Keys Gun", es = "Teclas de habilidad (pistola)", zh = "技能按键 Gun" },
         ["skill.melee"] = { en = "Skill Keys Melee", es = "Teclas de habilidad (puños)", zh = "技能按键 Melee" },
@@ -177,15 +177,18 @@ T, ModeDisplay = (function()
         ["target.spawned"] = { en = "Spawned", es = "Aparecido", zh = "已出现" },
         ["ui.bribe"] = { en = "Bribe", es = "Soborno", zh = "贿赂" },
         ["ui.floatingball"] = { en = "Floating Button", es = "Botón flotante", zh = "悬浮球" },
-        ["ui.floatingball.desc"] = { en = "Draggable button to open/close this menu (hotkey G always works)", es = "Botón arrastrable para abrir/cerrar el menú (la tecla G siempre funciona)", zh = "可拖动的悬浮球，点击开关菜单（热键 G 始终可用）" },
+        ["ui.floatingball.desc"] = { en = "Draggable button to open/close this menu", es = "Botón arrastrable para abrir/cerrar el menú", zh = "可拖动的悬浮球，点击开关菜单" },
         ["ui.details"] = { en = "Details", es = "Detalles", zh = "详情" },
         ["ui.teammates"] = { en = "Teammates", es = "Compañeros", zh = "队友" },
-        ["esp.toggle"] = { en = "Sea Event ESP", es = "ESP de eventos marinos", zh = "海上事件 ESP" },
-        ["esp.toggle.desc"] = { en = "Show names / HP / distance over all sea events", es = "Muestra nombre / vida / distancia sobre los eventos marinos", zh = "在海上事件上显示 名称/血量/距离" },
-        ["esp.maxrange"] = { en = "ESP Max Range (studs)", es = "Rango máx. del ESP (studs)", zh = "ESP 最大范围（studs）" },
-        ["esp.maxrange.desc"] = { en = "Hide ESP labels beyond this distance (500-20000)", es = "Oculta las etiquetas más allá de esta distancia (500-20000)", zh = "超出此距离隐藏标签（500-20000）" },
-        ["esp.showhp"] = { en = "ESP: Show HP", es = "ESP: mostrar vida", zh = "ESP: 显示血量" },
-        ["esp.showdist"] = { en = "ESP: Show Distance", es = "ESP: mostrar distancia", zh = "ESP: 显示距离" },
+        ["esp.toggle"] = { en = "Sea Event Panel", es = "Panel de eventos marinos", zh = "海上事件面板" },
+        ["esp.toggle.desc"] = { en = "On-screen draggable list of all sea events", es = "Lista arrastrable de todos los eventos marinos", zh = "可拖动的海上事件列表" },
+        ["esp.maxrange"] = { en = "Panel Max Range (studs)", es = "Rango máx. del panel (studs)", zh = "面板最大范围（studs）" },
+        ["esp.maxrange.desc"] = { en = "Hide entries beyond this distance (500-20000)", es = "Oculta entradas más allá de esta distancia (500-20000)", zh = "超出此距离隐藏条目（500-20000）" },
+        ["esp.showhp"] = { en = "Panel: Show HP Text", es = "Panel: mostrar texto de vida", zh = "面板: 显示血量文本" },
+        ["esp.showbar"] = { en = "Panel: Show HP Bar", es = "Panel: mostrar barra de vida", zh = "面板: 显示血条" },
+        ["esp.percent"] = { en = "Panel: Show HP %", es = "Panel: mostrar % de vida", zh = "面板: 显示血量百分比" },
+        ["esp.showdist"] = { en = "Panel: Show Distance", es = "Panel: mostrar distancia", zh = "面板: 显示距离" },
+        ["esp.fade"] = { en = "Panel: Fade With Distance", es = "Panel: desvanecer con distancia", zh = "面板: 随距离淡出" },
         ["webhook.auto"] = { en = "Auto Send Progress", es = "Enviar progreso automáticamente", zh = "自动发送进度" },
         ["webhook.auto.desc"] = { en = "Send current status to webhook every 60s", es = "Envia el estado al webhook cada 60 segundos", zh = "每 60 秒发送当前状态到 webhook" },
         ["webhook.interval"] = { en = "Send Interval (s)", es = "Intervalo (segundos)", zh = "发送间隔(秒)" },
@@ -262,12 +265,11 @@ if _G.AutoKen == nil then _G.AutoKen = false end
 if _G.FastAttack == nil then _G.FastAttack = false end
 if _G.DragonGunFarm == nil then _G.DragonGunFarm = false end
 if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
--- [DRAGONSTORM MULTI-SHOT]
 if _G.DragonShotsPerBurst == nil then _G.DragonShotsPerBurst = 3 end
 if _G.DragonFireInterval == nil then _G.DragonFireInterval = 0.30 end
--- [DRAGONSTORM MULTI-TARGET]
 if _G.DragonMultiTarget == nil then _G.DragonMultiTarget = true end
 if _G.DragonMaxTargetsPerBurst == nil then _G.DragonMaxTargetsPerBurst = 10 end
+if _G.DragonMultiRange == nil then _G.DragonMultiRange = 400 end
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
 if _G.AutoFastMode == nil then _G.AutoFastMode = false end
@@ -287,12 +289,16 @@ if _G.SoloSeaFarm == nil then _G.SoloSeaFarm = false end
 if _G.RespawnRebuy == nil then _G.RespawnRebuy = false end
 if _G.CruiseReturn == nil then _G.CruiseReturn = true end
 if _G.HuntSelectEvents == nil then _G.HuntSelectEvents = {} end
--- [ESP DEFAULTS]
 if _G.SeaEventESP == nil then _G.SeaEventESP = false end
+if _G.SeaEventESPPanel == nil then
+    _G.SeaEventESPPanel = _G.SeaEventESP or false
+end
 if _G.SeaEventESPMaxRange == nil then _G.SeaEventESPMaxRange = 5000 end
 if _G.SeaEventESPShowHP == nil then _G.SeaEventESPShowHP = true end
+if _G.SeaEventESPShowBar == nil then _G.SeaEventESPShowBar = true end
+if _G.SeaEventESPShowPercent == nil then _G.SeaEventESPShowPercent = true end
 if _G.SeaEventESPShowDistance == nil then _G.SeaEventESPShowDistance = true end
--- [/ESP DEFAULTS]
+if _G.SeaEventESPFade == nil then _G.SeaEventESPFade = true end
 if _G.WebhookURL == nil then _G.WebhookURL = "" end
 if _G.WebhookUsername == nil then _G.WebhookUsername = "Auto Leviathan" end
 if _G.AutoWebhook == nil then _G.AutoWebhook = false end
@@ -322,8 +328,6 @@ local TranslateStatus, SetStatus
 TranslateStatus, SetStatus = (function(LanguageCode)
     local StatusStatic = {
         ["Barco viejo inservible: espero el reinicio para recomprar"] = { en = "Old boat unusable: waiting for the reset to rebuy", zh = "旧船不可用 等待重生后重买" },
-        ["No pude bajarme antes de comprar: voy igual al vendedor"] = { en = "Failed to unseat before buying, still heading to dealer", zh = "买船前下船失败 仍尝试前往卖船点" },
-        ["No llegué al vendedor de barcos: reintentando"] = { en = "Did not reach boat dealer, retrying", zh = "未到达卖船点 稍后重试买船" },
         ["El barco desapareció: vuelo a comprar otro"] = { en = "Boat gone, flying to buy new boat", zh = "船已消失 平滑飞行去买船" },
         ["Barco nuevo comprado: esperando a los compañeros"] = { en = "New boat bought, waiting for teammates", zh = "新船已买 等待队友上船" },
         ["Barco hundido (Y<0): lo abandono y compro otro"] = { en = "Boat Y below 0, abandoning and rebuying", zh = "船Y轴低于0 放弃当前船 重新买船" },
@@ -348,14 +352,12 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         ["Fallo: el corazón no quedó enganchado"] = { en = "Hook failed, heart not hooked", zh = "勾心脏失败 心脏未勾中" },
         ["En la puerta del Leviathan: esperando a que aparezca"] = { en = "At the Leviathan gate, waiting for it to appear", zh = "已到利维坦之门 等待利维坦出现" },
         ["Leviathan apareció: empiezo el combate"] = { en = "Leviathan spawned, starting combat", zh = "利维坦已出现 开始战斗" },
-        ["Menos de 200 en 30 s: bajo y vuelvo a subir para reiniciar"] = { en = "Moved <200 in 30s, reseating and restarting", zh = "30秒内移动不足200 下船重上重开驱动" },
         ["Atascado y no pude bajarme: sigo esperando"] = { en = "Stuck and unseat failed, waiting", zh = "卡船且下船失败 继续等待" },
         ["Volviendo a Tiki"] = { en = "Returning to Tiki", zh = "回Tiki 返航中" },
         ["Volviendo a Tiki: el corazón desapareció, cancelo"] = { en = "Returning to Tiki, heart gone, aborting", zh = "回Tiki 心脏已消失 中断航程" },
         ["El corazón desapareció: dejo de volver a Tiki"] = { en = "Heart gone, stopping return to Tiki", zh = "心脏已消失 立即停止返回Tiki" },
         ["Debajo del corazón: espero 1.5 s"] = { en = "Under heart, waiting 1.5s", zh = "回Tiki 已到心脏正下方 等待1.5秒" },
         ["De vuelta en Tiki: espero a que el corazón desaparezca"] = { en = "Back at Tiki, waiting for heart", zh = "已回到 Tiki 等待心脏消失" },
-        ["Se agotó la espera de compañeros"] = { en = "Timed out waiting for teammates", zh = "等待队友超时 不再等待" },
         ["Esperando compañeros: el capitán sube al timón primero"] = { en = "Waiting for team, captain helms first", zh = "等待队友 队长先上驾驶座" },
         ["El barco desapareció: vuelvo a comprarlo"] = { en = "Boat gone, rebuying", zh = "等待队友 船已消失 返回重新买船" },
         ["El barco nuevo no tiene timón: vuelvo a comprar"] = { en = "New boat has no helm, rebuying", zh = "等待队友 新船无驾驶座 返回重买" },
@@ -422,48 +424,48 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         ["Corazón presente y sin barco: voy a comprar uno"] = { en = "Heart present but no boat: going to buy one", zh = "心脏已出现但没有船 去买船" },
     }
     local StatusPatterns = {
-        { es = "Personaje bloqueado en el sitio ({1}): lo libero", en = "Character stuck in place ({1}): freeing it", zh = "人物卡在原地 ({1}) 正在解卡", nested = false },
-        { es = "Siguiendo: el barco del capitán está a más de {1} — no lo persigo", en = "Following: captain's boat is over {1} away - not chasing it", zh = "跟随 队长船超出{1} 不追", nested = false },
-        { es = "Volviendo a Tiki: corazón a {1} — voy justo debajo del corazón", en = "Returning, heart {1} away, moving under heart", zh = "回Tiki 心脏离船 {1} 开向心脏正下方", nested = false },
-        { es = "Enganche: espero el resultado (disparo {1}, esperando {2} s)", en = "Hook: waiting after shot ({1} fired, {2}s)", zh = "勾心脏 发射后等待判断 (第{1}发 已等 {2} 秒)", nested = false },
-        { es = "Abriendo la puerta del Leviathan (intento {1}, cada 10 s)", en = "Opening Leviathan gate (attempt {1}, every 10s)", zh = "开启利维坦之门 第{1}次尝试 (每10秒一次)", nested = false },
-        { es = "Esperando el corazón: me teletransporto (llevo {1} s)", en = "Waiting on heart, TPing to its position ({1}s)", zh = "等待心脏 传送至心脏位置 (已等 {1} 秒)", nested = false },
-        { es = "Compañero lejos, recompra en espera: aguardo ({1} s)", en = "Teammate far, rebuy on cooldown, waiting ({1}s)", zh = "最近队员过远 重买冷却中 等待队友 ({1} 秒)", nested = false },
-        { es = "Esperando a que el corazón desaparezca (llevo {1} s)", en = "Waiting for heart to vanish ({1}s)", zh = "等待心脏消失 (已等 {1} 秒)", nested = false },
-        { es = "[Auto Leviathan] Soborno disponible - progreso {1}/5", en = "[Auto Leviathan] Bribe ready - progress {1}/5", zh = "[Auto Leviathan] 贿赂CD已好 进度 {1}/5", nested = false },
-        { es = "El corazón apareció: engancho en 5 s (llevo {1} s)", en = "Heart spawned, hooking in 5s ({1}s)", zh = "心脏已出现 等待5秒后勾心脏 (已等 {1} 秒)", nested = false },
-        { es = "Enganche: navego a X+300 del corazón (intento {1})", en = "Hook: sailing to heart X+300 (attempt {1})", zh = "勾心脏 开船前往心脏X+300位置 (第{1}次尝试)", nested = false },
-        { es = "Enganche: navegando a X+300 del corazón (dist {1})", en = "Hook: sailing to heart X+300 (dist {1})", zh = "勾心脏 开船前往心脏X+300 (距离 {1})", nested = false },
-        { es = "Volviendo a Tiki: corazón a {1} del barco, cancelo", en = "Returning, heart {1} from boat, aborting", zh = "回Tiki 心脏离船 {1} 中断航程", nested = false },
-        { es = "Siguiendo: pruebo el asiento {1} (cambio cada 1 s)", en = "Following, trying seat {1} (rotating every 1s)", zh = "跟随 尝试上船 {1} 座位 (每1秒换下一个)", nested = false },
-        { es = "Enganche: apunto la proa al corazón (intento {1})", en = "Hook: aiming bow at heart (attempt {1})", zh = "勾心脏 调整船头对准心脏 (第{1}次尝试)", nested = false },
-        { es = "Enganche: bajo al asiento del arpón (intento {1})", en = "Hook: unseating to harpoon seat (attempt {1})", zh = "勾心脏 下船上鱼叉座 (第{1}次尝试)", nested = false },
-        { es = "Esperando a que aparezca el corazón (llevo {1} s)", en = "Waiting for heart ({1}s)", zh = "等待心脏出现 (已等 {1} 秒)", nested = false },
-        { es = "Buscando al Leviathan: navegando (llevo {1} s)", en = "Hunting Leviathan, sailing ({1}s)", zh = "寻找利维坦 开船航行中 (已航行 {1} 秒)", nested = false },
-        { es = "Barco a más de {1}, lo abandono y compro otro", en = "Boat is over {1} away, abandoning it and buying another", zh = "船超出{1} 放弃旧船 重新买船", nested = false },
-        { es = "Enganche: disparo el arpón nº {1} (ángulo {2}°)", en = "Hook: firing harpoon {1} (angle {2}°)", zh = "勾心脏 发射鱼叉第{1}次 (角度 {2}°)", nested = false },
-        { es = "En espera en el barco (capitán {1} al timón)", en = "On standby (captain {1} at helm)", zh = "在船上待命 (队长 {1} 在驾驶)", nested = false },
-        { es = "{1}: reiniciando en Tiki para comprar barco", en = "{1}: resetting to Tiki to buy a boat", zh = "{1} 重置回Tiki买船", nested = true },
-        { es = "{1}: esperando a terminar el evento marino", en = "{1}: waiting to finish the sea event", zh = "{1} 等待打完海上事件", nested = true },
-        { es = "Volviendo a Tiki (dist {1}, navegando {2} s)", en = "Returning to Tiki (dist {1}, {2}s sailed)", zh = "回Tiki 自动巡航中 (距离 {1} 已航 {2} 秒)", nested = false },
-        { es = "Soborno incompleto ({1}/5): soborno ahora", en = "Bribe incomplete ({1}/5), bribing now", zh = "间谍贿赂未完成 ({1}/5) 立即贿赂", nested = false },
-        { es = "Farmeo marino: patrullando (llevo {1} s)", en = "Farming event, cruising ({1}s)", zh = "刷海上事件 开船巡海中 (已刷 {1} 秒)", nested = false },
-        { es = "El Leviathan apareció: ataco en {1} s", en = "Leviathan spawned, attacking in {1}s", zh = "利维坦出现 等待{1}秒后攻击", nested = false },
-        { es = "Enganche: subo al timón (intento {1})", en = "Hook: boarding helm (attempt {1})", zh = "勾心脏 上驾驶座 (第{1}次尝试)", nested = false },
-        { es = "Esperando compañeros a bordo ({1}/4)", en = "Waiting for teammates ({1}/4)", zh = "等待队友上船 ({1}/4)", nested = false },
-        { es = "Sobornando al espía (intento {1}/4)", en = "Bribing spy ({1}/4)", zh = "贿赂间谍 第{1}次", nested = false },
-        { es = "Atacando al Leviathan: {1} - vida {2}", en = "Attacking the Leviathan: {1} - HP {2}", zh = "攻击利维坦: {1} 血量 {2}", nested = false },
-        { es = "Vida baja: subo a evadir ({1})", en = "Low HP, flying to dodge ({1})", zh = "自身低血量 上飞悬空躲避 ({1})", nested = false },
-        { es = "Farmeo marino: {1} (llevo {2} s)", en = "Farming sea event: {1} ({2}s)", zh = "刷海上事件: {1} (已打 {2} 秒)", nested = false },
-        { es = "Evento marino derrotado: {1}", en = "Sea event defeated: {1}", zh = "海上事件已击败: {1}", nested = false },
-        { es = "Mientras espero, farmeo: {1}", en = "Farming event while waiting: {1}", zh = "等待队友期间 刷海上事件: {1}", nested = false },
-        { es = "Corazón enganchado (Y={1})", en = "Heart hooked (Y={1})", zh = "心脏已勾中 (Y={1})", nested = false },
-        { es = "Atacando al Leviathan: {1}", en = "Attacking the Leviathan: {1}", zh = "攻击利维坦: {1}", nested = false },
-        { es = "Receta no encontrada: {1}", en = "Recipe not found: {1}", zh = "配方不存在: {1}", nested = false },
-        { es = "Falta progreso {1} ({2}/{3})", en = "Missing progress {1} ({2}/{3})", zh = "进度缺 {1} ({2}/{3})", nested = false },
-        { es = "De caza: farmeo {1}", en = "Farming event while hunting: {1}", zh = "寻找利维坦途中 刷海上事件: {1}", nested = false },
-        { es = "{1}: fabricado", en = "{1}: crafted", zh = "{1}: 已制作", nested = false },
-        { es = "Falta {1} ({2}/{3})", en = "Missing {1} ({2}/{3})", zh = "缺 {1} ({2}/{3})", nested = false },
+        { es = "Personaje bloqueado en el sitio ({1}): lo libero", en = "Character stuck in place ({1}): freeing it", zh = "人物卡在原地 ({1}) 正在解卡" },
+        { es = "Siguiendo: el barco del capitán está a más de {1} — no lo persigo", en = "Following: captain's boat is over {1} away - not chasing it", zh = "跟随 队长船超出{1} 不追" },
+        { es = "Volviendo a Tiki: corazón a {1} — voy justo debajo del corazón", en = "Returning, heart {1} away, moving under heart", zh = "回Tiki 心脏离船 {1} 开向心脏正下方" },
+        { es = "Enganche: espero el resultado (disparo {1}, esperando {2} s)", en = "Hook: waiting after shot ({1} fired, {2}s)", zh = "勾心脏 发射后等待判断 (第{1}发 已等 {2} 秒)" },
+        { es = "Abriendo la puerta del Leviathan (intento {1}, cada 10 s)", en = "Opening Leviathan gate (attempt {1}, every 10s)", zh = "开启利维坦之门 第{1}次尝试 (每10秒一次)" },
+        { es = "Esperando el corazón: me teletransporto (llevo {1} s)", en = "Waiting on heart, TPing to its position ({1}s)", zh = "等待心脏 传送至心脏位置 (已等 {1} 秒)" },
+        { es = "Compañero lejos, recompra en espera: aguardo ({1} s)", en = "Teammate far, rebuy on cooldown, waiting ({1}s)", zh = "最近队员过远 重买冷却中 等待队友 ({1} 秒)" },
+        { es = "Esperando a que el corazón desaparezca (llevo {1} s)", en = "Waiting for heart to vanish ({1}s)", zh = "等待心脏消失 (已等 {1} 秒)" },
+        { es = "[Auto Leviathan] Soborno disponible - progreso {1}/5", en = "[Auto Leviathan] Bribe ready - progress {1}/5", zh = "[Auto Leviathan] 贿赂CD已好 进度 {1}/5" },
+        { es = "El corazón apareció: engancho en 5 s (llevo {1} s)", en = "Heart spawned, hooking in 5s ({1}s)", zh = "心脏已出现 等待5秒后勾心脏 (已等 {1} 秒)" },
+        { es = "Enganche: navego a X+300 del corazón (intento {1})", en = "Hook: sailing to heart X+300 (attempt {1})", zh = "勾心脏 开船前往心脏X+300位置 (第{1}次尝试)" },
+        { es = "Enganche: navegando a X+300 del corazón (dist {1})", en = "Hook: sailing to heart X+300 (dist {1})", zh = "勾心脏 开船前往心脏X+300 (距离 {1})" },
+        { es = "Volviendo a Tiki: corazón a {1} del barco, cancelo", en = "Returning, heart {1} from boat, aborting", zh = "回Tiki 心脏离船 {1} 中断航程" },
+        { es = "Siguiendo: pruebo el asiento {1} (cambio cada 1 s)", en = "Following, trying seat {1} (rotating every 1s)", zh = "跟随 尝试上船 {1} 座位 (每1秒换下一个)" },
+        { es = "Enganche: apunto la proa al corazón (intento {1})", en = "Hook: aiming bow at heart (attempt {1})", zh = "勾心脏 调整船头对准心脏 (第{1}次尝试)" },
+        { es = "Enganche: bajo al asiento del arpón (intento {1})", en = "Hook: unseating to harpoon seat (attempt {1})", zh = "勾心脏 下船上鱼叉座 (第{1}次尝试)" },
+        { es = "Esperando a que aparezca el corazón (llevo {1} s)", en = "Waiting for heart ({1}s)", zh = "等待心脏出现 (已等 {1} 秒)" },
+        { es = "Buscando al Leviathan: navegando (llevo {1} s)", en = "Hunting Leviathan, sailing ({1}s)", zh = "寻找利维坦 开船航行中 (已航行 {1} 秒)" },
+        { es = "Barco a más de {1}, lo abandono y compro otro", en = "Boat is over {1} away, abandoning it and buying another", zh = "船超出{1} 放弃旧船 重新买船" },
+        { es = "Enganche: disparo el arpón nº {1} (ángulo {2}°)", en = "Hook: firing harpoon {1} (angle {2}°)", zh = "勾心脏 发射鱼叉第{1}次 (角度 {2}°)" },
+        { es = "En espera en el barco (capitán {1} al timón)", en = "On standby (captain {1} at helm)", zh = "在船上待命 (队长 {1} 在驾驶)" },
+        { es = "{1}: reiniciando en Tiki para comprar barco", en = "{1}: resetting to Tiki to buy a boat", zh = "{1} 重置回Tiki买船" },
+        { es = "{1}: esperando a terminar el evento marino", en = "{1}: waiting to finish the sea event", zh = "{1} 等待打完海上事件" },
+        { es = "Volviendo a Tiki (dist {1}, navegando {2} s)", en = "Returning to Tiki (dist {1}, {2}s sailed)", zh = "回Tiki 自动巡航中 (距离 {1} 已航 {2} 秒)" },
+        { es = "Soborno incompleto ({1}/5): soborno ahora", en = "Bribe incomplete ({1}/5), bribing now", zh = "间谍贿赂未完成 ({1}/5) 立即贿赂" },
+        { es = "Farmeo marino: patrullando (llevo {1} s)", en = "Farming event, cruising ({1}s)", zh = "刷海上事件 开船巡海中 (已刷 {1} 秒)" },
+        { es = "El Leviathan apareció: ataco en {1} s", en = "Leviathan spawned, attacking in {1}s", zh = "利维坦出现 等待{1}秒后攻击" },
+        { es = "Enganche: subo al timón (intento {1})", en = "Hook: boarding helm (attempt {1})", zh = "勾心脏 上驾驶座 (第{1}次尝试)" },
+        { es = "Esperando compañeros a bordo ({1}/4)", en = "Waiting for teammates ({1}/4)", zh = "等待队友上船 ({1}/4)" },
+        { es = "Sobornando al espía (intento {1}/4)", en = "Bribing spy ({1}/4)", zh = "贿赂间谍 第{1}次" },
+        { es = "Atacando al Leviathan: {1} - vida {2}", en = "Attacking the Leviathan: {1} - HP {2}", zh = "攻击利维坦: {1} 血量 {2}" },
+        { es = "Vida baja: subo a evadir ({1})", en = "Low HP, flying to dodge ({1})", zh = "自身低血量 上飞悬空躲避 ({1})" },
+        { es = "Farmeo marino: {1} (llevo {2} s)", en = "Farming sea event: {1} ({2}s)", zh = "刷海上事件: {1} (已打 {2} 秒)" },
+        { es = "Evento marino derrotado: {1}", en = "Sea event defeated: {1}", zh = "海上事件已击败: {1}" },
+        { es = "Mientras espero, farmeo: {1}", en = "Farming event while waiting: {1}", zh = "等待队友期间 刷海上事件: {1}" },
+        { es = "Corazón enganchado (Y={1})", en = "Heart hooked (Y={1})", zh = "心脏已勾中 (Y={1})" },
+        { es = "Atacando al Leviathan: {1}", en = "Attacking the Leviathan: {1}", zh = "攻击利维坦: {1}" },
+        { es = "Receta no encontrada: {1}", en = "Recipe not found: {1}", zh = "配方不存在: {1}" },
+        { es = "Falta progreso {1} ({2}/{3})", en = "Missing progress {1} ({2}/{3})", zh = "进度缺 {1} ({2}/{3})" },
+        { es = "De caza: farmeo {1}", en = "Farming event while hunting: {1}", zh = "寻找利维坦途中 刷海上事件: {1}" },
+        { es = "{1}: fabricado", en = "{1}: crafted", zh = "{1}: 已制作" },
+        { es = "Falta {1} ({2}/{3})", en = "Missing {1} ({2}/{3})", zh = "缺 {1} ({2}/{3})" },
     }
     local function EscapePattern(text)
         return (text:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1"))
@@ -570,13 +572,15 @@ local ConfigKeys = {
     "SkillMelee", "SkillSword", "SkillFruit", "SkillGun",
     "FastAttack", "DragonGunFarm", "DragonGunLeviathan",
     "DragonShotsPerBurst", "DragonFireInterval",
-    "DragonMultiTarget", "DragonMaxTargetsPerBurst",
+    "DragonMultiTarget", "DragonMaxTargetsPerBurst", "DragonMultiRange",
     "RemoveFog", "AntiDracoAura", "AutoFastMode", "FPSBoost",
     "AutoBuso", "AutoKen", "AutoV3", "AutoV4",
     "BoatSpeed", "BoatHeight", "PlayerTweenSpeed", "CruiseReturn",
     "AutoCraftScrolls", "CraftQuality", "AutoRandomFruit", "AutoStoreFruits",
     "HuntFightEvents", "SoloSeaFarm", "RespawnRebuy", "HuntSelectEvents",
-    "SeaEventESP", "SeaEventESPMaxRange", "SeaEventESPShowHP", "SeaEventESPShowDistance",
+    "SeaEventESP", "SeaEventESPPanel", "SeaEventESPMaxRange", "SeaEventESPShowHP",
+    "SeaEventESPShowBar", "SeaEventESPShowPercent",
+    "SeaEventESPShowDistance", "SeaEventESPFade",
     "WebhookURL", "WebhookUsername", "AutoWebhook", "WebhookInterval",
     "WebhookSendProgress", "WebhookSendBribeReady", "WebhookSendLeviathan",
     "WebhookSendHeartSpawn", "WebhookSendHeartGot", "WebhookSendLowPlayers",
@@ -1830,7 +1834,6 @@ local function BuyOwnBoat(Message)
     end
     if not Arrived then
         DebugDumpBoats()
-        print("[DEBUG] BuyOwnBoat no llegó al vendedor de barcos", tostring(select(2, GetCharacterParts()) and select(2, GetCharacterParts()).Position or nil))
         SetStatus("No llegué al vendedor de barcos: reintentando")
         return false
     end
@@ -1840,7 +1843,6 @@ local function BuyOwnBoat(Message)
     end
     task.wait(1)
     DebugDumpBoats()
-    print("[DEBUG] BuyOwnBoat llamó a BuyBoat, esperando el barco nuevo")
     return true
 end
 local function NearestPlayerDistance(boat)
@@ -1885,7 +1887,6 @@ local function RebuyBoatAndBoard()
         task.wait(0.5)
     end
     DebugDumpBoats()
-    print("[DEBUG] RebuyBoatAndBoard: no apareció barco nuevo en 30 s")
     return nil, nil
 end
 local LastSailAt = 0
@@ -1905,7 +1906,6 @@ local function SailBoatStream(seat, speed)
         pcall(function()
             if seat.Parent then
                 _G.RJR_AbandonedBoats[seat.Parent] = true
-                print("[Leviathan] Barco con Y<0 abandonado: " .. seat.Parent.Name)
             end
         end)
         Unseat()
@@ -2071,7 +2071,13 @@ Sea_MobStillAlive = function(Mob)
     if Health and Health:IsA("ValueBase") and Health.Value <= 0 then return false end
     local Humanoid = Mob:FindFirstChildOfClass("Humanoid")
     if Humanoid and Humanoid.Health <= 0 then return false end
-    return (Health ~= nil and Health:IsA("ValueBase")) or (Humanoid ~= nil)
+    if Health and Health:IsA("ValueBase") then return true end
+    if Humanoid then return true end
+    for _, d in ipairs(Mob:GetDescendants()) do
+        if d:IsA("Humanoid") then return d.Health > 0 end
+        if d.Name == "Health" and d:IsA("ValueBase") then return d.Value > 0 end
+    end
+    return false
 end
 local FaceTargetCF = (function()
     local Cached = { model = nil, part = nil, at = 0 }
@@ -2143,6 +2149,42 @@ local VALID_SEA_ENEMIES = {
     "PirateBasic",
 }
 
+local function IsPlayerOwnedBoat(model)
+    if not model or not model.Parent then return false end
+    if model.Parent.Name ~= "Boats" then return false end
+    local owner = model:FindFirstChild("Owner")
+    return owner ~= nil and owner.Value ~= nil and tostring(owner.Value) ~= ""
+end
+
+local function GetMobHP(model)
+    if not model then return nil end
+    local hp = model:FindFirstChild("Health")
+    if hp and hp:IsA("ValueBase") then return hp.Value end
+    local hum = model:FindFirstChildOfClass("Humanoid")
+    if hum then return hum.Health end
+    for _, d in ipairs(model:GetDescendants()) do
+        if d:IsA("Humanoid") then return d.Health end
+    end
+    for _, d in ipairs(model:GetDescendants()) do
+        if d.Name == "Health" and d:IsA("ValueBase") then return d.Value end
+    end
+    return nil
+end
+
+local function IsValidSeaEnemyName(name)
+    if not name then return false end
+    if table.find(VALID_SEA_ENEMIES, name) then return true end
+    local low = tostring(name):lower()
+    if low:find("pirate") or low:find("brigade") then return true end
+    return false
+end
+
+local function GetShipAimPart(model)
+    local engine = model:FindFirstChild("Engine")
+    if engine and engine:IsA("BasePart") then return engine end
+    return nil
+end
+
 local function initDragon()
     if dragonReady then return true end
     local success, err = pcall(function()
@@ -2172,7 +2214,6 @@ local function initDragon()
     if not initDragonErrorReported then
         initDragonErrorReported = true
         warn("[Dragonstorm] initDragon fallo: " .. tostring(err))
-        warn("[Dragonstorm] El juego probablemente actualizo CombatController. Reintentando cada 5 s.")
     end
     return false
 end
@@ -2201,9 +2242,6 @@ local function DragonStillHealthy()
     return true
 end
 
--- ============================================================
--- fireShot — SIMULTANEOUS MULTI-HIT (SAME FRAME)
--- ============================================================
 local function fireShot(pos, hit)
     if not pos then return false end
     if not initDragon() then return false end
@@ -2213,7 +2251,6 @@ local function fireShot(pos, hit)
         shootFunc, idx = nil, {}
         return false
     end
-
     local primary
     if typeof(hit) == "Instance" and hit:IsA("BasePart") then
         primary = hit
@@ -2229,14 +2266,10 @@ local function fireShot(pos, hit)
             or hit:FindFirstChild("HumanoidRootPart")
             or hit:FindFirstChildWhichIsA("BasePart", true)
     end
-    if not primary or not primary.Parent then
-        return false
-    end
-
+    if not primary or not primary.Parent then return false end
     local shots = math.floor(tonumber(_G.DragonShotsPerBurst) or 3)
     if shots < 1 then shots = 1 end
     if shots > 10 then shots = 10 end
-
     local u20 = debug.getupvalue(shootFunc, idx.u20)
     local u21 = debug.getupvalue(shootFunc, idx.u21)
     local u22 = debug.getupvalue(shootFunc, idx.u22)
@@ -2251,7 +2284,6 @@ local function fireShot(pos, hit)
         shootFunc, idx = nil, {}
         return false
     end
-
     local tokens = table.create(shots)
     for i = 1, shots do
         local u79 = u25 * u21
@@ -2265,11 +2297,9 @@ local function fireShot(pos, hit)
             seq   = u26,
         }
     end
-
     debug.setupvalue(shootFunc, idx.u24, u24)
     debug.setupvalue(shootFunc, idx.u25, u25)
     debug.setupvalue(shootFunc, idx.u26, u26)
-
     local anyOk = false
     for i = 1, shots do
         if not primary.Parent then break end
@@ -2291,36 +2321,15 @@ local function fireShot(pos, hit)
             end
         end
     end
-
     return anyOk
-end
-
-local SeaBoatModelsCache, SeaBoatModelsAt
-local function getAllPlayerBoatModels()
-    local now = os.clock()
-    if SeaBoatModelsCache and (now - SeaBoatModelsAt) < 0.5 then return SeaBoatModelsCache end
-    local models = {}
-    local boats = workspace:FindFirstChild("Boats")
-    if boats then
-        for _, v in ipairs(boats:GetChildren()) do
-            local owner = v:FindFirstChild("Owner")
-            if owner and owner.Value and tostring(owner.Value) ~= "" then
-                models[v.Name] = true
-            end
-        end
-    end
-    SeaBoatModelsCache, SeaBoatModelsAt = models, now
-    return models
 end
 
 local function targetOwnerAlive(part)
     if not part or not part.Parent then return false end
     local model = part:FindFirstAncestorWhichIsA("Model")
     if not model then return true end
-    local hum = model:FindFirstChildOfClass("Humanoid")
-    if hum and hum.Health <= 0 then return false end
-    local hp = model:FindFirstChild("Health")
-    if hp and hp:IsA("ValueBase") and hp.Value <= 0 then return false end
+    local hpVal = GetMobHP(model)
+    if hpVal ~= nil and hpVal <= 0 then return false end
     return true
 end
 
@@ -2339,9 +2348,7 @@ local function getClosestSeaTarget()
     if not myHRP then return nil, nil end
     local myPos = myHRP.Position
     local best, bestModel, bestDist = nil, nil, AttackRange
-    local playerBoats = getAllPlayerBoatModels()
     local selectionSet = Sea_SelectionSet()
-
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
@@ -2350,8 +2357,8 @@ local function getClosestSeaTarget()
             local allowed = isLeviathan or configName == nil
                 or (selectionSet == nil or selectionSet[configName] == true)
             if allowed then
-                local hp = e:FindFirstChild("Health")
-                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+                local hpVal = GetMobHP(e)
+                local alive = hpVal == nil or hpVal > 0
                 if alive then
                     local part
                     if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
@@ -2366,22 +2373,18 @@ local function getClosestSeaTarget()
             end
         end
     end
-
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, e in ipairs(enemies:GetChildren()) do
-            if table.find(VALID_SEA_ENEMIES, e.Name)
-                and not playerBoats[e.Name]
+            if IsValidSeaEnemyName(e.Name)
+                and not IsPlayerOwnedBoat(e)
                 and Sea_SelectionAllows(e.Name) then
-                local hp = e:FindFirstChild("Health")
-                local hum = e:FindFirstChildOfClass("Humanoid")
-                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
-                    or (hum and hum.Health > 0)
+                local hpVal = GetMobHP(e)
+                local alive = hpVal == nil or hpVal > 0
                 if alive then
-                    local engine = e:FindFirstChild("Engine")
-                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                    local shipPart = GetShipAimPart(e)
                     local part
-                    if isBoat then part = engine
+                    if shipPart then part = shipPart
                     else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
                     if part and part:IsA("BasePart") then
                         local d = (part.Position - myPos).Magnitude
@@ -2397,9 +2400,6 @@ local function getClosestSeaTarget()
     return best, bestModel
 end
 
--- ============================================================
--- getAllSeaTargets — MULTI-TARGET SCANNER
--- ============================================================
 local function getAllSeaTargets()
     local targets = {}
     local char = LocalPlayer.Character
@@ -2407,10 +2407,8 @@ local function getAllSeaTargets()
     local myHRP = char:FindFirstChild("HumanoidRootPart")
     if not myHRP then return targets end
     local myPos = myHRP.Position
-    local playerBoats = getAllPlayerBoatModels()
     local selectionSet = Sea_SelectionSet()
     local Range = 2500
-
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
@@ -2419,8 +2417,8 @@ local function getAllSeaTargets()
             local allowed = isLeviathan or configName == nil
                 or (selectionSet == nil or selectionSet[configName] == true)
             if allowed then
-                local hp = e:FindFirstChild("Health")
-                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+                local hpVal = GetMobHP(e)
+                local alive = hpVal == nil or hpVal > 0
                 if alive then
                     local part
                     if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
@@ -2435,22 +2433,18 @@ local function getAllSeaTargets()
             end
         end
     end
-
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, e in ipairs(enemies:GetChildren()) do
-            if table.find(VALID_SEA_ENEMIES, e.Name)
-                and not playerBoats[e.Name]
+            if IsValidSeaEnemyName(e.Name)
+                and not IsPlayerOwnedBoat(e)
                 and Sea_SelectionAllows(e.Name) then
-                local hp = e:FindFirstChild("Health")
-                local hum = e:FindFirstChildOfClass("Humanoid")
-                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
-                    or (hum and hum.Health > 0)
+                local hpVal = GetMobHP(e)
+                local alive = hpVal == nil or hpVal > 0
                 if alive then
-                    local engine = e:FindFirstChild("Engine")
-                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                    local shipPart = GetShipAimPart(e)
                     local part
-                    if isBoat then part = engine
+                    if shipPart then part = shipPart
                     else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
                     if part and part:IsA("BasePart") then
                         local d = (part.Position - myPos).Magnitude
@@ -2476,8 +2470,8 @@ local function getLeviathanTarget()
     local best, bestModel, bestDist = nil, nil, AttackRange
     for _, e in ipairs(seaBeasts:GetChildren()) do
         if e.Name == "Leviathan Segment" or e.Name == "Leviathan" then
-            local hp = e:FindFirstChild("Health")
-            local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+            local hpVal = GetMobHP(e)
+            local alive = hpVal == nil or hpVal > 0
             if alive then
                 local part = e:FindFirstChild("Leviathan Segment")
                     or e:FindFirstChild("HumanoidRootPart")
@@ -2522,29 +2516,19 @@ local function StartDragonAttack()
                     if not IsOnBoat() then Equip_Auto("Dragonstorm") end
                     return
                 end
-
+                if TpActive or Tweening then return end
                 local now = os.clock()
                 local interval = _G.DragonFireInterval or 0.30
                 if now - DragonLastFire < interval then return end
-                DragonLastFire = now
-
-                local targets = getAllSeaTargets()
-                if #targets == 0 then
+                local all = getAllSeaTargets()
+                if #all == 0 then
                     if os.clock() - lastDiag > 2 then
                         lastDiag = os.clock()
                         print("[Dragonstorm] sin objetivo dentro de rango")
                     end
                     return
                 end
-
-                table.sort(targets, function(a, b) return a.dist < b.dist end)
-
-                -- [SIMULTANEOUS MULTI-HIT]
-                -- Fire at every target in the SAME frame so that all spawning
-                -- sea events are hit together. This is the fix for "pag sabay
-                -- nag spawn" - previously we used task.wait(0.05) between each
-                -- target, which was too slow and made the burst look buggy.
-                -- Only clamp with DragonMaxTargetsPerBurst for safety.
+                table.sort(all, function(a, b) return a.dist < b.dist end)
                 local maxTargets
                 if _G.DragonMultiTarget == false then
                     maxTargets = 1
@@ -2553,11 +2537,31 @@ local function StartDragonAttack()
                     if maxTargets < 1 then maxTargets = 1 end
                     if maxTargets > 20 then maxTargets = 20 end
                 end
-                local fireCount = math.min(#targets, maxTargets)
-                for i = 1, fireCount do
-                    local target = targets[i]
-                    if target.part and target.part.Parent then
-                        fireShot(target.part.Position, target.part)
+                local multiRange = tonumber(_G.DragonMultiRange) or 400
+                if multiRange < 50 then multiRange = 50 end
+                if multiRange > 3000 then multiRange = 3000 end
+                local primary = all[1]
+                local picked = {}
+                for i = 1, #all do
+                    if #picked >= maxTargets then break end
+                    local t = all[i]
+                    if t.part and t.part.Parent then
+                        if i == 1 then
+                            table.insert(picked, t)
+                        else
+                            local d = (t.part.Position - primary.part.Position).Magnitude
+                            if d <= multiRange then
+                                table.insert(picked, t)
+                            end
+                        end
+                    end
+                end
+                if #picked == 0 then return end
+                DragonLastFire = now
+                for i = 1, #picked do
+                    local t = picked[i]
+                    if t.part and t.part.Parent then
+                        fireShot(t.part.Position, t.part)
                     end
                 end
             end)
@@ -2574,6 +2578,8 @@ end
 -- End Dragonstorm
 -- ============================================================
 
+-- [FIXED] FightSeaEvent: always TP to the mob even when DragonGunFarm is on,
+-- so the character actually leaves the boat when a sea event appears.
 local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
     local start = os.clock()
     local function CurrentStand()
@@ -2592,8 +2598,13 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
             break
         end
         SetStatus("Farmeo marino: " .. Mob.Name .. " (llevo " .. math.floor(os.clock() - start) .. " s)")
-        AttackModel = Mob
-        AttackStandFn = CurrentStand
+        if _G.DragonGunFarm then
+            AttackModel = nil
+            AttackStandFn = nil
+        else
+            AttackModel = Mob
+            AttackStandFn = CurrentStand
+        end
         local _, _, humSE = GetCharacterParts()
         if humSE and (humSE.Sit or humSE.SeatPart ~= nil) then
             SetStatus("Farmeo marino: comprobando salir del asiento")
@@ -2637,21 +2648,12 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
     task.wait(0.3)
 end
 local function Leviathan_IsDead(model)
-    local Hum = model:FindFirstChildOfClass("Humanoid")
-    if Hum and Hum.Health <= 0 then return true end
-    local Health = model:FindFirstChild("Health")
-    if Health and (Health:IsA("NumberValue") or Health:IsA("IntValue")) and Health.Value <= 0 then
-        return true
-    end
+    local hpVal = GetMobHP(model)
+    if hpVal ~= nil then return hpVal <= 0 end
     return false
 end
 local function Leviathan_GetHP(model)
-    if not model then return nil end
-    local Hum = model:FindFirstChildOfClass("Humanoid")
-    if Hum then return Hum.Health end
-    local Health = model:FindFirstChild("Health")
-    if Health and (Health:IsA("NumberValue") or Health:IsA("IntValue")) then return Health.Value end
-    return nil
+    return GetMobHP(model)
 end
 local function Leviathan_RootPart(model)
     if not model then return nil end
@@ -2912,14 +2914,13 @@ do
 end
 end
 
--- ============================================================
--- [ESP] Sea Event ESP (BillboardGui based, no external deps)
--- ============================================================
+-- [SEA EVENT PANEL] Draggable on-screen list (replaces ESP)
 do
-    local ESP = {}
+    local PanelAPI = {}
     local Active = setmetatable({}, { __mode = "k" })
-    local RootGui = nil
-    local ESPCurrentMax = _G.SeaEventESPMaxRange or 5000
+    local ModelMaxHP = setmetatable({}, { __mode = "k" })
+    local PanelFrame, ScrollingFrame, TitleLabel, RootGui
+    local UPDATE_INTERVAL = 0.20
 
     local COLORS = {
         LeviathanSegment = Color3.fromRGB(190, 70, 255),
@@ -2934,246 +2935,489 @@ do
         PirateGrandBrigade = Color3.fromRGB(220, 40, 40),
         PirateBasic = Color3.fromRGB(200, 120, 120),
     }
-    local DEFAULT_COLOR = Color3.fromRGB(255, 255, 255)
-    local function GetColor(name)
-        return COLORS[name] or DEFAULT_COLOR
+    local function GetColor(n) return COLORS[n] or Color3.fromRGB(255, 255, 255) end
+
+    local DISPLAY_NAMES = {
+        ["SeaBeast1"] = "Sea Beast",
+        ["FishBoat"] = "Ghost Ship",
+        ["PirateBrigade"] = "Pirate Brigade Ship",
+        ["PirateGrandBrigade"] = "Pirate Grand Brigade Ship",
+        ["PirateBasic"] = "Pirate Basic Ship",
+        ["Leviathan Segment"] = "Leviathan",
+    }
+    local VALID_NAMES = {
+        ["Leviathan Segment"] = true, ["Leviathan"] = true, ["SeaBeast1"] = true,
+        ["Terrorshark"] = true, ["Shark"] = true, ["Piranha"] = true,
+        ["Fish Crew Member"] = true, ["FishBoat"] = true,
+        ["PirateBrigade"] = true, ["PirateGrandBrigade"] = true, ["PirateBasic"] = true,
+    }
+    local MAX_HP_NAMES = {
+        "MaxHealth", "MaxHp", "MaxHP", "HealthMax",
+        "TotalHealth", "TotalHp", "TotalHP", "MaxHitpoints",
+        "MaxHPValue", "HealthMaximum", "HPMax", "MaxH",
+    }
+    local MAX_HP_ATTRS = {"MaxHealth", "MaxHp", "MaxHP", "HealthMax", "TotalHealth", "MaxH"}
+
+    local function ReadNum(v)
+        if type(v) == "number" then return v end
+        if typeof(v) == "Instance" and v:IsA("ValueBase") then
+            local ok, n = pcall(function() return v.Value end)
+            if ok and type(n) == "number" then return n end
+        end
+        return nil
+    end
+    local function FindDeep(root, name, cls)
+        if not root then return nil end
+        local d = root:FindFirstChild(name)
+        if d and (not cls or d:IsA(cls)) then return d end
+        for _, x in ipairs(root:GetDescendants()) do
+            if x.Name == name and (not cls or x:IsA(cls)) then return x end
+        end
+        return nil
+    end
+    local function FindHum(root)
+        if not root then return nil end
+        local h = root:FindFirstChildOfClass("Humanoid")
+        if h then return h end
+        for _, d in ipairs(root:GetDescendants()) do
+            if d:IsA("Humanoid") then return d end
+        end
+        return nil
     end
 
-    local function EnsureRootGui()
+    local function GetHealthOf(model)
+        local hum = FindHum(model)
+        if hum then
+            local h = tonumber(hum.Health)
+            local mh = tonumber(hum.MaxHealth)
+            if h and mh and mh > 0 then
+                if not ModelMaxHP[model] or mh > ModelMaxHP[model] then
+                    ModelMaxHP[model] = mh
+                end
+                return h, ModelMaxHP[model]
+            end
+        end
+        local hp = model:FindFirstChild("Health")
+        if not (hp and hp:IsA("ValueBase")) then hp = FindDeep(model, "Health", "ValueBase") end
+        if not hp then
+            for _, a in ipairs({"Health", "Hp", "HP"}) do
+                local v = model:GetAttribute(a)
+                if type(v) == "number" and v >= 0 then
+                    local mv = ModelMaxHP[model]
+                    if not mv then
+                        for _, mn in ipairs(MAX_HP_ATTRS) do
+                            local m = model:GetAttribute(mn)
+                            if type(m) == "number" and m > 0 then mv = m break end
+                        end
+                        if mv then ModelMaxHP[model] = mv end
+                    end
+                    return v, mv or v
+                end
+            end
+            return nil, nil
+        end
+        local cur = ReadNum(hp)
+        if cur == nil then return nil, nil end
+        local maxv = nil
+        if hp.Parent then
+            for _, name in ipairs(MAX_HP_NAMES) do
+                local n = ReadNum(hp.Parent:FindFirstChild(name))
+                if n and n > 0 then maxv = n break end
+            end
+        end
+        if not maxv then
+            for _, d in ipairs(model:GetDescendants()) do
+                if d:IsA("ValueBase") then
+                    for _, name in ipairs(MAX_HP_NAMES) do
+                        if d.Name == name then
+                            local n = ReadNum(d)
+                            if n and n > 0 then maxv = n break end
+                        end
+                    end
+                end
+                if maxv then break end
+            end
+        end
+        if not maxv then
+            for _, a in ipairs(MAX_HP_ATTRS) do
+                local v = hp:GetAttribute(a)
+                if type(v) == "number" and v > 0 then maxv = v break end
+            end
+        end
+        if not maxv then
+            for _, a in ipairs(MAX_HP_ATTRS) do
+                local v = model:GetAttribute(a)
+                if type(v) == "number" and v > 0 then maxv = v break end
+            end
+        end
+        local cached = ModelMaxHP[model]
+        if maxv and maxv > 0 then
+            if not cached or maxv > cached then ModelMaxHP[model] = maxv end
+            maxv = ModelMaxHP[model]
+        elseif cached then
+            maxv = cached
+        else
+            maxv = cur
+        end
+        return cur, maxv
+    end
+
+    local function FormatHP(n)
+        if type(n) ~= "number" then return "?" end
+        if n ~= n or n == math.huge or n == -math.huge then return "?" end
+        if n == math.floor(n) then return string.format("%d", n) end
+        return string.format("%.1f", n)
+    end
+
+    local function IsMobile()
+        local ui = game:GetService("UserInputService")
+        return ui.TouchEnabled and not ui.KeyboardEnabled
+    end
+
+    local function EnsureRoot()
         if RootGui and RootGui.Parent then return RootGui end
-        local created = false
-        local parent = nil
+        local parent
         if gethui then
             local ok, hui = pcall(gethui)
             if ok and hui then parent = hui end
         end
-        if not parent then
-            pcall(function() parent = game:GetService("CoreGui") end)
-        end
+        if not parent then pcall(function() parent = game:GetService("CoreGui") end) end
+        local ok = false
         if parent then
-            local ok = pcall(function()
+            ok = pcall(function()
                 RootGui = Instance.new("ScreenGui")
-                RootGui.Name = "RJR_SeaEventESP"
+                RootGui.Name = "RJR_SeaEventPanel"
                 RootGui.ResetOnSpawn = false
                 RootGui.IgnoreGuiInset = true
-                RootGui.DisplayOrder = 998
+                RootGui.DisplayOrder = 997
                 RootGui.Parent = parent
-                created = true
             end)
-            if not ok then created = false end
         end
-        if not created or not RootGui or not RootGui.Parent then
+        if not ok or not RootGui or not RootGui.Parent then
             RootGui = Instance.new("ScreenGui")
-            RootGui.Name = "RJR_SeaEventESP"
+            RootGui.Name = "RJR_SeaEventPanel"
             RootGui.ResetOnSpawn = false
             RootGui.IgnoreGuiInset = true
-            RootGui.DisplayOrder = 998
+            RootGui.DisplayOrder = 997
             RootGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
         end
         return RootGui
     end
 
-    local function GetHealthOf(model)
-        local hum = model:FindFirstChildOfClass("Humanoid")
-        if hum and hum.Health and hum.MaxHealth and hum.MaxHealth > 0 then
-            return hum.Health, hum.MaxHealth
-        end
-        local hp = model:FindFirstChild("Health")
-        if hp and hp:IsA("ValueBase") then
-            local mx = model:FindFirstChild("MaxHealth")
-            local maxv = (mx and mx:IsA("ValueBase")) and mx.Value or hp.Value
-            return hp.Value, maxv
-        end
-        return nil, nil
+    local function BuildPanel()
+        if PanelFrame and PanelFrame.Parent then return end
+        local root = EnsureRoot()
+        local mobile = IsMobile()
+        local baseW = mobile and 260 or 300
+        local baseH = mobile and 240 or 280
+        PanelFrame = Instance.new("Frame")
+        PanelFrame.Name = "SeaEventPanel"
+        PanelFrame.Size = UDim2.fromOffset(baseW, baseH)
+        PanelFrame.Position = UDim2.fromOffset(20, 120)
+        PanelFrame.BackgroundColor3 = Color3.fromRGB(20, 18, 28)
+        PanelFrame.BackgroundTransparency = 0.08
+        PanelFrame.BorderSizePixel = 0
+        PanelFrame.Active = true
+        PanelFrame.Parent = root
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = PanelFrame
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(150, 60, 255)
+        stroke.Thickness = 1.5
+        stroke.Transparency = 0.2
+        stroke.Parent = PanelFrame
+        local titleBar = Instance.new("Frame")
+        titleBar.Name = "TitleBar"
+        titleBar.Size = UDim2.new(1, 0, 0, mobile and 30 or 28)
+        titleBar.BackgroundColor3 = Color3.fromRGB(150, 60, 255)
+        titleBar.BackgroundTransparency = 0.85
+        titleBar.BorderSizePixel = 0
+        titleBar.Parent = PanelFrame
+        local tc = Instance.new("UICorner")
+        tc.CornerRadius = UDim.new(0, 10)
+        tc.Parent = titleBar
+        TitleLabel = Instance.new("TextLabel")
+        TitleLabel.BackgroundTransparency = 1
+        TitleLabel.Size = UDim2.new(1, -72, 1, 0)
+        TitleLabel.Position = UDim2.fromOffset(10, 0)
+        TitleLabel.Font = Enum.Font.GothamBold
+        TitleLabel.TextSize = 13
+        TitleLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+        TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        TitleLabel.Text = "Sea Events (0)"
+        TitleLabel.Parent = titleBar
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.fromOffset(mobile and 28 or 22, mobile and 28 or 22)
+        closeBtn.Position = UDim2.new(1, mobile and -32 or -26, 0.5, mobile and -14 or -11)
+        closeBtn.BackgroundColor3 = Color3.fromRGB(220, 70, 70)
+        closeBtn.BackgroundTransparency = 0.3
+        closeBtn.Text = "X"
+        closeBtn.Font = Enum.Font.GothamBold
+        closeBtn.TextSize = 12
+        closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        closeBtn.AutoButtonColor = false
+        closeBtn.BorderSizePixel = 0
+        closeBtn.Parent = titleBar
+        local cc1 = Instance.new("UICorner")
+        cc1.CornerRadius = UDim.new(1, 0)
+        cc1.Parent = closeBtn
+        closeBtn.MouseButton1Click:Connect(function()
+            _G.SeaEventESPPanel = false
+            SaveConfig()
+            PanelAPI.Hide()
+        end)
+        local collapseBtn = Instance.new("TextButton")
+        collapseBtn.Size = UDim2.fromOffset(mobile and 28 or 22, mobile and 28 or 22)
+        collapseBtn.Position = UDim2.new(1, mobile and -64 or -52, 0.5, mobile and -14 or -11)
+        collapseBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+        collapseBtn.BackgroundTransparency = 0.3
+        collapseBtn.Text = "_"
+        collapseBtn.Font = Enum.Font.GothamBold
+        collapseBtn.TextSize = 12
+        collapseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        collapseBtn.AutoButtonColor = false
+        collapseBtn.BorderSizePixel = 0
+        collapseBtn.Parent = titleBar
+        local cc2 = Instance.new("UICorner")
+        cc2.CornerRadius = UDim.new(1, 0)
+        cc2.Parent = collapseBtn
+        ScrollingFrame = Instance.new("ScrollingFrame")
+        ScrollingFrame.Name = "Rows"
+        ScrollingFrame.Size = UDim2.new(1, -8, 1, -(mobile and 34 or 32))
+        ScrollingFrame.Position = UDim2.fromOffset(4, mobile and 32 or 30)
+        ScrollingFrame.BackgroundTransparency = 1
+        ScrollingFrame.BorderSizePixel = 0
+        ScrollingFrame.ScrollBarThickness = 6
+        ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(150, 60, 255)
+        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+        ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        ScrollingFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+        ScrollingFrame.Parent = PanelFrame
+        local pad = Instance.new("UIPadding")
+        pad.PaddingTop = UDim.new(0, 2)
+        pad.PaddingBottom = UDim.new(0, 2)
+        pad.PaddingLeft = UDim.new(0, 2)
+        pad.PaddingRight = UDim.new(0, 2)
+        pad.Parent = ScrollingFrame
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 3)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = ScrollingFrame
+        local dragging, dragStart, startPos = false, nil, nil
+        titleBar.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1
+                or i.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = Vector2.new(i.Position.X, i.Position.Y)
+                startPos = PanelFrame.Position
+            end
+        end)
+        titleBar.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1
+                or i.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+        local uis = game:GetService("UserInputService")
+        uis.InputChanged:Connect(function(i)
+            if not dragging then return end
+            if i.UserInputType == Enum.UserInputType.MouseMovement
+                or i.UserInputType == Enum.UserInputType.Touch then
+                local now = Vector2.new(i.Position.X, i.Position.Y)
+                local delta = now - dragStart
+                local screen = RootGui.AbsoluteSize
+                if screen.X <= 0 then
+                    screen = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+                end
+                local size = PanelFrame.AbsoluteSize
+                local bx = startPos.X.Scale * screen.X + startPos.X.Offset
+                local by = startPos.Y.Scale * screen.Y + startPos.Y.Offset
+                local nx = math.clamp(bx + delta.X, -size.X + math.min(40, size.X * 0.5), screen.X - math.min(40, size.X * 0.5))
+                local ny = math.clamp(by + delta.Y, 0, screen.Y - math.min(40, size.Y * 0.5))
+                PanelFrame.Position = UDim2.fromOffset(math.floor(nx), math.floor(ny))
+            end
+        end)
+        local collapsed = false
+        local expandedH = baseH
+        collapseBtn.MouseButton1Click:Connect(function()
+            collapsed = not collapsed
+            ScrollingFrame.Visible = not collapsed
+            PanelFrame.Size = UDim2.fromOffset(baseW, collapsed and (mobile and 30 or 28) or expandedH)
+        end)
     end
 
-    local function FindAnchorPart(model)
-        return model.PrimaryPart
-            or model:FindFirstChild("HumanoidRootPart")
-            or model:FindFirstChild("RootPart")
-            or model:FindFirstChild("Head")
-            or model:FindFirstChildWhichIsA("BasePart", true)
-    end
-
-    local function AttachESP(model, anchor)
-        if Active[model] then return end
-        if not anchor or not anchor.Parent then return end
-
-        local color = GetColor(model.Name)
-        local root = EnsureRootGui()
-
-        local gui = Instance.new("BillboardGui")
-        gui.Name = "RJR_ESP_" .. tostring(math.random(1, 1e9))
-        gui.Adornee = anchor
-        gui.Size = UDim2.new(0, 220, 0, 52)
-        gui.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
-        gui.AlwaysOnTop = true
-        gui.LightInfluence = 0
-        gui.MaxDistance = ESPCurrentMax
-        gui.ClipsDescendants = false
-        gui.Parent = root
-
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Name = "NameLabel"
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Size = UDim2.new(1, 0, 0, 20)
-        nameLabel.Position = UDim2.new(0, 0, 0, 0)
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextSize = 15
-        nameLabel.TextColor3 = color
-        nameLabel.TextStrokeTransparency = 0
-        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        nameLabel.TextXAlignment = Enum.TextXAlignment.Center
-        nameLabel.TextYAlignment = Enum.TextYAlignment.Bottom
-        nameLabel.TextWrapped = true
-        nameLabel.RichText = false
-        nameLabel.Text = model.Name
-        nameLabel.Parent = gui
-
-        local hpLabel = Instance.new("TextLabel")
-        hpLabel.Name = "HpLabel"
-        hpLabel.BackgroundTransparency = 1
-        hpLabel.Size = UDim2.new(1, 0, 0, 16)
-        hpLabel.Position = UDim2.new(0, 0, 0, 20)
-        hpLabel.Font = Enum.Font.Gotham
-        hpLabel.TextSize = 13
-        hpLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
-        hpLabel.TextStrokeTransparency = 0
-        hpLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        hpLabel.TextXAlignment = Enum.TextXAlignment.Center
-        hpLabel.Text = ""
-        hpLabel.Parent = gui
-
-        local distLabel = Instance.new("TextLabel")
-        distLabel.Name = "DistLabel"
-        distLabel.BackgroundTransparency = 1
-        distLabel.Size = UDim2.new(1, 0, 0, 14)
-        distLabel.Position = UDim2.new(0, 0, 0, 34)
-        distLabel.Font = Enum.Font.Gotham
-        distLabel.TextSize = 12
-        distLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-        distLabel.TextStrokeTransparency = 0
-        distLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        distLabel.TextXAlignment = Enum.TextXAlignment.Center
-        distLabel.Text = ""
-        distLabel.Parent = gui
-
-        Active[model] = {
-            gui = gui,
-            nameLabel = nameLabel,
-            hpLabel = hpLabel,
-            distLabel = distLabel,
-            anchor = anchor,
-            color = color,
+    local function CreateRow(model, order)
+        local mobile = IsMobile()
+        local rowH = mobile and 42 or 38
+        local row = Instance.new("Frame")
+        row.Name = "Row_" .. tostring(order)
+        row.Size = UDim2.new(1, -2, 0, rowH)
+        row.BackgroundColor3 = Color3.fromRGB(30, 28, 40)
+        row.BackgroundTransparency = 0.3
+        row.BorderSizePixel = 0
+        row.LayoutOrder = order
+        row.Parent = ScrollingFrame
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 6)
+        c.Parent = row
+        local nameLbl = Instance.new("TextLabel")
+        nameLbl.BackgroundTransparency = 1
+        nameLbl.Size = UDim2.new(1, -70, 0, 16)
+        nameLbl.Position = UDim2.fromOffset(6, 2)
+        nameLbl.Font = Enum.Font.GothamBold
+        nameLbl.TextSize = 12
+        nameLbl.TextColor3 = GetColor(model.Name)
+        nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+        nameLbl.Text = DISPLAY_NAMES[model.Name] or model.Name
+        nameLbl.Parent = row
+        local distLbl = Instance.new("TextLabel")
+        distLbl.BackgroundTransparency = 1
+        distLbl.Size = UDim2.fromOffset(60, 16)
+        distLbl.Position = UDim2.new(1, -66, 0, 2)
+        distLbl.Font = Enum.Font.Gotham
+        distLbl.TextSize = 11
+        distLbl.TextColor3 = Color3.fromRGB(200, 200, 210)
+        distLbl.TextXAlignment = Enum.TextXAlignment.Right
+        distLbl.Text = ""
+        distLbl.Parent = row
+        local hpLbl = Instance.new("TextLabel")
+        hpLbl.BackgroundTransparency = 1
+        hpLbl.Size = UDim2.new(1, -12, 0, 12)
+        hpLbl.Position = UDim2.fromOffset(6, 17)
+        hpLbl.Font = Enum.Font.Gotham
+        hpLbl.TextSize = 10
+        hpLbl.TextColor3 = Color3.fromRGB(220, 220, 230)
+        hpLbl.TextXAlignment = Enum.TextXAlignment.Left
+        hpLbl.Text = ""
+        hpLbl.Parent = row
+        local barBg = Instance.new("Frame")
+        barBg.Size = UDim2.new(1, -12, 0, 5)
+        barBg.Position = UDim2.new(0, 6, 1, -8)
+        barBg.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+        barBg.BorderSizePixel = 0
+        barBg.Parent = row
+        local bc = Instance.new("UICorner")
+        bc.CornerRadius = UDim.new(0, 2)
+        bc.Parent = barBg
+        local barFill = Instance.new("Frame")
+        barFill.Size = UDim2.new(1, 0, 1, 0)
+        barFill.BackgroundColor3 = Color3.fromRGB(80, 220, 120)
+        barFill.BorderSizePixel = 0
+        barFill.Parent = barBg
+        local fc = Instance.new("UICorner")
+        fc.CornerRadius = UDim.new(0, 2)
+        fc.Parent = barFill
+        return {
+            frame = row, nameLabel = nameLbl, hpLabel = hpLbl,
+            distLabel = distLbl, barFill = barFill, barBg = barBg,
         }
     end
 
-    local function DetachESP(model)
-        local data = Active[model]
-        if not data then return end
-        pcall(function() data.gui:Destroy() end)
-        Active[model] = nil
-    end
-
-    local VALID_NAMES = {
-        ["Leviathan Segment"] = true,
-        ["Leviathan"] = true,
-        ["SeaBeast1"] = true,
-        ["Terrorshark"] = true,
-        ["Shark"] = true,
-        ["Piranha"] = true,
-        ["Fish Crew Member"] = true,
-        ["FishBoat"] = true,
-        ["PirateBrigade"] = true,
-        ["PirateGrandBrigade"] = true,
-        ["PirateBasic"] = true,
-    }
-
-    local function ProcessModel(model, seen, myPos)
-        if not model or not model.Parent then return end
-        if not VALID_NAMES[model.Name] then return end
-        local anchor = FindAnchorPart(model)
-        if not anchor then return end
-
-        local dist = myPos and (anchor.Position - myPos).Magnitude or 0
-        if dist > ESPCurrentMax then
-            DetachESP(model)
+    local function Update()
+        if not _G.SeaEventESPPanel then
+            if PanelFrame then pcall(function() PanelFrame:Destroy() end) end
+            PanelFrame, ScrollingFrame, TitleLabel = nil, nil, nil
+            for model, data in pairs(Active) do
+                pcall(function() data.frame:Destroy() end)
+                Active[model] = nil
+            end
             return
         end
-        seen[model] = true
-
-        if not Active[model] then AttachESP(model, anchor) end
-        local data = Active[model]
-        if not data then return end
-        if data.anchor ~= anchor or not data.anchor.Parent then
-            data.anchor = anchor
-            data.gui.Adornee = anchor
-        end
-        data.gui.MaxDistance = ESPCurrentMax
-
-        if _G.SeaEventESPShowHP then
+        BuildPanel()
+        if not ScrollingFrame then return end
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        local myPos = hrp.Position
+        local range = tonumber(_G.SeaEventESPMaxRange) or 5000
+        local found = {}
+        local function process(model)
+            if not model or not model.Parent then return end
+            if not VALID_NAMES[model.Name] then return end
+            local part = model.PrimaryPart
+                or model:FindFirstChild("HumanoidRootPart")
+                or model:FindFirstChild("RootPart")
+                or model:FindFirstChild("Head")
+                or model:FindFirstChildWhichIsA("BasePart", true)
+            if not part then return end
             local hp, maxHp = GetHealthOf(model)
-            if hp then
-                data.hpLabel.Text = string.format("HP: %s/%s",
-                    tostring(math.floor(hp)),
-                    tostring(math.floor(maxHp or hp)))
-            else
-                data.hpLabel.Text = ""
-            end
-        else
-            data.hpLabel.Text = ""
+            if hp ~= nil and hp <= 0 then return end
+            local d = (part.Position - myPos).Magnitude
+            if d > range then return end
+            table.insert(found, {model = model, dist = d})
         end
-
-        if _G.SeaEventESPShowDistance then
-            data.distLabel.Text = string.format("%dm", math.floor(dist))
-        else
-            data.distLabel.Text = ""
-        end
-    end
-
-    local function UpdateESP()
-        if not _G.SeaEventESP then
-            for model in pairs(Active) do
-                DetachESP(model)
-            end
-            return
-        end
-        ESPCurrentMax = tonumber(_G.SeaEventESPMaxRange) or 5000
-        local _, myHRP = GetCharacterParts()
-        local myPos = myHRP and myHRP.Position
-        local seen = {}
         local SeaBeasts = workspace:FindFirstChild("SeaBeasts")
+        if SeaBeasts then for _, m in ipairs(SeaBeasts:GetChildren()) do process(m) end end
         local Enemies = workspace:FindFirstChild("Enemies")
-        if SeaBeasts then
-            for _, model in ipairs(SeaBeasts:GetChildren()) do
-                ProcessModel(model, seen, myPos)
+        if Enemies then for _, m in ipairs(Enemies:GetChildren()) do process(m) end end
+        table.sort(found, function(a, b) return a.dist < b.dist end)
+        local seen = {}
+        for i, entry in ipairs(found) do
+            local m = entry.model
+            seen[m] = true
+            local data = Active[m]
+            if not data then
+                data = CreateRow(m, i)
+                Active[m] = data
             end
+            data.frame.LayoutOrder = i
+            pcall(function()
+                local hp, maxHp = GetHealthOf(m)
+                data.nameLabel.Text = DISPLAY_NAMES[m.Name] or m.Name
+                data.nameLabel.TextColor3 = GetColor(m.Name)
+                if hp ~= nil then
+                    local pct = (maxHp and maxHp > 0) and math.floor(hp / maxHp * 100 + 0.5) or 0
+                    data.hpLabel.Text = string.format("HP %s / %s (%d%%)", FormatHP(hp), FormatHP(maxHp or hp), pct)
+                    if maxHp and maxHp > 0 then
+                        local ratio = math.clamp(hp / maxHp, 0, 1)
+                        data.barFill.Size = UDim2.new(ratio, 0, 1, 0)
+                        local r, g, b
+                        if ratio > 0.5 then
+                            r = math.floor(255 * (1 - (ratio - 0.5) * 2)); g = 220; b = 80
+                        else
+                            r = 220; g = math.floor(80 + 140 * (ratio * 2)); b = 60
+                        end
+                        data.barFill.BackgroundColor3 = Color3.fromRGB(r, g, b)
+                    else
+                        data.barFill.Size = UDim2.new(0, 0, 1, 0)
+                    end
+                else
+                    data.hpLabel.Text = "HP unknown"
+                    data.barFill.Size = UDim2.new(0, 0, 1, 0)
+                end
+                data.distLabel.Text = string.format("%dm", math.floor(entry.dist))
+            end)
         end
-        if Enemies then
-            for _, model in ipairs(Enemies:GetChildren()) do
-                ProcessModel(model, seen, myPos)
-            end
-        end
-        for model in pairs(Active) do
+        for model, data in pairs(Active) do
             if not seen[model] or not model.Parent then
-                DetachESP(model)
+                pcall(function() data.frame:Destroy() end)
+                Active[model] = nil
             end
+        end
+        if TitleLabel then
+            TitleLabel.Text = string.format("Sea Events (%d)", #found)
         end
     end
 
     task.spawn(function()
         while true do
-            task.wait(0.15)
-            pcall(UpdateESP)
+            task.wait(UPDATE_INTERVAL)
+            pcall(Update)
         end
     end)
-    ESP.Update = UpdateESP
-    ESP.Detach = DetachESP
-    _G.RJR_SeaEventESP = ESP
+    PanelAPI.Update = Update
+    PanelAPI.Hide = function()
+        if PanelFrame then pcall(function() PanelFrame:Destroy() end) end
+        PanelFrame, ScrollingFrame, TitleLabel = nil, nil, nil
+    end
+    PanelAPI.Show = function()
+        _G.SeaEventESPPanel = true
+        Update()
+    end
+    _G.RJR_SeaEventPanel = PanelAPI
 end
--- ============================================================
--- End Sea Event ESP
--- ============================================================
 
 _G.RJR_BoatDeadArmed = true
 _G.RJR_BoatDeadMonitorRunning = false
@@ -3209,9 +3453,6 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
                 math.floor(MaxWait - (os.clock() - WaitStart)) .. "s)")
             task.wait(1)
         end
-        if LastEventName and os.clock() - WaitStart >= MaxWait then
-            print("[Leviathan] Timeout esperando evento marino (" .. LastEventName .. "); reinicio de todas formas")
-        end
     else
         SetStatus(reason .. ": sin barco, reinicio directo")
     end
@@ -3239,7 +3480,6 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
     end
     for _, boat in ipairs(OwnedBoatsOf(LocalPlayer)) do
         _G.RJR_AbandonedBoats[boat] = true
-        print("[Leviathan] Reinicio hecho, barco viejo abandonado: " .. boat.Name)
     end
     _G.RJR_Resetting = false
 end
@@ -3358,14 +3598,8 @@ local function RecoverPositionLock(reason)
         local Freed = false
         while os.clock() < FreedAt do
             local _, _, hum = GetCharacterParts()
-            if not hum then
-                Freed = true
-                break
-            end
-            if not hum.Sit and hum.SeatPart == nil then
-                Freed = true
-                break
-            end
+            if not hum then Freed = true break end
+            if not hum.Sit and hum.SeatPart == nil then Freed = true break end
             task.wait(0.2)
         end
         if ((not Freed) or RecoverLock.tries >= 2) and _G.AutoLeviathanFull and not _G.RJR_Resetting then
@@ -3382,7 +3616,6 @@ local function RecoverPositionLock(reason)
             end
         end
         end)
-        if not ok then print("[Leviathan] RecoverPositionLock: error, se libera el flag") end
         RecoverLock.running = false
     end)
 end
@@ -3510,10 +3743,7 @@ local function HarpoonHeart()
                 and workspace.Map:FindFirstChild("FrozenHeart")
             local P = H and GetHeartPos(H)
             if not H or not P or not HeartIsValid(H) then break end
-            if (P - LastCheck).Magnitude < 8 then
-                Stable = true
-                break
-            end
+            if (P - LastCheck).Magnitude < 8 then Stable = true break end
             LastCheck = P
         end
         if not Stable then
@@ -3829,20 +4059,10 @@ end
 local function ReturnTiki(Speed)
     Speed = Speed or 200
     local boat = GetOwnBoat()
-    if not boat then
-        print("[ReturnTiki] sin barco")
-        return false
-    end
+    if not boat then return false end
     local DriverSeat = boat:FindFirstChild("VehicleSeat")
-    if not DriverSeat then
-        print("[ReturnTiki] sin asiento de conductor")
-        return false
-    end
-    if not BoardSeatRetry(DriverSeat) then
-        print("[ReturnTiki] no pude subir al timón")
-        return false
-    end
-    print("[ReturnTiki] ya estoy en el timón")
+    if not DriverSeat then return false end
+    if not BoardSeatRetry(DriverSeat) then return false end
     SetStatus("Volviendo a Tiki")
     local function HeartCloseCheck(seat)
         local Map = workspace:FindFirstChild("Map")
@@ -3850,13 +4070,11 @@ local function ReturnTiki(Speed)
         local HeartPos = Heart and GetHeartPos(Heart)
         if not HeartPos then
             SetStatus("Volviendo a Tiki: el corazón desapareció, cancelo")
-            print("[ReturnTiki] heart gone, interrupt leg")
             return false
         end
         local Dist = (HeartPos - seat.Position).Magnitude
         if Dist > 3000 then
             SetStatus("Volviendo a Tiki: corazón a " .. math.floor(Dist) .. " del barco, cancelo")
-            print("[ReturnTiki] heart check fail dist=" .. math.floor(Dist))
             return false
         end
         return true
@@ -3868,17 +4086,14 @@ local function ReturnTiki(Speed)
         local Heart = Map and Map:FindFirstChild("FrozenHeart")
         if not Heart then
             SetStatus("El corazón desapareció: dejo de volver a Tiki")
-            print("[ReturnTiki] heart gone, stop return")
             break
         end
         local HeartPos = Heart and GetHeartPos(Heart)
         if not HeartPos then
             SetStatus("El corazón desapareció: dejo de volver a Tiki")
-            print("[ReturnTiki] heart gone, stop return")
             break
         end
         if not DriverSeat or not DriverSeat.Parent or not IsSittingOn(DriverSeat) then
-            print("[ReturnTiki] me caí del asiento: vuelvo al timón")
             local b2 = GetOwnBoat()
             if not b2 then break end
             DriverSeat = b2:FindFirstChild("VehicleSeat")
@@ -3889,7 +4104,6 @@ local function ReturnTiki(Speed)
         local Dist3D = (HeartPos - BoatPos).Magnitude
         if Dist3D > 3000 then
             SetStatus("Volviendo a Tiki: corazón a " .. math.floor(Dist3D) .. " — voy justo debajo del corazón")
-            print("[ReturnTiki] heart far=" .. math.floor(Dist3D) .. ", sail to heart")
             SailToCF(DriverSeat, CFrame.new(HeartPos.X, BoatPos.Y, HeartPos.Z), Speed)
             SetStatus("Debajo del corazón: espero 1.5 s")
             local HoldStart = os.clock()
@@ -3897,13 +4111,10 @@ local function ReturnTiki(Speed)
             WentToHeart = true
         end
         if not WentToHeart then
-            print("[ReturnTiki] empieza el primer tramo")
             local R1 = SailToCF(DriverSeat, TikiWaypointCF, Speed, HeartCloseCheck)
-            print("[ReturnTiki] primer tramo terminado arrived=" .. tostring(R1))
             if R1 then
                 local R2 = SailToCF(DriverSeat, TikiReturnCF, Speed, HeartCloseCheck)
                 pcall(function() DriverSeat.CFrame = TikiReturnCF end)
-                print("[ReturnTiki] segundo tramo terminado arrived=" .. tostring(R2))
                 if R2 then
                     Returned = true
                     break
@@ -5149,8 +5360,9 @@ local RJR_SilentAimTarget = (function()
         local seg = model:FindFirstChild("Leviathan Segment") or model:FindFirstChild("Hitbox")
         if seg and seg:IsA("BasePart") then return seg.Position end
         if not root then return nil end
-        if model:FindFirstChild("Engine") then
-            return Vector3.new(root.Position.X, -58, root.Position.Z)
+        local engine = model:FindFirstChild("Engine")
+        if engine and engine:IsA("BasePart") then
+            return engine.Position
         end
         return Vector3.new(root.Position.X, math.max(root.Position.Y, 40), root.Position.Z)
     end
@@ -5181,20 +5393,6 @@ local RJR_SilentAimTarget = (function()
         return best
     end
 end)()
-RunService:BindToRenderStep("RJR_AimCamera", Enum.RenderPriority.Camera.Value + 1, function()
-    if not (_G.AutoLeviathanFull and _G.SilentAim and AttackModel) then return end
-    local aimPos = RJR_SilentAimTarget()
-    local cam = workspace.CurrentCamera
-    local _, hrpAim = GetCharacterParts()
-    if not aimPos or not cam or not hrpAim then return end
-    local flat = Vector3.new(aimPos.X - hrpAim.Position.X, 0, aimPos.Z - hrpAim.Position.Z)
-    if flat.Magnitude < 1 then return end
-    local dir = flat.Unit
-    pcall(function()
-        cam.CFrame = CFrame.lookAt(hrpAim.Position - dir * 13 + Vector3.new(0, 7, 0),
-            hrpAim.Position + dir * 30 + Vector3.new(0, 3, 0))
-    end)
-end)
 pcall(function()
     local mt = getrawmetatable(game)
     local oldNamecall = mt.__namecall
@@ -5246,9 +5444,6 @@ LocalPlayer.CharacterAdded:Connect(function()
                         _G.RJR_AbandonedBoats[boat] = true
                         Marked = Marked + 1
                     end
-                end
-                if Marked > 0 then
-                    print("[Leviathan] El capitán murió: abandonados " .. Marked .. " barcos viejos, pendientes de recompra")
                 end
             end
         end)
@@ -5388,7 +5583,6 @@ task.spawn(function()
                                         FruitsBlackList[originalName] = now
                                         StorageFull = true
                                         StorageFullAt = now
-                                        print("[AutoStoreFruits] Storage limit reached; pausing attempts for " .. RETRY_INTERVAL .. "s")
                                     end
                                     break
                                 end
@@ -5960,6 +6154,21 @@ do
             end
         end,
     })
+    CombatSection:AddInput("dragon.multirange", {
+        Title = "Multi-Target Cluster Range (studs)",
+        Description = "Only fire at other targets within this distance of the closest target (50–3000)",
+        Default = tostring(_G.DragonMultiRange or 400),
+        Placeholder = "400",
+        Numeric = true,
+        Finished = false,
+        Callback = function(Value)
+            local n = tonumber(Value)
+            if n and n >= 50 and n <= 3000 then
+                _G.DragonMultiRange = math.floor(n)
+                SaveConfig()
+            end
+        end,
+    })
     CombatSection:AddInput("dragon.shots", {
         Title = T("dragon.shots"),
         Description = T("dragon.shots.desc"),
@@ -6096,18 +6305,17 @@ do
             SaveConfig()
         end,
     })
-    -- [ESP UI]
     local ESPSection = Tabs.Perf:AddSection(T("sec.esp"))
     SectionKeys[#SectionKeys + 1] = { element = ESPSection, key = "sec.esp" }
-    ESPSection:AddToggle("esp.toggle", {
+    ESPSection:AddToggle("esp.panel", {
         Title = T("esp.toggle"),
         Description = T("esp.toggle.desc"),
-        Default = _G.SeaEventESP,
+        Default = _G.SeaEventESPPanel,
         Callback = function(State)
-            _G.SeaEventESP = State and true or false
+            _G.SeaEventESPPanel = State and true or false
             SaveConfig()
-            if not _G.SeaEventESP and _G.RJR_SeaEventESP then
-                pcall(_G.RJR_SeaEventESP.Detach)
+            if not State and _G.RJR_SeaEventPanel then
+                pcall(_G.RJR_SeaEventPanel.Hide)
             end
         end,
     })
@@ -6135,12 +6343,39 @@ do
             SaveConfig()
         end,
     })
+    ESPSection:AddToggle("esp.showbar", {
+        Title = T("esp.showbar"),
+        Description = "",
+        Default = _G.SeaEventESPShowBar,
+        Callback = function(State)
+            _G.SeaEventESPShowBar = State and true or false
+            SaveConfig()
+        end,
+    })
+    ESPSection:AddToggle("esp.percent", {
+        Title = T("esp.percent"),
+        Description = "",
+        Default = _G.SeaEventESPShowPercent,
+        Callback = function(State)
+            _G.SeaEventESPShowPercent = State and true or false
+            SaveConfig()
+        end,
+    })
     ESPSection:AddToggle("esp.showdist", {
         Title = T("esp.showdist"),
         Description = "",
         Default = _G.SeaEventESPShowDistance,
         Callback = function(State)
             _G.SeaEventESPShowDistance = State and true or false
+            SaveConfig()
+        end,
+    })
+    ESPSection:AddToggle("esp.fade", {
+        Title = T("esp.fade"),
+        Description = "",
+        Default = _G.SeaEventESPFade,
+        Callback = function(State)
+            _G.SeaEventESPFade = State and true or false
             SaveConfig()
         end,
     })
@@ -6261,17 +6496,11 @@ do
                 headers = { ["Content-Type"] = "application/json" }
                 do
                     local titleStr = title or "Auto Leviathan"
-                    local embedColor
-                    if titleStr:find("Leviathan", 1, true) then
-                        embedColor = 0x9C27B0
-                    elseif titleStr:find("Corazón", 1, true) or titleStr:find("Heart", 1, true) then
-                        embedColor = 0x1E88E5
-                    elseif titleStr:find("Soborno", 1, true) or titleStr:find("Bribe", 1, true) then
-                        embedColor = 0xFB8C00
-                    elseif titleStr:find("Jugadores", 1, true) or titleStr:find("Players", 1, true) then
-                        embedColor = 0xE53935
-                    else
-                        embedColor = 0x32CD32
+                    local embedColor = 0x32CD32
+                    if titleStr:find("Leviathan", 1, true) then embedColor = 0x9C27B0
+                    elseif titleStr:find("Heart", 1, true) or titleStr:find("Coraz", 1, true) then embedColor = 0x1E88E5
+                    elseif titleStr:find("Bribe", 1, true) or titleStr:find("Soborno", 1, true) then embedColor = 0xFB8C00
+                    elseif titleStr:find("Players", 1, true) or titleStr:find("Jugadores", 1, true) then embedColor = 0xE53935
                     end
                     local fields = {}
                     local descriptions = {}
@@ -6329,9 +6558,6 @@ do
                 end
                 local code = resp and (resp.StatusCode or resp.statusCode or resp.Status or resp.status)
                 ok = code == nil or code == 200 or code == 204
-                if not ok then
-                    print("[Webhook] envio fallido HTTP " .. tostring(code))
-                end
             end)
             WebhookSendLock = false
             if onDone then onDone(ok) end
@@ -6367,11 +6593,8 @@ do
                     elseif key:find("Leviathan") ~= nil and key:find("Heart") ~= nil then
                         HeartT = tostring(v)
                     elseif key:find("Scroll") ~= nil then
-                        if ScrollT == "" then
-                            ScrollT = key .. ": " .. tostring(v)
-                        else
-                            ScrollT = ScrollT .. ", " .. key .. ": " .. tostring(v)
-                        end
+                        if ScrollT == "" then ScrollT = key .. ": " .. tostring(v)
+                        else ScrollT = ScrollT .. ", " .. key .. ": " .. tostring(v) end
                     end
                 end
             end
@@ -6792,7 +7015,6 @@ do
             end
         end)
         task.spawn(function()
-
             while BallGui.Parent do
                 SyncBall()
                 task.wait(0.25)
@@ -6814,7 +7036,9 @@ task.defer(function()
     if _G.AntiDracoAura then pcall(PerformanceAPI.ApplyAntiDracoAura) end
     if _G.AutoFastMode then pcall(PerformanceAPI.ApplyAutoFastMode) end
     if _G.FPSBoost then pcall(PerformanceAPI.ApplyFPSBoost) end
-    if _G.SeaEventESP and _G.RJR_SeaEventESP then pcall(_G.RJR_SeaEventESP.Update) end
+    if _G.SeaEventESPPanel and _G.RJR_SeaEventPanel then
+        pcall(_G.RJR_SeaEventPanel.Update)
+    end
 end)
 
 SendNotify(T("notify.title"), T("notify.ready"))
