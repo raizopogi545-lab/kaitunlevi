@@ -141,7 +141,7 @@ T, ModeDisplay = (function()
         ["sec.main"] = { en = "Main", es = "Principal", zh = "主功能" },
         ["sec.mode"] = { en = "Mode", es = "Modo", zh = "模式" },
         ["sec.performance"] = { en = "Performance & Effects", es = "Rendimiento y efectos", zh = "性能与特效" },
-        ["sec.esp"] = { en = "Sea Event ESP", es = "ESP de eventos marinos", zh = "海上事件 ESP" },
+        ["sec.esp"] = { en = "Sea Event Panel", es = "Panel de eventos marinos", zh = "海上事件面板" },
         ["sec.team"] = { en = "Teammates", es = "Compañeros", zh = "队友" },
         ["sec.travel"] = { en = "Travel Settings", es = "Ajustes de navegación", zh = "航行设置" },
         ["sel.weapon"] = { en = "Select Weapon", es = "Seleccionar arma", zh = "选择武器" },
@@ -180,15 +180,15 @@ T, ModeDisplay = (function()
         ["ui.floatingball.desc"] = { en = "Draggable button to open/close this menu", es = "Botón arrastrable para abrir/cerrar el menú", zh = "可拖动的悬浮球，点击开关菜单" },
         ["ui.details"] = { en = "Details", es = "Detalles", zh = "详情" },
         ["ui.teammates"] = { en = "Teammates", es = "Compañeros", zh = "队友" },
-        ["esp.toggle"] = { en = "Sea Event ESP", es = "ESP de eventos marinos", zh = "海上事件 ESP" },
-        ["esp.toggle.desc"] = { en = "Show names / HP / distance over all sea events", es = "Muestra nombre / vida / distancia sobre los eventos marinos", zh = "在海上事件上显示 名称/血量/距离" },
-        ["esp.maxrange"] = { en = "ESP Max Range (studs)", es = "Rango máx. del ESP (studs)", zh = "ESP 最大范围（studs）" },
-        ["esp.maxrange.desc"] = { en = "Hide ESP labels beyond this distance (500-20000)", es = "Oculta las etiquetas más allá de esta distancia (500-20000)", zh = "超出此距离隐藏标签（500-20000）" },
-        ["esp.showhp"] = { en = "ESP: Show HP Text", es = "ESP: mostrar texto de vida", zh = "ESP: 显示血量文本" },
-        ["esp.showbar"] = { en = "ESP: Show HP Bar", es = "ESP: mostrar barra de vida", zh = "ESP: 显示血条" },
-        ["esp.percent"] = { en = "ESP: Show HP %", es = "ESP: mostrar % de vida", zh = "ESP: 显示血量百分比" },
-        ["esp.showdist"] = { en = "ESP: Show Distance", es = "ESP: mostrar distancia", zh = "ESP: 显示距离" },
-        ["esp.fade"] = { en = "ESP: Fade With Distance", es = "ESP: desvanecer con distancia", zh = "ESP: 随距离淡出" },
+        ["esp.toggle"] = { en = "Sea Event Panel", es = "Panel de eventos marinos", zh = "海上事件面板" },
+        ["esp.toggle.desc"] = { en = "On-screen draggable list of all sea events", es = "Lista arrastrable de todos los eventos marinos", zh = "可拖动的海上事件列表" },
+        ["esp.maxrange"] = { en = "Panel Max Range (studs)", es = "Rango máx. del panel (studs)", zh = "面板最大范围（studs）" },
+        ["esp.maxrange.desc"] = { en = "Hide entries beyond this distance (500-20000)", es = "Oculta entradas más allá de esta distancia (500-20000)", zh = "超出此距离隐藏条目（500-20000）" },
+        ["esp.showhp"] = { en = "Panel: Show HP Text", es = "Panel: mostrar texto de vida", zh = "面板: 显示血量文本" },
+        ["esp.showbar"] = { en = "Panel: Show HP Bar", es = "Panel: mostrar barra de vida", zh = "面板: 显示血条" },
+        ["esp.percent"] = { en = "Panel: Show HP %", es = "Panel: mostrar % de vida", zh = "面板: 显示血量百分比" },
+        ["esp.showdist"] = { en = "Panel: Show Distance", es = "Panel: mostrar distancia", zh = "面板: 显示距离" },
+        ["esp.fade"] = { en = "Panel: Fade With Distance", es = "Panel: desvanecer con distancia", zh = "面板: 随距离淡出" },
         ["webhook.auto"] = { en = "Auto Send Progress", es = "Enviar progreso automáticamente", zh = "自动发送进度" },
         ["webhook.auto.desc"] = { en = "Send current status to webhook every 60s", es = "Envia el estado al webhook cada 60 segundos", zh = "每 60 秒发送当前状态到 webhook" },
         ["webhook.interval"] = { en = "Send Interval (s)", es = "Intervalo (segundos)", zh = "发送间隔(秒)" },
@@ -269,6 +269,7 @@ if _G.DragonShotsPerBurst == nil then _G.DragonShotsPerBurst = 3 end
 if _G.DragonFireInterval == nil then _G.DragonFireInterval = 0.30 end
 if _G.DragonMultiTarget == nil then _G.DragonMultiTarget = true end
 if _G.DragonMaxTargetsPerBurst == nil then _G.DragonMaxTargetsPerBurst = 10 end
+if _G.DragonMultiRange == nil then _G.DragonMultiRange = 400 end
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
 if _G.AutoFastMode == nil then _G.AutoFastMode = false end
@@ -289,6 +290,9 @@ if _G.RespawnRebuy == nil then _G.RespawnRebuy = false end
 if _G.CruiseReturn == nil then _G.CruiseReturn = true end
 if _G.HuntSelectEvents == nil then _G.HuntSelectEvents = {} end
 if _G.SeaEventESP == nil then _G.SeaEventESP = false end
+if _G.SeaEventESPPanel == nil then
+    _G.SeaEventESPPanel = _G.SeaEventESP or false
+end
 if _G.SeaEventESPMaxRange == nil then _G.SeaEventESPMaxRange = 5000 end
 if _G.SeaEventESPShowHP == nil then _G.SeaEventESPShowHP = true end
 if _G.SeaEventESPShowBar == nil then _G.SeaEventESPShowBar = true end
@@ -568,13 +572,13 @@ local ConfigKeys = {
     "SkillMelee", "SkillSword", "SkillFruit", "SkillGun",
     "FastAttack", "DragonGunFarm", "DragonGunLeviathan",
     "DragonShotsPerBurst", "DragonFireInterval",
-    "DragonMultiTarget", "DragonMaxTargetsPerBurst",
+    "DragonMultiTarget", "DragonMaxTargetsPerBurst", "DragonMultiRange",
     "RemoveFog", "AntiDracoAura", "AutoFastMode", "FPSBoost",
     "AutoBuso", "AutoKen", "AutoV3", "AutoV4",
     "BoatSpeed", "BoatHeight", "PlayerTweenSpeed", "CruiseReturn",
     "AutoCraftScrolls", "CraftQuality", "AutoRandomFruit", "AutoStoreFruits",
     "HuntFightEvents", "SoloSeaFarm", "RespawnRebuy", "HuntSelectEvents",
-    "SeaEventESP", "SeaEventESPMaxRange", "SeaEventESPShowHP",
+    "SeaEventESP", "SeaEventESPPanel", "SeaEventESPMaxRange", "SeaEventESPShowHP",
     "SeaEventESPShowBar", "SeaEventESPShowPercent",
     "SeaEventESPShowDistance", "SeaEventESPFade",
     "WebhookURL", "WebhookUsername", "AutoWebhook", "WebhookInterval",
@@ -2069,7 +2073,6 @@ Sea_MobStillAlive = function(Mob)
     if Humanoid and Humanoid.Health <= 0 then return false end
     if Health and Health:IsA("ValueBase") then return true end
     if Humanoid then return true end
-    -- Deep fallback
     for _, d in ipairs(Mob:GetDescendants()) do
         if d:IsA("Humanoid") then return d.Health > 0 end
         if d.Name == "Health" and d:IsA("ValueBase") then return d.Value > 0 end
@@ -2146,16 +2149,6 @@ local VALID_SEA_ENEMIES = {
     "PirateBasic",
 }
 
--- ============================================================
--- [PIRATE-SHIP FIX] Helpers
--- ------------------------------------------------------------
--- IsPlayerOwnedBoat: only true if the model is in workspace.Boats
--- with a real Owner value. Enemies in workspace.Enemies can never
--- match this, even when a player has captured a boat with the same
--- name (e.g. "PirateBrigade"). This prevents the name-collision
--- bug where capturing one pirate ship caused ALL pirate-ship
--- enemies to be skipped.
--- ============================================================
 local function IsPlayerOwnedBoat(model)
     if not model or not model.Parent then return false end
     if model.Parent.Name ~= "Boats" then return false end
@@ -2163,8 +2156,6 @@ local function IsPlayerOwnedBoat(model)
     return owner ~= nil and owner.Value ~= nil and tostring(owner.Value) ~= ""
 end
 
--- GetMobHP: robust HP reader that finds HP from any source
--- (direct Health, direct Humanoid, nested Humanoid, nested Health)
 local function GetMobHP(model)
     if not model then return nil end
     local hp = model:FindFirstChild("Health")
@@ -2180,8 +2171,6 @@ local function GetMobHP(model)
     return nil
 end
 
--- IsValidSeaEnemyName: accepts known enemy names plus a safety
--- net for pirate ships with slightly different names
 local function IsValidSeaEnemyName(name)
     if not name then return false end
     if table.find(VALID_SEA_ENEMIES, name) then return true end
@@ -2190,8 +2179,6 @@ local function IsValidSeaEnemyName(name)
     return false
 end
 
--- GetShipAimPart: for ships, aim at the actual Engine part
--- (much more accurate than a hardcoded Y=-58)
 local function GetShipAimPart(model)
     local engine = model:FindFirstChild("Engine")
     if engine and engine:IsA("BasePart") then return engine end
@@ -2264,7 +2251,6 @@ local function fireShot(pos, hit)
         shootFunc, idx = nil, {}
         return false
     end
-
     local primary
     if typeof(hit) == "Instance" and hit:IsA("BasePart") then
         primary = hit
@@ -2280,14 +2266,10 @@ local function fireShot(pos, hit)
             or hit:FindFirstChild("HumanoidRootPart")
             or hit:FindFirstChildWhichIsA("BasePart", true)
     end
-    if not primary or not primary.Parent then
-        return false
-    end
-
+    if not primary or not primary.Parent then return false end
     local shots = math.floor(tonumber(_G.DragonShotsPerBurst) or 3)
     if shots < 1 then shots = 1 end
     if shots > 10 then shots = 10 end
-
     local u20 = debug.getupvalue(shootFunc, idx.u20)
     local u21 = debug.getupvalue(shootFunc, idx.u21)
     local u22 = debug.getupvalue(shootFunc, idx.u22)
@@ -2302,7 +2284,6 @@ local function fireShot(pos, hit)
         shootFunc, idx = nil, {}
         return false
     end
-
     local tokens = table.create(shots)
     for i = 1, shots do
         local u79 = u25 * u21
@@ -2316,11 +2297,9 @@ local function fireShot(pos, hit)
             seq   = u26,
         }
     end
-
     debug.setupvalue(shootFunc, idx.u24, u24)
     debug.setupvalue(shootFunc, idx.u25, u25)
     debug.setupvalue(shootFunc, idx.u26, u26)
-
     local anyOk = false
     for i = 1, shots do
         if not primary.Parent then break end
@@ -2342,26 +2321,7 @@ local function fireShot(pos, hit)
             end
         end
     end
-
     return anyOk
-end
-
-local SeaBoatModelsCache, SeaBoatModelsAt
-local function getAllPlayerBoatModels()
-    local now = os.clock()
-    if SeaBoatModelsCache and (now - SeaBoatModelsAt) < 0.5 then return SeaBoatModelsCache end
-    local models = {}
-    local boats = workspace:FindFirstChild("Boats")
-    if boats then
-        for _, v in ipairs(boats:GetChildren()) do
-            local owner = v:FindFirstChild("Owner")
-            if owner and owner.Value and tostring(owner.Value) ~= "" then
-                models[v] = true
-            end
-        end
-    end
-    SeaBoatModelsCache, SeaBoatModelsAt = models, now
-    return models
 end
 
 local function targetOwnerAlive(part)
@@ -2389,7 +2349,6 @@ local function getClosestSeaTarget()
     local myPos = myHRP.Position
     local best, bestModel, bestDist = nil, nil, AttackRange
     local selectionSet = Sea_SelectionSet()
-
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
@@ -2414,11 +2373,9 @@ local function getClosestSeaTarget()
             end
         end
     end
-
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, e in ipairs(enemies:GetChildren()) do
-            -- [PIRATE-SHIP FIX]: use instance-based check, not name-based
             if IsValidSeaEnemyName(e.Name)
                 and not IsPlayerOwnedBoat(e)
                 and Sea_SelectionAllows(e.Name) then
@@ -2452,7 +2409,6 @@ local function getAllSeaTargets()
     local myPos = myHRP.Position
     local selectionSet = Sea_SelectionSet()
     local Range = 2500
-
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
@@ -2477,11 +2433,9 @@ local function getAllSeaTargets()
             end
         end
     end
-
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, e in ipairs(enemies:GetChildren()) do
-            -- [PIRATE-SHIP FIX]: use instance-based check, not name-based
             if IsValidSeaEnemyName(e.Name)
                 and not IsPlayerOwnedBoat(e)
                 and Sea_SelectionAllows(e.Name) then
@@ -2562,23 +2516,19 @@ local function StartDragonAttack()
                     if not IsOnBoat() then Equip_Auto("Dragonstorm") end
                     return
                 end
-
+                if TpActive or Tweening then return end
                 local now = os.clock()
                 local interval = _G.DragonFireInterval or 0.30
                 if now - DragonLastFire < interval then return end
-                DragonLastFire = now
-
-                local targets = getAllSeaTargets()
-                if #targets == 0 then
+                local all = getAllSeaTargets()
+                if #all == 0 then
                     if os.clock() - lastDiag > 2 then
                         lastDiag = os.clock()
                         print("[Dragonstorm] sin objetivo dentro de rango")
                     end
                     return
                 end
-
-                table.sort(targets, function(a, b) return a.dist < b.dist end)
-
+                table.sort(all, function(a, b) return a.dist < b.dist end)
                 local maxTargets
                 if _G.DragonMultiTarget == false then
                     maxTargets = 1
@@ -2587,11 +2537,31 @@ local function StartDragonAttack()
                     if maxTargets < 1 then maxTargets = 1 end
                     if maxTargets > 20 then maxTargets = 20 end
                 end
-                local fireCount = math.min(#targets, maxTargets)
-                for i = 1, fireCount do
-                    local target = targets[i]
-                    if target.part and target.part.Parent then
-                        fireShot(target.part.Position, target.part)
+                local multiRange = tonumber(_G.DragonMultiRange) or 400
+                if multiRange < 50 then multiRange = 50 end
+                if multiRange > 3000 then multiRange = 3000 end
+                local primary = all[1]
+                local picked = {}
+                for i = 1, #all do
+                    if #picked >= maxTargets then break end
+                    local t = all[i]
+                    if t.part and t.part.Parent then
+                        if i == 1 then
+                            table.insert(picked, t)
+                        else
+                            local d = (t.part.Position - primary.part.Position).Magnitude
+                            if d <= multiRange then
+                                table.insert(picked, t)
+                            end
+                        end
+                    end
+                end
+                if #picked == 0 then return end
+                DragonLastFire = now
+                for i = 1, #picked do
+                    local t = picked[i]
+                    if t.part and t.part.Parent then
+                        fireShot(t.part.Position, t.part)
                     end
                 end
             end)
@@ -2626,8 +2596,13 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
             break
         end
         SetStatus("Farmeo marino: " .. Mob.Name .. " (llevo " .. math.floor(os.clock() - start) .. " s)")
-        AttackModel = Mob
-        AttackStandFn = CurrentStand
+        if _G.DragonGunFarm then
+            AttackModel = nil
+            AttackStandFn = nil
+        else
+            AttackModel = Mob
+            AttackStandFn = CurrentStand
+        end
         local _, _, humSE = GetCharacterParts()
         if humSE and (humSE.Sit or humSE.SeatPart ~= nil) then
             SetStatus("Farmeo marino: comprobando salir del asiento")
@@ -2636,7 +2611,7 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
         local Stand = CurrentStand()
         if Stand then
             local _, hrpNow = GetCharacterParts()
-            if hrpNow and (Stand.Position - hrpNow.Position).Magnitude > 10 then
+            if hrpNow and (Stand.Position - hrpNow.Position).Magnitude > 10 and not _G.DragonGunFarm then
                 _tp(CurrentStand, function()
                     return (not _G.AutoLeviathanFull) or (not Mob or not Mob.Parent)
                         or (not Sea_MobStillAlive(Mob)) or (ShouldBreak and ShouldBreak())
@@ -2938,18 +2913,14 @@ end
 end
 
 -- ============================================================
--- [ESP] Sea Event ESP with enhanced HP + high-water-mark fix
+-- [SEA EVENT PANEL] Draggable on-screen list (replaces ESP)
 -- ============================================================
 do
-    local ESP = {}
+    local PanelAPI = {}
     local Active = setmetatable({}, { __mode = "k" })
-    -- High-water-mark cache per model. The FIRST time we see a full-HP
-    -- value, we remember it forever. This prevents Sea Beast from ever
-    -- showing current/current again (which happened when the max HP
-    -- couldn't be discovered and the code fell back to the current HP).
     local ModelMaxHP = setmetatable({}, { __mode = "k" })
-    local RootGui = nil
-    local ESPCurrentMax = _G.SeaEventESPMaxRange or 5000
+    local PanelFrame, ScrollingFrame, TitleLabel, RootGui
+    local UPDATE_INTERVAL = 0.20
 
     local COLORS = {
         LeviathanSegment = Color3.fromRGB(190, 70, 255),
@@ -2964,51 +2935,28 @@ do
         PirateGrandBrigade = Color3.fromRGB(220, 40, 40),
         PirateBasic = Color3.fromRGB(200, 120, 120),
     }
-    local DEFAULT_COLOR = Color3.fromRGB(255, 255, 255)
-    local function GetColor(name) return COLORS[name] or DEFAULT_COLOR end
+    local function GetColor(n) return COLORS[n] or Color3.fromRGB(255, 255, 255) end
 
-    local function EnsureRootGui()
-        if RootGui and RootGui.Parent then return RootGui end
-        local created = false
-        local parent = nil
-        if gethui then
-            local ok, hui = pcall(gethui)
-            if ok and hui then parent = hui end
-        end
-        if not parent then
-            pcall(function() parent = game:GetService("CoreGui") end)
-        end
-        if parent then
-            local ok = pcall(function()
-                RootGui = Instance.new("ScreenGui")
-                RootGui.Name = "RJR_SeaEventESP"
-                RootGui.ResetOnSpawn = false
-                RootGui.IgnoreGuiInset = true
-                RootGui.DisplayOrder = 998
-                RootGui.Parent = parent
-                created = true
-            end)
-            if not ok then created = false end
-        end
-        if not created or not RootGui or not RootGui.Parent then
-            RootGui = Instance.new("ScreenGui")
-            RootGui.Name = "RJR_SeaEventESP"
-            RootGui.ResetOnSpawn = false
-            RootGui.IgnoreGuiInset = true
-            RootGui.DisplayOrder = 998
-            RootGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-        end
-        return RootGui
-    end
-
+    local DISPLAY_NAMES = {
+        ["SeaBeast1"] = "Sea Beast",
+        ["FishBoat"] = "Ghost Ship",
+        ["PirateBrigade"] = "Pirate Brigade Ship",
+        ["PirateGrandBrigade"] = "Pirate Grand Brigade Ship",
+        ["PirateBasic"] = "Pirate Basic Ship",
+        ["Leviathan Segment"] = "Leviathan",
+    }
+    local VALID_NAMES = {
+        ["Leviathan Segment"] = true, ["Leviathan"] = true, ["SeaBeast1"] = true,
+        ["Terrorshark"] = true, ["Shark"] = true, ["Piranha"] = true,
+        ["Fish Crew Member"] = true, ["FishBoat"] = true,
+        ["PirateBrigade"] = true, ["PirateGrandBrigade"] = true, ["PirateBasic"] = true,
+    }
     local MAX_HP_NAMES = {
         "MaxHealth", "MaxHp", "MaxHP", "HealthMax",
         "TotalHealth", "TotalHp", "TotalHP", "MaxHitpoints",
         "MaxHPValue", "HealthMaximum", "HPMax", "MaxH",
     }
-    local MAX_HP_ATTRS = {
-        "MaxHealth", "MaxHp", "MaxHP", "HealthMax", "TotalHealth", "MaxH",
-    }
+    local MAX_HP_ATTRS = {"MaxHealth", "MaxHp", "MaxHP", "HealthMax", "TotalHealth", "MaxH"}
 
     local function ReadNum(v)
         if type(v) == "number" then return v end
@@ -3018,20 +2966,16 @@ do
         end
         return nil
     end
-
-    local function FindFirstDeep(root, name, classFilter)
+    local function FindDeep(root, name, cls)
         if not root then return nil end
-        local direct = root:FindFirstChild(name)
-        if direct and (not classFilter or direct:IsA(classFilter)) then return direct end
-        for _, d in ipairs(root:GetDescendants()) do
-            if d.Name == name and (not classFilter or d:IsA(classFilter)) then
-                return d
-            end
+        local d = root:FindFirstChild(name)
+        if d and (not cls or d:IsA(cls)) then return d end
+        for _, x in ipairs(root:GetDescendants()) do
+            if x.Name == name and (not cls or x:IsA(cls)) then return x end
         end
         return nil
     end
-
-    local function FindFirstHumanoidDeep(root)
+    local function FindHum(root)
         if not root then return nil end
         local h = root:FindFirstChildOfClass("Humanoid")
         if h then return h end
@@ -3042,23 +2986,20 @@ do
     end
 
     local function GetHealthOf(model)
-        -- 1. Humanoid is most authoritative
-        local hum = FindFirstHumanoidDeep(model)
+        local hum = FindHum(model)
         if hum then
             local h = tonumber(hum.Health)
             local mh = tonumber(hum.MaxHealth)
-            if h ~= nil and mh ~= nil and mh > 0 then
-                ModelMaxHP[model] = mh
-                return h, mh
+            if h and mh and mh > 0 then
+                if not ModelMaxHP[model] or mh > ModelMaxHP[model] then
+                    ModelMaxHP[model] = mh
+                end
+                return h, ModelMaxHP[model]
             end
         end
-        -- 2. Health ValueBase (direct or nested)
         local hp = model:FindFirstChild("Health")
-        if not (hp and hp:IsA("ValueBase")) then
-            hp = FindFirstDeep(model, "Health", "ValueBase")
-        end
+        if not (hp and hp:IsA("ValueBase")) then hp = FindDeep(model, "Health", "ValueBase") end
         if not hp then
-            -- 3. Attribute fallback
             for _, a in ipairs({"Health", "Hp", "HP"}) do
                 local v = model:GetAttribute(a)
                 if type(v) == "number" and v >= 0 then
@@ -3068,8 +3009,8 @@ do
                             local m = model:GetAttribute(mn)
                             if type(m) == "number" and m > 0 then mv = m break end
                         end
+                        if mv then ModelMaxHP[model] = mv end
                     end
-                    if mv then ModelMaxHP[model] = mv end
                     return v, mv or v
                 end
             end
@@ -3077,13 +3018,10 @@ do
         end
         local cur = ReadNum(hp)
         if cur == nil then return nil, nil end
-        -- 4. Search for max HP
         local maxv = nil
-        local parent = hp.Parent
-        if parent then
+        if hp.Parent then
             for _, name in ipairs(MAX_HP_NAMES) do
-                local node = parent:FindFirstChild(name)
-                local n = ReadNum(node)
+                local n = ReadNum(hp.Parent:FindFirstChild(name))
                 if n and n > 0 then maxv = n break end
             end
         end
@@ -3112,20 +3050,13 @@ do
                 if type(v) == "number" and v > 0 then maxv = v break end
             end
         end
-        -- 5. HIGH-WATER-MARK: update cache if new max is higher OR if no cache
         local cached = ModelMaxHP[model]
         if maxv and maxv > 0 then
-            if not cached or maxv > cached then
-                ModelMaxHP[model] = maxv
-            end
+            if not cached or maxv > cached then ModelMaxHP[model] = maxv end
             maxv = ModelMaxHP[model]
         elseif cached then
             maxv = cached
         else
-            -- Only set if cur > 0 (avoid 0/0)
-            if cur > 0 then
-                ModelMaxHP[model] = cur
-            end
             maxv = cur
         end
         return cur, maxv
@@ -3138,292 +3069,375 @@ do
         return string.format("%.1f", n)
     end
 
-    local function FindAnchorPart(model)
-        return model.PrimaryPart
-            or model:FindFirstChild("HumanoidRootPart")
-            or model:FindFirstChild("RootPart")
-            or model:FindFirstChild("Head")
-            or model:FindFirstChildWhichIsA("BasePart", true)
+    local function IsMobile()
+        local ui = game:GetService("UserInputService")
+        return ui.TouchEnabled and not ui.KeyboardEnabled
     end
 
-    local function GetTopOffset(model, anchor)
-        if not model or not anchor or not anchor.Parent then return 6 end
-        local ok, cf, size = pcall(function()
-            return model:GetBoundingBox()
+    local function EnsureRoot()
+        if RootGui and RootGui.Parent then return RootGui end
+        local parent
+        if gethui then
+            local ok, hui = pcall(gethui)
+            if ok and hui then parent = hui end
+        end
+        if not parent then pcall(function() parent = game:GetService("CoreGui") end) end
+        local ok = false
+        if parent then
+            ok = pcall(function()
+                RootGui = Instance.new("ScreenGui")
+                RootGui.Name = "RJR_SeaEventPanel"
+                RootGui.ResetOnSpawn = false
+                RootGui.IgnoreGuiInset = true
+                RootGui.DisplayOrder = 997
+                RootGui.Parent = parent
+            end)
+        end
+        if not ok or not RootGui or not RootGui.Parent then
+            RootGui = Instance.new("ScreenGui")
+            RootGui.Name = "RJR_SeaEventPanel"
+            RootGui.ResetOnSpawn = false
+            RootGui.IgnoreGuiInset = true
+            RootGui.DisplayOrder = 997
+            RootGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        end
+        return RootGui
+    end
+
+    local function BuildPanel()
+        if PanelFrame and PanelFrame.Parent then return end
+        local root = EnsureRoot()
+        local mobile = IsMobile()
+        local baseW = mobile and 260 or 300
+        local baseH = mobile and 240 or 280
+
+        PanelFrame = Instance.new("Frame")
+        PanelFrame.Name = "SeaEventPanel"
+        PanelFrame.Size = UDim2.fromOffset(baseW, baseH)
+        PanelFrame.Position = UDim2.fromOffset(20, 120)
+        PanelFrame.BackgroundColor3 = Color3.fromRGB(20, 18, 28)
+        PanelFrame.BackgroundTransparency = 0.08
+        PanelFrame.BorderSizePixel = 0
+        PanelFrame.Active = true
+        PanelFrame.Parent = root
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = PanelFrame
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(150, 60, 255)
+        stroke.Thickness = 1.5
+        stroke.Transparency = 0.2
+        stroke.Parent = PanelFrame
+
+        local titleBar = Instance.new("Frame")
+        titleBar.Name = "TitleBar"
+        titleBar.Size = UDim2.new(1, 0, 0, mobile and 30 or 28)
+        titleBar.BackgroundColor3 = Color3.fromRGB(150, 60, 255)
+        titleBar.BackgroundTransparency = 0.85
+        titleBar.BorderSizePixel = 0
+        titleBar.Parent = PanelFrame
+        local tc = Instance.new("UICorner")
+        tc.CornerRadius = UDim.new(0, 10)
+        tc.Parent = titleBar
+
+        TitleLabel = Instance.new("TextLabel")
+        TitleLabel.BackgroundTransparency = 1
+        TitleLabel.Size = UDim2.new(1, -72, 1, 0)
+        TitleLabel.Position = UDim2.fromOffset(10, 0)
+        TitleLabel.Font = Enum.Font.GothamBold
+        TitleLabel.TextSize = 13
+        TitleLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+        TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        TitleLabel.Text = "Sea Events (0)"
+        TitleLabel.Parent = titleBar
+
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.fromOffset(mobile and 28 or 22, mobile and 28 or 22)
+        closeBtn.Position = UDim2.new(1, mobile and -32 or -26, 0.5, mobile and -14 or -11)
+        closeBtn.BackgroundColor3 = Color3.fromRGB(220, 70, 70)
+        closeBtn.BackgroundTransparency = 0.3
+        closeBtn.Text = "X"
+        closeBtn.Font = Enum.Font.GothamBold
+        closeBtn.TextSize = 12
+        closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        closeBtn.AutoButtonColor = false
+        closeBtn.BorderSizePixel = 0
+        closeBtn.Parent = titleBar
+        local cc1 = Instance.new("UICorner")
+        cc1.CornerRadius = UDim.new(1, 0)
+        cc1.Parent = closeBtn
+        closeBtn.MouseButton1Click:Connect(function()
+            _G.SeaEventESPPanel = false
+            SaveConfig()
+            PanelAPI.Hide()
         end)
-        if not ok or not cf or not size then return 6 end
-        local topY = cf.Position.Y + size.Y * 0.5
-        local off = topY - anchor.Position.Y + 6
-        if off < 6 then off = 6 end
-        if off > 800 then off = 800 end
-        return off
+
+        local collapseBtn = Instance.new("TextButton")
+        collapseBtn.Size = UDim2.fromOffset(mobile and 28 or 22, mobile and 28 or 22)
+        collapseBtn.Position = UDim2.new(1, mobile and -64 or -52, 0.5, mobile and -14 or -11)
+        collapseBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+        collapseBtn.BackgroundTransparency = 0.3
+        collapseBtn.Text = "_"
+        collapseBtn.Font = Enum.Font.GothamBold
+        collapseBtn.TextSize = 12
+        collapseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        collapseBtn.AutoButtonColor = false
+        collapseBtn.BorderSizePixel = 0
+        collapseBtn.Parent = titleBar
+        local cc2 = Instance.new("UICorner")
+        cc2.CornerRadius = UDim.new(1, 0)
+        cc2.Parent = collapseBtn
+
+        ScrollingFrame = Instance.new("ScrollingFrame")
+        ScrollingFrame.Name = "Rows"
+        ScrollingFrame.Size = UDim2.new(1, -8, 1, -(mobile and 34 or 32))
+        ScrollingFrame.Position = UDim2.fromOffset(4, mobile and 32 or 30)
+        ScrollingFrame.BackgroundTransparency = 1
+        ScrollingFrame.BorderSizePixel = 0
+        ScrollingFrame.ScrollBarThickness = 6
+        ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(150, 60, 255)
+        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+        ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        ScrollingFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+        ScrollingFrame.Parent = PanelFrame
+        local pad = Instance.new("UIPadding")
+        pad.PaddingTop = UDim.new(0, 2)
+        pad.PaddingBottom = UDim.new(0, 2)
+        pad.PaddingLeft = UDim.new(0, 2)
+        pad.PaddingRight = UDim.new(0, 2)
+        pad.Parent = ScrollingFrame
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 3)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = ScrollingFrame
+
+        local dragging, dragStart, startPos = false, nil, nil
+        titleBar.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1
+                or i.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = Vector2.new(i.Position.X, i.Position.Y)
+                startPos = PanelFrame.Position
+            end
+        end)
+        titleBar.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1
+                or i.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+        local uis = game:GetService("UserInputService")
+        uis.InputChanged:Connect(function(i)
+            if not dragging then return end
+            if i.UserInputType == Enum.UserInputType.MouseMovement
+                or i.UserInputType == Enum.UserInputType.Touch then
+                local now = Vector2.new(i.Position.X, i.Position.Y)
+                local delta = now - dragStart
+                local screen = RootGui.AbsoluteSize
+                if screen.X <= 0 then
+                    screen = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+                end
+                local size = PanelFrame.AbsoluteSize
+                local bx = startPos.X.Scale * screen.X + startPos.X.Offset
+                local by = startPos.Y.Scale * screen.Y + startPos.Y.Offset
+                local nx = math.clamp(bx + delta.X, -size.X + math.min(40, size.X * 0.5), screen.X - math.min(40, size.X * 0.5))
+                local ny = math.clamp(by + delta.Y, 0, screen.Y - math.min(40, size.Y * 0.5))
+                PanelFrame.Position = UDim2.fromOffset(math.floor(nx), math.floor(ny))
+            end
+        end)
+
+        local collapsed = false
+        local expandedH = baseH
+        collapseBtn.MouseButton1Click:Connect(function()
+            collapsed = not collapsed
+            ScrollingFrame.Visible = not collapsed
+            PanelFrame.Size = UDim2.fromOffset(baseW, collapsed and (mobile and 30 or 28) or expandedH)
+        end)
     end
 
-    local function AttachESP(model, anchor)
-        if Active[model] then return end
-        if not anchor or not anchor.Parent then return end
-        local color = GetColor(model.Name)
-        local root = EnsureRootGui()
+    local function CreateRow(model, order)
+        local mobile = IsMobile()
+        local rowH = mobile and 42 or 38
+        local row = Instance.new("Frame")
+        row.Name = "Row_" .. tostring(order)
+        row.Size = UDim2.new(1, -2, 0, rowH)
+        row.BackgroundColor3 = Color3.fromRGB(30, 28, 40)
+        row.BackgroundTransparency = 0.3
+        row.BorderSizePixel = 0
+        row.LayoutOrder = order
+        row.Parent = ScrollingFrame
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 6)
+        c.Parent = row
 
-        local gui = Instance.new("BillboardGui")
-        gui.Name = "RJR_ESP_" .. tostring(math.random(1, 1e9))
-        gui.Adornee = anchor
-        gui.Size = UDim2.new(0, 260, 0, 70)
-        gui.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
-        gui.AlwaysOnTop = true
-        gui.LightInfluence = 0
-        gui.MaxDistance = ESPCurrentMax
-        gui.ClipsDescendants = false
-        gui.Parent = root
+        local nameLbl = Instance.new("TextLabel")
+        nameLbl.BackgroundTransparency = 1
+        nameLbl.Size = UDim2.new(1, -70, 0, 16)
+        nameLbl.Position = UDim2.fromOffset(6, 2)
+        nameLbl.Font = Enum.Font.GothamBold
+        nameLbl.TextSize = 12
+        nameLbl.TextColor3 = GetColor(model.Name)
+        nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+        nameLbl.Text = DISPLAY_NAMES[model.Name] or model.Name
+        nameLbl.Parent = row
 
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Name = "NameLabel"
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Size = UDim2.new(1, 0, 0, 22)
-        nameLabel.Position = UDim2.new(0, 0, 0, 0)
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextSize = 15
-        nameLabel.TextColor3 = color
-        nameLabel.TextStrokeTransparency = 0
-        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        nameLabel.TextXAlignment = Enum.TextXAlignment.Center
-        nameLabel.TextYAlignment = Enum.TextYAlignment.Bottom
-        nameLabel.TextWrapped = true
-        nameLabel.RichText = false
-        nameLabel.Text = model.Name
-        nameLabel.Parent = gui
+        local distLbl = Instance.new("TextLabel")
+        distLbl.BackgroundTransparency = 1
+        distLbl.Size = UDim2.fromOffset(60, 16)
+        distLbl.Position = UDim2.new(1, -66, 0, 2)
+        distLbl.Font = Enum.Font.Gotham
+        distLbl.TextSize = 11
+        distLbl.TextColor3 = Color3.fromRGB(200, 200, 210)
+        distLbl.TextXAlignment = Enum.TextXAlignment.Right
+        distLbl.Text = ""
+        distLbl.Parent = row
 
-        local hpLabel = Instance.new("TextLabel")
-        hpLabel.Name = "HpLabel"
-        hpLabel.BackgroundTransparency = 1
-        hpLabel.Size = UDim2.new(1, 0, 0, 18)
-        hpLabel.Position = UDim2.new(0, 0, 0, 22)
-        hpLabel.Font = Enum.Font.Gotham
-        hpLabel.TextSize = 14
-        hpLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
-        hpLabel.TextStrokeTransparency = 0
-        hpLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        hpLabel.TextXAlignment = Enum.TextXAlignment.Center
-        hpLabel.Text = ""
-        hpLabel.Parent = gui
+        local hpLbl = Instance.new("TextLabel")
+        hpLbl.BackgroundTransparency = 1
+        hpLbl.Size = UDim2.new(1, -12, 0, 12)
+        hpLbl.Position = UDim2.fromOffset(6, 17)
+        hpLbl.Font = Enum.Font.Gotham
+        hpLbl.TextSize = 10
+        hpLbl.TextColor3 = Color3.fromRGB(220, 220, 230)
+        hpLbl.TextXAlignment = Enum.TextXAlignment.Left
+        hpLbl.Text = ""
+        hpLbl.Parent = row
 
         local barBg = Instance.new("Frame")
-        barBg.Name = "BarBg"
-        barBg.Size = UDim2.new(0.9, 0, 0, 6)
-        barBg.Position = UDim2.new(0.05, 0, 0, 42)
-        barBg.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+        barBg.Size = UDim2.new(1, -12, 0, 5)
+        barBg.Position = UDim2.new(0, 6, 1, -8)
+        barBg.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
         barBg.BorderSizePixel = 0
-        barBg.Parent = gui
-        local barBgCorner = Instance.new("UICorner")
-        barBgCorner.CornerRadius = UDim.new(0, 3)
-        barBgCorner.Parent = barBg
-
+        barBg.Parent = row
+        local bc = Instance.new("UICorner")
+        bc.CornerRadius = UDim.new(0, 2)
+        bc.Parent = barBg
         local barFill = Instance.new("Frame")
-        barFill.Name = "BarFill"
         barFill.Size = UDim2.new(1, 0, 1, 0)
         barFill.BackgroundColor3 = Color3.fromRGB(80, 220, 120)
         barFill.BorderSizePixel = 0
         barFill.Parent = barBg
-        local barFillCorner = Instance.new("UICorner")
-        barFillCorner.CornerRadius = UDim.new(0, 3)
-        barFillCorner.Parent = barFill
+        local fc = Instance.new("UICorner")
+        fc.CornerRadius = UDim.new(0, 2)
+        fc.Parent = barFill
 
-        local distLabel = Instance.new("TextLabel")
-        distLabel.Name = "DistLabel"
-        distLabel.BackgroundTransparency = 1
-        distLabel.Size = UDim2.new(1, 0, 0, 16)
-        distLabel.Position = UDim2.new(0, 0, 0, 52)
-        distLabel.Font = Enum.Font.Gotham
-        distLabel.TextSize = 12
-        distLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-        distLabel.TextStrokeTransparency = 0
-        distLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        distLabel.TextXAlignment = Enum.TextXAlignment.Center
-        distLabel.Text = ""
-        distLabel.Parent = gui
-
-        Active[model] = {
-            gui = gui,
-            nameLabel = nameLabel,
-            hpLabel = hpLabel,
-            barBg = barBg,
-            barFill = barFill,
-            distLabel = distLabel,
-            anchor = anchor,
-            color = color,
+        return {
+            frame = row, nameLabel = nameLbl, hpLabel = hpLbl,
+            distLabel = distLbl, barFill = barFill, barBg = barBg,
         }
     end
 
-    local function DetachESP(model)
-        local data = Active[model]
-        if not data then return end
-        pcall(function() data.gui:Destroy() end)
-        Active[model] = nil
-    end
-
-    local VALID_NAMES = {
-        ["Leviathan Segment"] = true,
-        ["Leviathan"] = true,
-        ["SeaBeast1"] = true,
-        ["Terrorshark"] = true,
-        ["Shark"] = true,
-        ["Piranha"] = true,
-        ["Fish Crew Member"] = true,
-        ["FishBoat"] = true,
-        ["PirateBrigade"] = true,
-        ["PirateGrandBrigade"] = true,
-        ["PirateBasic"] = true,
-    }
-
-    local DISPLAY_NAMES = {
-        ["SeaBeast1"] = "Sea Beast",
-        ["FishBoat"] = "Ghost Ship",
-        ["PirateBrigade"] = "Pirate Brigade Ship",
-        ["PirateGrandBrigade"] = "Pirate Grand Brigade Ship",
-        ["PirateBasic"] = "Pirate Basic Ship",
-        ["Leviathan Segment"] = "Leviathan",
-    }
-
-    local function ProcessModel(model, seen, myPos)
-        if not model or not model.Parent then return end
-        if not VALID_NAMES[model.Name] then return end
-        local anchor = FindAnchorPart(model)
-        if not anchor then return end
-
-        local dist = myPos and (anchor.Position - myPos).Magnitude or 0
-        if dist > ESPCurrentMax then
-            DetachESP(model)
-            return
-        end
-        seen[model] = true
-
-        if not Active[model] then AttachESP(model, anchor) end
-        local data = Active[model]
-        if not data then return end
-        if data.anchor ~= anchor or not data.anchor.Parent then
-            data.anchor = anchor
-            data.gui.Adornee = anchor
-        end
-        data.gui.MaxDistance = ESPCurrentMax
-
-        local topOff = GetTopOffset(model, data.anchor)
-        data.gui.StudsOffsetWorldSpace = Vector3.new(0, topOff, 0)
-
-        data.nameLabel.Text = DISPLAY_NAMES[model.Name] or model.Name
-
-        if _G.SeaEventESPShowHP then
-            local hp, maxHp = GetHealthOf(model)
-            if hp ~= nil then
-                if _G.SeaEventESPShowPercent and maxHp and maxHp > 0 then
-                    local pct = math.floor((hp / maxHp) * 100 + 0.5)
-                    data.hpLabel.Text = string.format("HP: %s/%s (%d%%)",
-                        FormatHP(hp), FormatHP(maxHp), pct)
-                else
-                    data.hpLabel.Text = "HP: " .. FormatHP(hp) .. "/" .. FormatHP(maxHp or hp)
-                end
-            else
-                data.hpLabel.Text = ""
-            end
-        else
-            data.hpLabel.Text = ""
-        end
-
-        if _G.SeaEventESPShowBar then
-            local hp, maxHp = GetHealthOf(model)
-            data.barBg.Visible = true
-            if hp and maxHp and maxHp > 0 then
-                local ratio = math.clamp(hp / maxHp, 0, 1)
-                data.barFill.Size = UDim2.new(ratio, 0, 1, 0)
-                local r, g, b
-                if ratio > 0.5 then
-                    r = math.floor(255 * (1 - (ratio - 0.5) * 2))
-                    g = 220
-                    b = 80
-                else
-                    r = 220
-                    g = math.floor(80 + 140 * (ratio * 2))
-                    b = 60
-                end
-                data.barFill.BackgroundColor3 = Color3.fromRGB(r, g, b)
-            else
-                data.barFill.Size = UDim2.new(0, 0, 1, 0)
-            end
-        else
-            data.barBg.Visible = false
-        end
-
-        if _G.SeaEventESPShowDistance then
-            data.distLabel.Text = string.format("%dm", math.floor(dist))
-        else
-            data.distLabel.Text = ""
-        end
-
-        if _G.SeaEventESPFade then
-            local fadeStart = ESPCurrentMax * 0.7
-            if dist > fadeStart then
-                local t = (dist - fadeStart) / math.max(1, ESPCurrentMax - fadeStart)
-                local tr = math.clamp(t * 0.8, 0, 0.8)
-                data.nameLabel.TextTransparency = tr
-                data.hpLabel.TextTransparency = tr
-                data.distLabel.TextTransparency = tr
-                data.barBg.BackgroundTransparency = tr
-            else
-                data.nameLabel.TextTransparency = 0
-                data.hpLabel.TextTransparency = 0
-                data.distLabel.TextTransparency = 0
-                data.barBg.BackgroundTransparency = 0
-            end
-        else
-            data.nameLabel.TextTransparency = 0
-            data.hpLabel.TextTransparency = 0
-            data.distLabel.TextTransparency = 0
-            data.barBg.BackgroundTransparency = 0
-        end
-    end
-
-    local function UpdateESP()
-        if not _G.SeaEventESP then
-            for model in pairs(Active) do
-                DetachESP(model)
+    local function Update()
+        if not _G.SeaEventESPPanel then
+            if PanelFrame then pcall(function() PanelFrame:Destroy() end) end
+            PanelFrame, ScrollingFrame, TitleLabel = nil, nil, nil
+            for model, data in pairs(Active) do
+                pcall(function() data.frame:Destroy() end)
+                Active[model] = nil
             end
             return
         end
-        ESPCurrentMax = tonumber(_G.SeaEventESPMaxRange) or 5000
-        local _, myHRP = GetCharacterParts()
-        local myPos = myHRP and myHRP.Position
-        local seen = {}
+        BuildPanel()
+        if not ScrollingFrame then return end
+
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        local myPos = hrp.Position
+        local range = tonumber(_G.SeaEventESPMaxRange) or 5000
+
+        local found = {}
+        local function process(model)
+            if not model or not model.Parent then return end
+            if not VALID_NAMES[model.Name] then return end
+            local part = model.PrimaryPart
+                or model:FindFirstChild("HumanoidRootPart")
+                or model:FindFirstChild("RootPart")
+                or model:FindFirstChild("Head")
+                or model:FindFirstChildWhichIsA("BasePart", true)
+            if not part then return end
+            local hp, maxHp = GetHealthOf(model)
+            if hp ~= nil and hp <= 0 then return end
+            local d = (part.Position - myPos).Magnitude
+            if d > range then return end
+            table.insert(found, {model = model, dist = d})
+        end
         local SeaBeasts = workspace:FindFirstChild("SeaBeasts")
+        if SeaBeasts then for _, m in ipairs(SeaBeasts:GetChildren()) do process(m) end end
         local Enemies = workspace:FindFirstChild("Enemies")
-        if SeaBeasts then
-            for _, model in ipairs(SeaBeasts:GetChildren()) do
-                ProcessModel(model, seen, myPos)
+        if Enemies then for _, m in ipairs(Enemies:GetChildren()) do process(m) end end
+
+        table.sort(found, function(a, b) return a.dist < b.dist end)
+
+        local seen = {}
+        for i, entry in ipairs(found) do
+            local m = entry.model
+            seen[m] = true
+            local data = Active[m]
+            if not data then
+                data = CreateRow(m, i)
+                Active[m] = data
             end
+            data.frame.LayoutOrder = i
+            pcall(function()
+                local hp, maxHp = GetHealthOf(m)
+                data.nameLabel.Text = DISPLAY_NAMES[m.Name] or m.Name
+                data.nameLabel.TextColor3 = GetColor(m.Name)
+                if hp ~= nil then
+                    local pct = (maxHp and maxHp > 0) and math.floor(hp / maxHp * 100 + 0.5) or 0
+                    data.hpLabel.Text = string.format("HP %s / %s (%d%%)", FormatHP(hp), FormatHP(maxHp or hp), pct)
+                    if maxHp and maxHp > 0 then
+                        local ratio = math.clamp(hp / maxHp, 0, 1)
+                        data.barFill.Size = UDim2.new(ratio, 0, 1, 0)
+                        local r, g, b
+                        if ratio > 0.5 then
+                            r = math.floor(255 * (1 - (ratio - 0.5) * 2)); g = 220; b = 80
+                        else
+                            r = 220; g = math.floor(80 + 140 * (ratio * 2)); b = 60
+                        end
+                        data.barFill.BackgroundColor3 = Color3.fromRGB(r, g, b)
+                    else
+                        data.barFill.Size = UDim2.new(0, 0, 1, 0)
+                    end
+                else
+                    data.hpLabel.Text = "HP unknown"
+                    data.barFill.Size = UDim2.new(0, 0, 1, 0)
+                end
+                data.distLabel.Text = string.format("%dm", math.floor(entry.dist))
+            end)
         end
-        if Enemies then
-            for _, model in ipairs(Enemies:GetChildren()) do
-                ProcessModel(model, seen, myPos)
-            end
-        end
-        for model in pairs(Active) do
+        for model, data in pairs(Active) do
             if not seen[model] or not model.Parent then
-                DetachESP(model)
+                pcall(function() data.frame:Destroy() end)
+                Active[model] = nil
             end
+        end
+        if TitleLabel then
+            TitleLabel.Text = string.format("Sea Events (%d)", #found)
         end
     end
 
     task.spawn(function()
         while true do
-            task.wait(0.15)
-            pcall(UpdateESP)
+            task.wait(UPDATE_INTERVAL)
+            pcall(Update)
         end
     end)
-    ESP.Update = UpdateESP
-    ESP.Detach = DetachESP
-    ESP.GetHealthOf = GetHealthOf
-    _G.RJR_SeaEventESP = ESP
+
+    PanelAPI.Update = Update
+    PanelAPI.Hide = function()
+        if PanelFrame then pcall(function() PanelFrame:Destroy() end) end
+        PanelFrame, ScrollingFrame, TitleLabel = nil, nil, nil
+    end
+    PanelAPI.Show = function()
+        _G.SeaEventESPPanel = true
+        Update()
+    end
+    _G.RJR_SeaEventPanel = PanelAPI
 end
 -- ============================================================
--- End Sea Event ESP
+-- End Sea Event Panel
 -- ============================================================
 
 _G.RJR_BoatDeadArmed = true
@@ -5352,7 +5366,6 @@ task.spawn(function()
         SailNoclipOn = on
     end
 end)
--- [CAMERA LOCK REMOVED] Silent aim redirects projectiles but does not lock the camera.
 local RJR_SilentAimTarget = (function()
     local TargetPos, At = nil, 0
     local function RootOf(model)
@@ -6162,6 +6175,21 @@ do
             end
         end,
     })
+    CombatSection:AddInput("dragon.multirange", {
+        Title = "Multi-Target Cluster Range (studs)",
+        Description = "Only fire at other targets within this distance of the closest target (50–3000)",
+        Default = tostring(_G.DragonMultiRange or 400),
+        Placeholder = "400",
+        Numeric = true,
+        Finished = false,
+        Callback = function(Value)
+            local n = tonumber(Value)
+            if n and n >= 50 and n <= 3000 then
+                _G.DragonMultiRange = math.floor(n)
+                SaveConfig()
+            end
+        end,
+    })
     CombatSection:AddInput("dragon.shots", {
         Title = T("dragon.shots"),
         Description = T("dragon.shots.desc"),
@@ -6300,15 +6328,15 @@ do
     })
     local ESPSection = Tabs.Perf:AddSection(T("sec.esp"))
     SectionKeys[#SectionKeys + 1] = { element = ESPSection, key = "sec.esp" }
-    ESPSection:AddToggle("esp.toggle", {
+    ESPSection:AddToggle("esp.panel", {
         Title = T("esp.toggle"),
         Description = T("esp.toggle.desc"),
-        Default = _G.SeaEventESP,
+        Default = _G.SeaEventESPPanel,
         Callback = function(State)
-            _G.SeaEventESP = State and true or false
+            _G.SeaEventESPPanel = State and true or false
             SaveConfig()
-            if not _G.SeaEventESP and _G.RJR_SeaEventESP then
-                pcall(_G.RJR_SeaEventESP.Detach)
+            if not State and _G.RJR_SeaEventPanel then
+                pcall(_G.RJR_SeaEventPanel.Hide)
             end
         end,
     })
@@ -7029,7 +7057,9 @@ task.defer(function()
     if _G.AntiDracoAura then pcall(PerformanceAPI.ApplyAntiDracoAura) end
     if _G.AutoFastMode then pcall(PerformanceAPI.ApplyAutoFastMode) end
     if _G.FPSBoost then pcall(PerformanceAPI.ApplyFPSBoost) end
-    if _G.SeaEventESP and _G.RJR_SeaEventESP then pcall(_G.RJR_SeaEventESP.Update) end
+    if _G.SeaEventESPPanel and _G.RJR_SeaEventPanel then
+        pcall(_G.RJR_SeaEventPanel.Update)
+    end
 end)
 
 SendNotify(T("notify.title"), T("notify.ready"))
