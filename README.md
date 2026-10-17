@@ -23,13 +23,23 @@ T, ModeDisplay = (function()
     local LANGUAGE_LABELS = { "English", "Español", "中文" }
     local LANG_CODE = { ["English"] = "en", ["Español"] = "es", ["中文"] = "zh" }
     local function NormalizeLanguage(value)
-        if value == nil then return nil end
+        if value == nil then
+            return nil
+        end
         local v = tostring(value)
-        if LANG_CODE[v] then return v end
+        if LANG_CODE[v] then
+            return v
+        end
         local low = v:lower()
-        if low == "chinese" or low == "zh" or low == "cn" or low == "china" then return "中文" end
-        if low == "spanish" or low == "es" or low == "español" then return "Español" end
-        if low == "english" or low == "en" then return "English" end
+        if low == "chinese" or low == "zh" or low == "cn" or low == "china" then
+            return "中文"
+        end
+        if low == "spanish" or low == "es" or low == "español" then
+            return "Español"
+        end
+        if low == "english" or low == "en" then
+            return "English"
+        end
         return nil
     end
     local function LanguageCode()
@@ -91,14 +101,10 @@ T, ModeDisplay = (function()
         ["dragon.farm.desc"] = { en = "Use Dragonstorm for sea events (not Leviathan)", es = "Usa Dragonstorm en los eventos marinos (no en el Leviathan)", zh = "海上事件用 Dragonstorm 打（利维坦不用）" },
         ["dragon.leviathan"] = { en = "Dragonstorm vs Leviathan", es = "Dragonstorm contra el Leviathan", zh = "龙炮打利维坦" },
         ["dragon.leviathan.desc"] = { en = "Shoot Leviathan with Dragonstorm", es = "Dispara al Leviathan con Dragonstorm (funciona sin el modo de farmeo)", zh = "打利维坦时用 Dragonstorm 射击（不开刷海龙炮也能用）" },
-        ["dragon.rate"] = { en = "Burst interval (s)", es = "Intervalo entre ráfagas (s)", zh = "齐射间隔（秒）" },
-        ["dragon.rate.desc"] = { en = "Seconds between bursts. 0.30 is safe; lower risks rejection.", es = "Segundos entre ráfagas. 0.30 es seguro; menos puede ser rechazado.", zh = "两轮齐射之间的秒数。0.30 安全；更低有被拒绝的风险。" },
-        ["dragon.shots"] = { en = "Shots per burst", es = "Disparos por ráfaga", zh = "每轮射击次数" },
-        ["dragon.shots.desc"] = { en = "How many shots per burst (1-10).", es = "Cuántos disparos por ráfaga (1-10).", zh = "每轮打几发（1-10）。" },
-        ["dragon.multitarget"] = { en = "Multi-Hit All Sea Events", es = "Golpear todos los eventos a la vez", zh = "同时攻击所有海上事件" },
-        ["dragon.multitarget.desc"] = { en = "Fire at every spawning sea event in the same frame (simultaneous multi-hit)", es = "Dispara a todos los eventos marinos en el mismo frame (multi-golpe simultáneo)", zh = "同一帧打全部刷新的海上事件（同时多目标）" },
-        ["dragon.maxtargets"] = { en = "Max targets per burst", es = "Máx. objetivos por ráfaga", zh = "每轮最大目标数" },
-        ["dragon.maxtargets.desc"] = { en = "Safety cap for simultaneous multi-hit (1-20)", es = "Límite de seguridad para el multi-golpe simultáneo (1-20)", zh = "同时多目标的安全上限 (1-20)" },
+        ["dragon.multipart"] = { en = "Multi-part hit (experimental)", es = "Impacto multiparte (experimental)", zh = "多部件命中（实验性）" },
+        ["dragon.multipart.desc"] = { en = "Send every visible part of the target. Damage may or may not increase — server-side unknown.", es = "Envía todas las partes visibles del objetivo. Puede o no aumentar el daño — desconocido del lado servidor.", zh = "向服务器发送目标的每个可见部件。是否增加伤害未知（取决于服务器）。" },
+        ["dragon.rate"] = { en = "Dragonstorm fire interval (s)", es = "Intervalo de disparo Dragonstorm (s)", zh = "Dragonstorm 射击间隔（秒）" },
+        ["dragon.rate.desc"] = { en = "Minimum seconds between shots. 0.10 is safe; lower risks rejection.", es = "Segundos mínimos entre disparos. 0.10 es seguro; menos puede ser rechazado.", zh = "两次射击之间的最小秒数。0.10 安全；更低有被拒绝的风险。" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -128,25 +134,24 @@ T, ModeDisplay = (function()
         ["notify.title"] = { en = "RJR Hub Notify", es = "RJR Hub | Aviso", zh = "RJR Hub 通知" },
         ["notstarted"] = { en = "Off", es = "Desactivado", zh = "未开启" },
         ["player.tween.speed"] = { en = "Player Tween Speed", es = "Velocidad de desplazamiento", zh = "玩家 Tween 速度" },
-        ["player.tween.speed.desc"] = { en = "Player travel speed on foot to boats and sea-event targets (50–500).", es = "Velocidad a pie al ir al barco y a los eventos marinos (50-500).", zh = "步行前往船和海上事件目标的移动速度（50–500）。" },
+        ["player.tween.speed.desc"] = { en = "Player travel speed on foot to boats and sea-event targets (50–500). Applies to teleports and the combat hover", es = "Velocidad a pie al ir al barco y a los eventos marinos (50-500). Afecta a los teletransportes y a la suspensión en combate", zh = "步行前往船和海上事件目标的移动速度（50–500），作用于传送与战斗悬浮" },
         ["refresh.btn"] = { en = "Refresh Player List", es = "Actualizar lista de jugadores", zh = "刷新玩家列表" },
         ["remove.fog"] = { en = "Remove Fog", es = "Quitar la niebla", zh = "移除雾" },
         ["remove.fog.desc"] = { en = "Removes the fog layer (LightingLayers)", es = "Elimina la capa de niebla (LightingLayers) para ver mejor", zh = "删除雾层 LightingLayers，视野清晰" },
         ["reset.data"] = { en = "Reset Data", es = "Reiniciar datos", zh = "重置数据" },
         ["respawn.rebuy"] = { en = "Respawn Rebuy", es = "Recomprar al reaparecer", zh = "重生买船" },
-        ["respawn.rebuy.desc"] = { en = "Respawns at Tiki when the boat is destroyed or missing (follower included).", es = "Reaparece en Tiki si el barco se destruye o desaparece (tambien el compañero).", zh = "船被毁或消失时重生回Tiki买船（队员同样生效）。" },
+        ["respawn.rebuy.desc"] = { en = "Respawns at Tiki when the boat is destroyed or missing (follower included). The follower also dies with the captain so both rebuy together. Never respawns while the Leviathan, its gate or its heart are present", es = "Reaparece en Tiki si el barco se destruye o desaparece (tambien el compañero). El compañero tambien muere con el capitan para recomprar los dos juntos. Nunca reaparece con el Leviathan, su puerta o su corazon presentes", zh = "船被毁或消失时重生回Tiki买船（队员同样生效）；队员会随队长一起死亡，好一起买船；利维坦/利维坦之门/心脏出现时绝不重生" },
         ["sec.combat"] = { en = "Combat Settings", es = "Ajustes de combate", zh = "战斗设置" },
         ["sec.haki"] = { en = "Haki & Race", es = "Haki y raza", zh = "霸气与种族" },
         ["sec.hunt"] = { en = "Hunt Settings", es = "Ajustes de caza", zh = "狩猎设置" },
         ["sec.main"] = { en = "Main", es = "Principal", zh = "主功能" },
         ["sec.mode"] = { en = "Mode", es = "Modo", zh = "模式" },
         ["sec.performance"] = { en = "Performance & Effects", es = "Rendimiento y efectos", zh = "性能与特效" },
-        ["sec.esp"] = { en = "Sea Event Panel", es = "Panel de eventos marinos", zh = "海上事件面板" },
         ["sec.team"] = { en = "Teammates", es = "Compañeros", zh = "队友" },
         ["sec.travel"] = { en = "Travel Settings", es = "Ajustes de navegación", zh = "航行设置" },
         ["sel.weapon"] = { en = "Select Weapon", es = "Seleccionar arma", zh = "选择武器" },
         ["silent.aim"] = { en = "Silent aim (skills)", es = "Apuntado asistido (silent aim)", zh = "静默瞄准（技能）" },
-        ["silent.aim.desc"] = { en = "Skills are aimed at the current mob or Leviathan. The camera is NOT locked - you can rotate freely.", es = "Las habilidades apuntan al mob o al Leviathan. La camara NO se bloquea.", zh = "技能自动瞄准当前怪物或利维坦。相机不会被锁定。" },
+        ["silent.aim.desc"] = { en = "Skills are aimed at the current mob or Leviathan, ignoring camera and mouse", es = "Las habilidades apuntan al mob o al Leviathan, ignorando camara y raton", zh = "技能自动瞄准当前怪物或利维坦，忽略视角和鼠标" },
         ["skill.fruit"] = { en = "Skill Keys Fruit", es = "Teclas de habilidad (fruta)", zh = "技能按键 Fruit" },
         ["skill.gun"] = { en = "Skill Keys Gun", es = "Teclas de habilidad (pistola)", zh = "技能按键 Gun" },
         ["skill.melee"] = { en = "Skill Keys Melee", es = "Teclas de habilidad (puños)", zh = "技能按键 Melee" },
@@ -177,18 +182,9 @@ T, ModeDisplay = (function()
         ["target.spawned"] = { en = "Spawned", es = "Aparecido", zh = "已出现" },
         ["ui.bribe"] = { en = "Bribe", es = "Soborno", zh = "贿赂" },
         ["ui.floatingball"] = { en = "Floating Button", es = "Botón flotante", zh = "悬浮球" },
-        ["ui.floatingball.desc"] = { en = "Draggable button to open/close this menu", es = "Botón arrastrable para abrir/cerrar el menú", zh = "可拖动的悬浮球，点击开关菜单" },
+        ["ui.floatingball.desc"] = { en = "Draggable button to open/close this menu (hotkey G always works)", es = "Botón arrastrable para abrir/cerrar el menú (la tecla G siempre funciona)", zh = "可拖动的悬浮球，点击开关菜单（热键 G 始终可用）" },
         ["ui.details"] = { en = "Details", es = "Detalles", zh = "详情" },
         ["ui.teammates"] = { en = "Teammates", es = "Compañeros", zh = "队友" },
-        ["esp.toggle"] = { en = "Sea Event Panel", es = "Panel de eventos marinos", zh = "海上事件面板" },
-        ["esp.toggle.desc"] = { en = "On-screen draggable list of all sea events", es = "Lista arrastrable de todos los eventos marinos", zh = "可拖动的海上事件列表" },
-        ["esp.maxrange"] = { en = "Panel Max Range (studs)", es = "Rango máx. del panel (studs)", zh = "面板最大范围（studs）" },
-        ["esp.maxrange.desc"] = { en = "Hide entries beyond this distance (500-20000)", es = "Oculta entradas más allá de esta distancia (500-20000)", zh = "超出此距离隐藏条目（500-20000）" },
-        ["esp.showhp"] = { en = "Panel: Show HP Text", es = "Panel: mostrar texto de vida", zh = "面板: 显示血量文本" },
-        ["esp.showbar"] = { en = "Panel: Show HP Bar", es = "Panel: mostrar barra de vida", zh = "面板: 显示血条" },
-        ["esp.percent"] = { en = "Panel: Show HP %", es = "Panel: mostrar % de vida", zh = "面板: 显示血量百分比" },
-        ["esp.showdist"] = { en = "Panel: Show Distance", es = "Panel: mostrar distancia", zh = "面板: 显示距离" },
-        ["esp.fade"] = { en = "Panel: Fade With Distance", es = "Panel: desvanecer con distancia", zh = "面板: 随距离淡出" },
         ["webhook.auto"] = { en = "Auto Send Progress", es = "Enviar progreso automáticamente", zh = "自动发送进度" },
         ["webhook.auto.desc"] = { en = "Send current status to webhook every 60s", es = "Envia el estado al webhook cada 60 segundos", zh = "每 60 秒发送当前状态到 webhook" },
         ["webhook.interval"] = { en = "Send Interval (s)", es = "Intervalo (segundos)", zh = "发送间隔(秒)" },
@@ -234,7 +230,9 @@ T, ModeDisplay = (function()
     }
     local function T(key)
         local entry = LangTable[key]
-        if not entry then return key end
+        if not entry then
+            return key
+        end
         return entry[LanguageCode()] or entry.en or entry.es or entry.zh or key
     end
     local function ModeDisplay()
@@ -265,11 +263,10 @@ if _G.AutoKen == nil then _G.AutoKen = false end
 if _G.FastAttack == nil then _G.FastAttack = false end
 if _G.DragonGunFarm == nil then _G.DragonGunFarm = false end
 if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
-if _G.DragonShotsPerBurst == nil then _G.DragonShotsPerBurst = 3 end
-if _G.DragonFireInterval == nil then _G.DragonFireInterval = 0.30 end
-if _G.DragonMultiTarget == nil then _G.DragonMultiTarget = true end
-if _G.DragonMaxTargetsPerBurst == nil then _G.DragonMaxTargetsPerBurst = 10 end
-if _G.DragonMultiRange == nil then _G.DragonMultiRange = 400 end
+-- [DRAGONSTORM ENHANCED] new knobs
+if _G.DragonMultiPartHit == nil then _G.DragonMultiPartHit = false end
+if _G.DragonFireInterval == nil then _G.DragonFireInterval = 0.10 end
+-- [/DRAGONSTORM ENHANCED]
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
 if _G.AutoFastMode == nil then _G.AutoFastMode = false end
@@ -289,16 +286,6 @@ if _G.SoloSeaFarm == nil then _G.SoloSeaFarm = false end
 if _G.RespawnRebuy == nil then _G.RespawnRebuy = false end
 if _G.CruiseReturn == nil then _G.CruiseReturn = true end
 if _G.HuntSelectEvents == nil then _G.HuntSelectEvents = {} end
-if _G.SeaEventESP == nil then _G.SeaEventESP = false end
-if _G.SeaEventESPPanel == nil then
-    _G.SeaEventESPPanel = _G.SeaEventESP or false
-end
-if _G.SeaEventESPMaxRange == nil then _G.SeaEventESPMaxRange = 5000 end
-if _G.SeaEventESPShowHP == nil then _G.SeaEventESPShowHP = true end
-if _G.SeaEventESPShowBar == nil then _G.SeaEventESPShowBar = true end
-if _G.SeaEventESPShowPercent == nil then _G.SeaEventESPShowPercent = true end
-if _G.SeaEventESPShowDistance == nil then _G.SeaEventESPShowDistance = true end
-if _G.SeaEventESPFade == nil then _G.SeaEventESPFade = true end
 if _G.WebhookURL == nil then _G.WebhookURL = "" end
 if _G.WebhookUsername == nil then _G.WebhookUsername = "Auto Leviathan" end
 if _G.AutoWebhook == nil then _G.AutoWebhook = false end
@@ -328,6 +315,8 @@ local TranslateStatus, SetStatus
 TranslateStatus, SetStatus = (function(LanguageCode)
     local StatusStatic = {
         ["Barco viejo inservible: espero el reinicio para recomprar"] = { en = "Old boat unusable: waiting for the reset to rebuy", zh = "旧船不可用 等待重生后重买" },
+        ["No pude bajarme antes de comprar: voy igual al vendedor"] = { en = "Failed to unseat before buying, still heading to dealer", zh = "买船前下船失败 仍尝试前往卖船点" },
+        ["No llegué al vendedor de barcos: reintentando"] = { en = "Did not reach boat dealer, retrying", zh = "未到达卖船点 稍后重试买船" },
         ["El barco desapareció: vuelo a comprar otro"] = { en = "Boat gone, flying to buy new boat", zh = "船已消失 平滑飞行去买船" },
         ["Barco nuevo comprado: esperando a los compañeros"] = { en = "New boat bought, waiting for teammates", zh = "新船已买 等待队友上船" },
         ["Barco hundido (Y<0): lo abandono y compro otro"] = { en = "Boat Y below 0, abandoning and rebuying", zh = "船Y轴低于0 放弃当前船 重新买船" },
@@ -352,12 +341,14 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         ["Fallo: el corazón no quedó enganchado"] = { en = "Hook failed, heart not hooked", zh = "勾心脏失败 心脏未勾中" },
         ["En la puerta del Leviathan: esperando a que aparezca"] = { en = "At the Leviathan gate, waiting for it to appear", zh = "已到利维坦之门 等待利维坦出现" },
         ["Leviathan apareció: empiezo el combate"] = { en = "Leviathan spawned, starting combat", zh = "利维坦已出现 开始战斗" },
+        ["Menos de 200 en 30 s: bajo y vuelvo a subir para reiniciar"] = { en = "Moved <200 in 30s, reseating and restarting", zh = "30秒内移动不足200 下船重上重开驱动" },
         ["Atascado y no pude bajarme: sigo esperando"] = { en = "Stuck and unseat failed, waiting", zh = "卡船且下船失败 继续等待" },
         ["Volviendo a Tiki"] = { en = "Returning to Tiki", zh = "回Tiki 返航中" },
         ["Volviendo a Tiki: el corazón desapareció, cancelo"] = { en = "Returning to Tiki, heart gone, aborting", zh = "回Tiki 心脏已消失 中断航程" },
         ["El corazón desapareció: dejo de volver a Tiki"] = { en = "Heart gone, stopping return to Tiki", zh = "心脏已消失 立即停止返回Tiki" },
         ["Debajo del corazón: espero 1.5 s"] = { en = "Under heart, waiting 1.5s", zh = "回Tiki 已到心脏正下方 等待1.5秒" },
         ["De vuelta en Tiki: espero a que el corazón desaparezca"] = { en = "Back at Tiki, waiting for heart", zh = "已回到 Tiki 等待心脏消失" },
+        ["Se agotó la espera de compañeros"] = { en = "Timed out waiting for teammates", zh = "等待队友超时 不再等待" },
         ["Esperando compañeros: el capitán sube al timón primero"] = { en = "Waiting for team, captain helms first", zh = "等待队友 队长先上驾驶座" },
         ["El barco desapareció: vuelvo a comprarlo"] = { en = "Boat gone, rebuying", zh = "等待队友 船已消失 返回重新买船" },
         ["El barco nuevo no tiene timón: vuelvo a comprar"] = { en = "New boat has no helm, rebuying", zh = "等待队友 新船无驾驶座 返回重买" },
@@ -424,48 +415,48 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         ["Corazón presente y sin barco: voy a comprar uno"] = { en = "Heart present but no boat: going to buy one", zh = "心脏已出现但没有船 去买船" },
     }
     local StatusPatterns = {
-        { es = "Personaje bloqueado en el sitio ({1}): lo libero", en = "Character stuck in place ({1}): freeing it", zh = "人物卡在原地 ({1}) 正在解卡" },
-        { es = "Siguiendo: el barco del capitán está a más de {1} — no lo persigo", en = "Following: captain's boat is over {1} away - not chasing it", zh = "跟随 队长船超出{1} 不追" },
-        { es = "Volviendo a Tiki: corazón a {1} — voy justo debajo del corazón", en = "Returning, heart {1} away, moving under heart", zh = "回Tiki 心脏离船 {1} 开向心脏正下方" },
-        { es = "Enganche: espero el resultado (disparo {1}, esperando {2} s)", en = "Hook: waiting after shot ({1} fired, {2}s)", zh = "勾心脏 发射后等待判断 (第{1}发 已等 {2} 秒)" },
-        { es = "Abriendo la puerta del Leviathan (intento {1}, cada 10 s)", en = "Opening Leviathan gate (attempt {1}, every 10s)", zh = "开启利维坦之门 第{1}次尝试 (每10秒一次)" },
-        { es = "Esperando el corazón: me teletransporto (llevo {1} s)", en = "Waiting on heart, TPing to its position ({1}s)", zh = "等待心脏 传送至心脏位置 (已等 {1} 秒)" },
-        { es = "Compañero lejos, recompra en espera: aguardo ({1} s)", en = "Teammate far, rebuy on cooldown, waiting ({1}s)", zh = "最近队员过远 重买冷却中 等待队友 ({1} 秒)" },
-        { es = "Esperando a que el corazón desaparezca (llevo {1} s)", en = "Waiting for heart to vanish ({1}s)", zh = "等待心脏消失 (已等 {1} 秒)" },
-        { es = "[Auto Leviathan] Soborno disponible - progreso {1}/5", en = "[Auto Leviathan] Bribe ready - progress {1}/5", zh = "[Auto Leviathan] 贿赂CD已好 进度 {1}/5" },
-        { es = "El corazón apareció: engancho en 5 s (llevo {1} s)", en = "Heart spawned, hooking in 5s ({1}s)", zh = "心脏已出现 等待5秒后勾心脏 (已等 {1} 秒)" },
-        { es = "Enganche: navego a X+300 del corazón (intento {1})", en = "Hook: sailing to heart X+300 (attempt {1})", zh = "勾心脏 开船前往心脏X+300位置 (第{1}次尝试)" },
-        { es = "Enganche: navegando a X+300 del corazón (dist {1})", en = "Hook: sailing to heart X+300 (dist {1})", zh = "勾心脏 开船前往心脏X+300 (距离 {1})" },
-        { es = "Volviendo a Tiki: corazón a {1} del barco, cancelo", en = "Returning, heart {1} from boat, aborting", zh = "回Tiki 心脏离船 {1} 中断航程" },
-        { es = "Siguiendo: pruebo el asiento {1} (cambio cada 1 s)", en = "Following, trying seat {1} (rotating every 1s)", zh = "跟随 尝试上船 {1} 座位 (每1秒换下一个)" },
-        { es = "Enganche: apunto la proa al corazón (intento {1})", en = "Hook: aiming bow at heart (attempt {1})", zh = "勾心脏 调整船头对准心脏 (第{1}次尝试)" },
-        { es = "Enganche: bajo al asiento del arpón (intento {1})", en = "Hook: unseating to harpoon seat (attempt {1})", zh = "勾心脏 下船上鱼叉座 (第{1}次尝试)" },
-        { es = "Esperando a que aparezca el corazón (llevo {1} s)", en = "Waiting for heart ({1}s)", zh = "等待心脏出现 (已等 {1} 秒)" },
-        { es = "Buscando al Leviathan: navegando (llevo {1} s)", en = "Hunting Leviathan, sailing ({1}s)", zh = "寻找利维坦 开船航行中 (已航行 {1} 秒)" },
-        { es = "Barco a más de {1}, lo abandono y compro otro", en = "Boat is over {1} away, abandoning it and buying another", zh = "船超出{1} 放弃旧船 重新买船" },
-        { es = "Enganche: disparo el arpón nº {1} (ángulo {2}°)", en = "Hook: firing harpoon {1} (angle {2}°)", zh = "勾心脏 发射鱼叉第{1}次 (角度 {2}°)" },
-        { es = "En espera en el barco (capitán {1} al timón)", en = "On standby (captain {1} at helm)", zh = "在船上待命 (队长 {1} 在驾驶)" },
-        { es = "{1}: reiniciando en Tiki para comprar barco", en = "{1}: resetting to Tiki to buy a boat", zh = "{1} 重置回Tiki买船" },
-        { es = "{1}: esperando a terminar el evento marino", en = "{1}: waiting to finish the sea event", zh = "{1} 等待打完海上事件" },
-        { es = "Volviendo a Tiki (dist {1}, navegando {2} s)", en = "Returning to Tiki (dist {1}, {2}s sailed)", zh = "回Tiki 自动巡航中 (距离 {1} 已航 {2} 秒)" },
-        { es = "Soborno incompleto ({1}/5): soborno ahora", en = "Bribe incomplete ({1}/5), bribing now", zh = "间谍贿赂未完成 ({1}/5) 立即贿赂" },
-        { es = "Farmeo marino: patrullando (llevo {1} s)", en = "Farming event, cruising ({1}s)", zh = "刷海上事件 开船巡海中 (已刷 {1} 秒)" },
-        { es = "El Leviathan apareció: ataco en {1} s", en = "Leviathan spawned, attacking in {1}s", zh = "利维坦出现 等待{1}秒后攻击" },
-        { es = "Enganche: subo al timón (intento {1})", en = "Hook: boarding helm (attempt {1})", zh = "勾心脏 上驾驶座 (第{1}次尝试)" },
-        { es = "Esperando compañeros a bordo ({1}/4)", en = "Waiting for teammates ({1}/4)", zh = "等待队友上船 ({1}/4)" },
-        { es = "Sobornando al espía (intento {1}/4)", en = "Bribing spy ({1}/4)", zh = "贿赂间谍 第{1}次" },
-        { es = "Atacando al Leviathan: {1} - vida {2}", en = "Attacking the Leviathan: {1} - HP {2}", zh = "攻击利维坦: {1} 血量 {2}" },
-        { es = "Vida baja: subo a evadir ({1})", en = "Low HP, flying to dodge ({1})", zh = "自身低血量 上飞悬空躲避 ({1})" },
-        { es = "Farmeo marino: {1} (llevo {2} s)", en = "Farming sea event: {1} ({2}s)", zh = "刷海上事件: {1} (已打 {2} 秒)" },
-        { es = "Evento marino derrotado: {1}", en = "Sea event defeated: {1}", zh = "海上事件已击败: {1}" },
-        { es = "Mientras espero, farmeo: {1}", en = "Farming event while waiting: {1}", zh = "等待队友期间 刷海上事件: {1}" },
-        { es = "Corazón enganchado (Y={1})", en = "Heart hooked (Y={1})", zh = "心脏已勾中 (Y={1})" },
-        { es = "Atacando al Leviathan: {1}", en = "Attacking the Leviathan: {1}", zh = "攻击利维坦: {1}" },
-        { es = "Receta no encontrada: {1}", en = "Recipe not found: {1}", zh = "配方不存在: {1}" },
-        { es = "Falta progreso {1} ({2}/{3})", en = "Missing progress {1} ({2}/{3})", zh = "进度缺 {1} ({2}/{3})" },
-        { es = "De caza: farmeo {1}", en = "Farming event while hunting: {1}", zh = "寻找利维坦途中 刷海上事件: {1}" },
-        { es = "{1}: fabricado", en = "{1}: crafted", zh = "{1}: 已制作" },
-        { es = "Falta {1} ({2}/{3})", en = "Missing {1} ({2}/{3})", zh = "缺 {1} ({2}/{3})" },
+        { es = "Personaje bloqueado en el sitio ({1}): lo libero", en = "Character stuck in place ({1}): freeing it", zh = "人物卡在原地 ({1}) 正在解卡", nested = false },
+        { es = "Siguiendo: el barco del capitán está a más de {1} — no lo persigo", en = "Following: captain's boat is over {1} away - not chasing it", zh = "跟随 队长船超出{1} 不追", nested = false },
+        { es = "Volviendo a Tiki: corazón a {1} — voy justo debajo del corazón", en = "Returning, heart {1} away, moving under heart", zh = "回Tiki 心脏离船 {1} 开向心脏正下方", nested = false },
+        { es = "Enganche: espero el resultado (disparo {1}, esperando {2} s)", en = "Hook: waiting after shot ({1} fired, {2}s)", zh = "勾心脏 发射后等待判断 (第{1}发 已等 {2} 秒)", nested = false },
+        { es = "Abriendo la puerta del Leviathan (intento {1}, cada 10 s)", en = "Opening Leviathan gate (attempt {1}, every 10s)", zh = "开启利维坦之门 第{1}次尝试 (每10秒一次)", nested = false },
+        { es = "Esperando el corazón: me teletransporto (llevo {1} s)", en = "Waiting on heart, TPing to its position ({1}s)", zh = "等待心脏 传送至心脏位置 (已等 {1} 秒)", nested = false },
+        { es = "Compañero lejos, recompra en espera: aguardo ({1} s)", en = "Teammate far, rebuy on cooldown, waiting ({1}s)", zh = "最近队员过远 重买冷却中 等待队友 ({1} 秒)", nested = false },
+        { es = "Esperando a que el corazón desaparezca (llevo {1} s)", en = "Waiting for heart to vanish ({1}s)", zh = "等待心脏消失 (已等 {1} 秒)", nested = false },
+        { es = "[Auto Leviathan] Soborno disponible - progreso {1}/5", en = "[Auto Leviathan] Bribe ready - progress {1}/5", zh = "[Auto Leviathan] 贿赂CD已好 进度 {1}/5", nested = false },
+        { es = "El corazón apareció: engancho en 5 s (llevo {1} s)", en = "Heart spawned, hooking in 5s ({1}s)", zh = "心脏已出现 等待5秒后勾心脏 (已等 {1} 秒)", nested = false },
+        { es = "Enganche: navego a X+300 del corazón (intento {1})", en = "Hook: sailing to heart X+300 (attempt {1})", zh = "勾心脏 开船前往心脏X+300位置 (第{1}次尝试)", nested = false },
+        { es = "Enganche: navegando a X+300 del corazón (dist {1})", en = "Hook: sailing to heart X+300 (dist {1})", zh = "勾心脏 开船前往心脏X+300 (距离 {1})", nested = false },
+        { es = "Volviendo a Tiki: corazón a {1} del barco, cancelo", en = "Returning, heart {1} from boat, aborting", zh = "回Tiki 心脏离船 {1} 中断航程", nested = false },
+        { es = "Siguiendo: pruebo el asiento {1} (cambio cada 1 s)", en = "Following, trying seat {1} (rotating every 1s)", zh = "跟随 尝试上船 {1} 座位 (每1秒换下一个)", nested = false },
+        { es = "Enganche: apunto la proa al corazón (intento {1})", en = "Hook: aiming bow at heart (attempt {1})", zh = "勾心脏 调整船头对准心脏 (第{1}次尝试)", nested = false },
+        { es = "Enganche: bajo al asiento del arpón (intento {1})", en = "Hook: unseating to harpoon seat (attempt {1})", zh = "勾心脏 下船上鱼叉座 (第{1}次尝试)", nested = false },
+        { es = "Esperando a que aparezca el corazón (llevo {1} s)", en = "Waiting for heart ({1}s)", zh = "等待心脏出现 (已等 {1} 秒)", nested = false },
+        { es = "Buscando al Leviathan: navegando (llevo {1} s)", en = "Hunting Leviathan, sailing ({1}s)", zh = "寻找利维坦 开船航行中 (已航行 {1} 秒)", nested = false },
+        { es = "Barco a más de {1}, lo abandono y compro otro", en = "Boat is over {1} away, abandoning it and buying another", zh = "船超出{1} 放弃旧船 重新买船", nested = false },
+        { es = "Enganche: disparo el arpón nº {1} (ángulo {2}°)", en = "Hook: firing harpoon {1} (angle {2}°)", zh = "勾心脏 发射鱼叉第{1}次 (角度 {2}°)", nested = false },
+        { es = "En espera en el barco (capitán {1} al timón)", en = "On standby (captain {1} at helm)", zh = "在船上待命 (队长 {1} 在驾驶)", nested = false },
+        { es = "{1}: reiniciando en Tiki para comprar barco", en = "{1}: resetting to Tiki to buy a boat", zh = "{1} 重置回Tiki买船", nested = true },
+        { es = "{1}: esperando a terminar el evento marino", en = "{1}: waiting to finish the sea event", zh = "{1} 等待打完海上事件", nested = true },
+        { es = "Volviendo a Tiki (dist {1}, navegando {2} s)", en = "Returning to Tiki (dist {1}, {2}s sailed)", zh = "回Tiki 自动巡航中 (距离 {1} 已航 {2} 秒)", nested = false },
+        { es = "Soborno incompleto ({1}/5): soborno ahora", en = "Bribe incomplete ({1}/5), bribing now", zh = "间谍贿赂未完成 ({1}/5) 立即贿赂", nested = false },
+        { es = "Farmeo marino: patrullando (llevo {1} s)", en = "Farming event, cruising ({1}s)", zh = "刷海上事件 开船巡海中 (已刷 {1} 秒)", nested = false },
+        { es = "El Leviathan apareció: ataco en {1} s", en = "Leviathan spawned, attacking in {1}s", zh = "利维坦出现 等待{1}秒后攻击", nested = false },
+        { es = "Enganche: subo al timón (intento {1})", en = "Hook: boarding helm (attempt {1})", zh = "勾心脏 上驾驶座 (第{1}次尝试)", nested = false },
+        { es = "Esperando compañeros a bordo ({1}/4)", en = "Waiting for teammates ({1}/4)", zh = "等待队友上船 ({1}/4)", nested = false },
+        { es = "Sobornando al espía (intento {1}/4)", en = "Bribing spy ({1}/4)", zh = "贿赂间谍 第{1}次", nested = false },
+        { es = "Atacando al Leviathan: {1} - vida {2}", en = "Attacking the Leviathan: {1} - HP {2}", zh = "攻击利维坦: {1} 血量 {2}", nested = false },
+        { es = "Vida baja: subo a evadir ({1})", en = "Low HP, flying to dodge ({1})", zh = "自身低血量 上飞悬空躲避 ({1})", nested = false },
+        { es = "Farmeo marino: {1} (llevo {2} s)", en = "Farming sea event: {1} ({2}s)", zh = "刷海上事件: {1} (已打 {2} 秒)", nested = false },
+        { es = "Evento marino derrotado: {1}", en = "Sea event defeated: {1}", zh = "海上事件已击败: {1}", nested = false },
+        { es = "Mientras espero, farmeo: {1}", en = "Farming event while waiting: {1}", zh = "等待队友期间 刷海上事件: {1}", nested = false },
+        { es = "Corazón enganchado (Y={1})", en = "Heart hooked (Y={1})", zh = "心脏已勾中 (Y={1})", nested = false },
+        { es = "Atacando al Leviathan: {1}", en = "Attacking the Leviathan: {1}", zh = "攻击利维坦: {1}", nested = false },
+        { es = "Receta no encontrada: {1}", en = "Recipe not found: {1}", zh = "配方不存在: {1}", nested = false },
+        { es = "Falta progreso {1} ({2}/{3})", en = "Missing progress {1} ({2}/{3})", zh = "进度缺 {1} ({2}/{3})", nested = false },
+        { es = "De caza: farmeo {1}", en = "Farming event while hunting: {1}", zh = "寻找利维坦途中 刷海上事件: {1}", nested = false },
+        { es = "{1}: fabricado", en = "{1}: crafted", zh = "{1}: 已制作", nested = false },
+        { es = "Falta {1} ({2}/{3})", en = "Missing {1} ({2}/{3})", zh = "缺 {1} ({2}/{3})", nested = false },
     }
     local function EscapePattern(text)
         return (text:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1"))
@@ -568,62 +559,126 @@ local ConfigUser = tostring(LocalPlayer and LocalPlayer.Name or "default"):gsub(
 local ConfigFile = ConfigFolder .. "/" .. ConfigUser .. "_leviathan_config.json"
 local ConfigLegacyFile = ConfigFolder .. "/leviathan_config.json"
 local ConfigKeys = {
-    "Mode", "SilentAim", "Language", "FollowTarget", "SelectWeapon",
-    "SkillMelee", "SkillSword", "SkillFruit", "SkillGun",
-    "FastAttack", "DragonGunFarm", "DragonGunLeviathan",
-    "DragonShotsPerBurst", "DragonFireInterval",
-    "DragonMultiTarget", "DragonMaxTargetsPerBurst", "DragonMultiRange",
-    "RemoveFog", "AntiDracoAura", "AutoFastMode", "FPSBoost",
-    "AutoBuso", "AutoKen", "AutoV3", "AutoV4",
-    "BoatSpeed", "BoatHeight", "PlayerTweenSpeed", "CruiseReturn",
-    "AutoCraftScrolls", "CraftQuality", "AutoRandomFruit", "AutoStoreFruits",
-    "HuntFightEvents", "SoloSeaFarm", "RespawnRebuy", "HuntSelectEvents",
-    "SeaEventESP", "SeaEventESPPanel", "SeaEventESPMaxRange", "SeaEventESPShowHP",
-    "SeaEventESPShowBar", "SeaEventESPShowPercent",
-    "SeaEventESPShowDistance", "SeaEventESPFade",
-    "WebhookURL", "WebhookUsername", "AutoWebhook", "WebhookInterval",
-    "WebhookSendProgress", "WebhookSendBribeReady", "WebhookSendLeviathan",
-    "WebhookSendHeartSpawn", "WebhookSendHeartGot", "WebhookSendLowPlayers",
+    "Mode",
+    "SilentAim",
+    "Language",
+    "FollowTarget",
+    "SelectWeapon",
+    "SkillMelee",
+    "SkillSword",
+    "SkillFruit",
+    "SkillGun",
+    "FastAttack",
+    "DragonGunFarm",
+    "DragonGunLeviathan",
+    -- [DRAGONSTORM ENHANCED]
+    "DragonMultiPartHit",
+    "DragonFireInterval",
+    -- [/DRAGONSTORM ENHANCED]
+    "RemoveFog",
+    "AntiDracoAura",
+    "AutoFastMode",
+    "FPSBoost",
+    "AutoBuso",
+    "AutoKen",
+    "AutoV3",
+    "AutoV4",
+    "BoatSpeed",
+    "BoatHeight",
+    "PlayerTweenSpeed",
+    "CruiseReturn",
+    "AutoCraftScrolls",
+    "CraftQuality",
+    "AutoRandomFruit",
+    "AutoStoreFruits",
+    "HuntFightEvents",
+    "SoloSeaFarm",
+    "RespawnRebuy",
+    "HuntSelectEvents",
+    "WebhookURL",
+    "WebhookUsername",
+    "AutoWebhook",
+    "WebhookInterval",
+    "WebhookSendProgress",
+    "WebhookSendBribeReady",
+    "WebhookSendLeviathan",
+    "WebhookSendHeartSpawn",
+    "WebhookSendHeartGot",
+    "WebhookSendLowPlayers",
     "ShowInfoUI",
 }
 local function EnsureConfigFolder()
     if typeof(isfolder) == "function" and typeof(makefolder) == "function" then
-        if not isfolder(ConfigFolder) then makefolder(ConfigFolder) end
+        if not isfolder(ConfigFolder) then
+            makefolder(ConfigFolder)
+        end
         return true
     end
     return false
 end
 local function DeepCopy(value)
-    if type(value) ~= "table" then return value end
+    if type(value) ~= "table" then
+        return value
+    end
     local copy = {}
-    for k, v in pairs(value) do copy[k] = DeepCopy(v) end
+    for k, v in pairs(value) do
+        copy[k] = DeepCopy(v)
+    end
     return copy
 end
 local function SaveConfig()
-    if not EnsureConfigFolder() then return end
-    if typeof(writefile) ~= "function" then return end
+    if not EnsureConfigFolder() then
+        return
+    end
+    if typeof(writefile) ~= "function" then
+        return
+    end
     local data = {}
     for _, key in ipairs(ConfigKeys) do
-        if _G[key] ~= nil then data[key] = DeepCopy(_G[key]) end
+        if _G[key] ~= nil then
+            data[key] = DeepCopy(_G[key])
+        end
     end
-    local ok, encoded = pcall(function() return HttpService:JSONEncode(data) end)
-    if ok then pcall(function() writefile(ConfigFile, encoded) end) end
+    local ok, encoded = pcall(function()
+        return HttpService:JSONEncode(data)
+    end)
+    if ok then
+        pcall(function()
+            writefile(ConfigFile, encoded)
+        end)
+    end
 end
 local function ReadConfigFile(path)
-    if typeof(isfile) ~= "function" or typeof(readfile) ~= "function" then return false end
-    if not isfile(path) then return false end
+    if typeof(isfile) ~= "function" or typeof(readfile) ~= "function" then
+        return false
+    end
+    if not isfile(path) then
+        return false
+    end
     local ok, raw = pcall(readfile, path)
-    if not (ok and type(raw) == "string" and raw ~= "") then return false end
-    local okDecode, data = pcall(function() return HttpService:JSONDecode(raw) end)
-    if not (okDecode and type(data) == "table") then return false end
+    if not (ok and type(raw) == "string" and raw ~= "") then
+        return false
+    end
+    local okDecode, data = pcall(function()
+        return HttpService:JSONDecode(raw)
+    end)
+    if not (okDecode and type(data) == "table") then
+        return false
+    end
     for _, key in ipairs(ConfigKeys) do
-        if data[key] ~= nil then _G[key] = data[key] end
+        if data[key] ~= nil then
+            _G[key] = data[key]
+        end
     end
     return true
 end
 local function LoadConfig()
-    if ReadConfigFile(ConfigFile) then return end
-    if not ReadConfigFile(ConfigLegacyFile) then return end
+    if ReadConfigFile(ConfigFile) then
+        return
+    end
+    if not ReadConfigFile(ConfigLegacyFile) then
+        return
+    end
     SaveConfig()
     pcall(function()
         if typeof(isfile) == "function" and typeof(delfile) == "function"
@@ -672,12 +727,16 @@ do
             end
         end)
         if not ok then
-            pcall(function() LocalPlayer.SimulationRadius = math.huge end)
+            pcall(function()
+                LocalPlayer.SimulationRadius = math.huge
+            end)
         end
     end
     ApplySimulationRadius()
     task.spawn(function()
-        while task.wait(1) do ApplySimulationRadius() end
+        while task.wait(1) do
+            ApplySimulationRadius()
+        end
     end)
 end
 task.spawn(function()
@@ -699,24 +758,34 @@ if Character == nil then
 end
 local function GetCharacterParts()
     local char = LocalPlayer.Character
-    if not char then return nil, nil, nil end
+    if not char then
+        return nil, nil, nil
+    end
     return char, char:FindFirstChild("HumanoidRootPart"), char:FindFirstChildOfClass("Humanoid")
 end
 local NoclipOn = false
 local LastNoclipApply = 0
 local function NoClip(v)
-    if not Character or not HRP or not HD or HD.Health <= 0 then return end
+    if not Character or not HRP or not HD or HD.Health <= 0 then
+        return
+    end
     if v then
-        if NoclipOn and os.clock() - LastNoclipApply < 0.5 then return end
+        if NoclipOn and os.clock() - LastNoclipApply < 0.5 then
+            return
+        end
         NoclipOn = true
         LastNoclipApply = os.clock()
         for _, part in pairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
         end
     else
         NoclipOn = false
         for _, part in pairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = true end
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
         end
     end
 end
@@ -727,7 +796,9 @@ local LiveHoldFn = nil
 local TpActive = false
 local function GetTweenPart()
     local part = workspace:FindFirstChild(TWEEN_PART_NAME)
-    if part and part:IsA("BasePart") then return part end
+    if part and part:IsA("BasePart") then
+        return part
+    end
     part = Instance.new("Part")
     part.Name = TWEEN_PART_NAME
     part.Size = Vector3.new(1, 1, 1)
@@ -744,12 +815,18 @@ end
 local function _tp(targetPos, abortCheck)
     local startChar = LocalPlayer.Character
     local myHRP = select(2, GetCharacterParts())
-    if not myHRP then return false end
-    if _G.StopTween then return false end
+    if not myHRP then
+        return false
+    end
+    if _G.StopTween then
+        return false
+    end
     local targetCFrame, liveTarget
     if typeof(targetPos) == "function" then
         targetCFrame = targetPos()
-        if not targetCFrame then return false end
+        if not targetCFrame then
+            return false
+        end
         liveTarget = targetPos
     elseif typeof(targetPos) == "Vector3" then
         targetCFrame = CFrame.new(targetPos)
@@ -760,16 +837,22 @@ local function _tp(targetPos, abortCheck)
     else
         return false
     end
-    if targetCFrame.Position.Y < 0 then return false end
+    if targetCFrame.Position.Y < 0 then
+        return false
+    end
     HoldCFrame = nil
     LiveHoldFn = nil
     if not liveTarget then
         local h2 = select(2, GetCharacterParts())
-        if not h2 then return false end
+        if not h2 then
+            return false
+        end
         myHRP = h2
     end
     local SeatNearTarget = function(seat)
-        if not seat or not seat.Parent then return false end
+        if not seat or not seat.Parent then
+            return false
+        end
         local tgt
         if liveTarget then
             local ok, cf = pcall(liveTarget)
@@ -777,11 +860,15 @@ local function _tp(targetPos, abortCheck)
         else
             tgt = targetCFrame
         end
-        if not tgt then return false end
+        if not tgt then
+            return false
+        end
         return (seat.Position - tgt.Position).Magnitude <= 40
     end
     local _, _, humPre = GetCharacterParts()
-    if humPre and humPre.SeatPart and SeatNearTarget(humPre.SeatPart) then return true end
+    if humPre and humPre.SeatPart and SeatNearTarget(humPre.SeatPart) then
+        return true
+    end
     local _, _, humS = GetCharacterParts()
     if humS and (humS.Sit or humS.SeatPart ~= nil) then
         pcall(function()
@@ -798,7 +885,9 @@ local function _tp(targetPos, abortCheck)
     NoClip(true)
     local tweenSpeed = _G.PlayerTweenSpeed or 140
     if CurrentTween then
-        pcall(function() CurrentTween:Cancel() end)
+        pcall(function()
+            CurrentTween:Cancel()
+        end)
         CurrentTween = nil
     end
     local tween = nil
@@ -824,22 +913,30 @@ local function _tp(targetPos, abortCheck)
         local curHRP = select(2, GetCharacterParts())
         if not curHRP or curChar ~= startChar or not curHum or curHum.Health <= 0 then
             aborted = true
-            if tween then tween:Cancel() end
+            if tween then
+                tween:Cancel()
+            end
         elseif curHRP.Position.Y < 0 then
             aborted = true
-            if tween then tween:Cancel() end
+            if tween then
+                tween:Cancel()
+            end
         else
             if not seatedStop and curHum.SeatPart ~= nil then
                 seatedStop = true
                 arrived = true
-                if tween then tween:Cancel() end
+                if tween then
+                    tween:Cancel()
+                end
             end
             if not seatedStop then
                 if liveTarget then
                     local tgt = liveTarget()
                     if tgt and tgt.Position.Y < 0 then
                         aborted = true
-                        if tween then tween:Cancel() end
+                        if tween then
+                            tween:Cancel()
+                        end
                     elseif tgt then
                         local cur = part.Position
                         local delta = tgt.Position - cur
@@ -856,7 +953,9 @@ local function _tp(targetPos, abortCheck)
                     curHRP.CFrame = part.CFrame
                     curHRP.AssemblyLinearVelocity = Vector3.zero
                     for _, p in ipairs(curChar:GetDescendants()) do
-                        if p:IsA("BasePart") then p.CanCollide = false end
+                        if p:IsA("BasePart") then
+                            p.CanCollide = false
+                        end
                     end
                 end
             end
@@ -868,25 +967,36 @@ local function _tp(targetPos, abortCheck)
                 local ok, stop = pcall(abortCheck)
                 if ok and stop then
                     aborted = true
-                    if tween then tween:Cancel() end
+                    if tween then
+                        tween:Cancel()
+                    end
                 end
             end
         end
     end)
     pcall(function()
         if liveTarget then
-            local timeout = tick() + math.max(8, (targetCFrame.Position - myHRP.Position).Magnitude / tweenSpeed + 8)
-            repeat task.wait() until arrived or aborted or tick() > timeout
+            local timeout = tick()
+                + math.max(8, (targetCFrame.Position - myHRP.Position).Magnitude / tweenSpeed + 8)
+            repeat
+                task.wait()
+            until arrived or aborted or tick() > timeout
         elseif tween then
             tween:Play()
             repeat
                 task.wait()
-                if seatedStop or aborted then break end
+                if seatedStop or aborted then
+                    break
+                end
             until tween.PlaybackState ~= Enum.PlaybackState.Playing
         end
     end)
-    pcall(function() connection:Disconnect() end)
-    if tween and CurrentTween == tween then CurrentTween = nil end
+    pcall(function()
+        connection:Disconnect()
+    end)
+    if tween and CurrentTween == tween then
+        CurrentTween = nil
+    end
     Tweening = false
     TpActive = false
     if not aborted and not seatedStop then
@@ -908,12 +1018,22 @@ local function ClearHover()
     LiveHoldFn = nil
 end
 RunService.Heartbeat:Connect(function(dt)
-    if _G.StopTween then return end
+    if _G.StopTween then
+        return
+    end
     local _, hrp, hum = GetCharacterParts()
-    if not hrp then return end
-    if hum and hum.SeatPart ~= nil then return end
-    if TpActive then return end
-    if CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing then return end
+    if not hrp then
+        return
+    end
+    if hum and hum.SeatPart ~= nil then
+        return
+    end
+    if TpActive then
+        return
+    end
+    if CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing then
+        return
+    end
     local goal = nil
     if AttackModel then
         if not AttackModel.Parent then
@@ -950,14 +1070,20 @@ RunService.Heartbeat:Connect(function(dt)
             return
         end
     end
-    if not goal then return end
-    if not LiveHoldFn then HoldCFrame = goal end
+    if not goal then
+        return
+    end
+    if not LiveHoldFn then
+        HoldCFrame = goal
+    end
     hrp.AssemblyLinearVelocity = Vector3.zero
     hrp.AssemblyAngularVelocity = Vector3.zero
     local char = LocalPlayer.Character
     if char then
         for _, p in ipairs(char:GetDescendants()) do
-            if p:IsA("BasePart") then p.CanCollide = false end
+            if p:IsA("BasePart") then
+                p.CanCollide = false
+            end
         end
     end
     local dist = (goal.Position - hrp.Position).Magnitude
@@ -971,7 +1097,9 @@ end)
 local function StopTweenAll()
     _G.StopTween = true
     if CurrentTween then
-        pcall(function() CurrentTween:Cancel() end)
+        pcall(function()
+            CurrentTween:Cancel()
+        end)
         CurrentTween = nil
     end
     Tweening = false
@@ -990,14 +1118,18 @@ local SeatPhantomState = {
 }
 local function SeatTakenByOther(seat, hum)
     local Occupant = seat.Occupant
-    if Occupant ~= nil and Occupant ~= hum then return true end
+    if Occupant ~= nil and Occupant ~= hum then
+        return true
+    end
     local Weld = seat:FindFirstChild("SeatWeld")
     if Weld then
         local p1 = Weld.Part1
         if p1 and p1:IsA("BasePart") then
             local owner = p1:FindFirstAncestorWhichIsA("Model")
             local otherHum = owner and owner:FindFirstChildOfClass("Humanoid")
-            if otherHum and otherHum ~= hum then return true end
+            if otherHum and otherHum ~= hum then
+                return true
+            end
         end
     end
     return false
@@ -1007,10 +1139,18 @@ local SEAT_DRIFT = 60
 local BODY_STILL = 30
 _G.RJR_SeatConfirmed = function(seat)
     local _, hrp, hum = GetCharacterParts()
-    if not hum or not seat or not seat.Parent then return false end
-    if hum.SeatPart ~= seat then return false end
-    if SeatTakenByOther(seat, hum) then return false end
-    if not hrp then return true end
+    if not hum or not seat or not seat.Parent then
+        return false
+    end
+    if hum.SeatPart ~= seat then
+        return false
+    end
+    if SeatTakenByOther(seat, hum) then
+        return false
+    end
+    if not hrp then
+        return true
+    end
     local st = SeatPhantomState.since[seat]
     if not st then
         SeatPhantomState.since[seat] = { seatPos = seat.Position, bodyPos = hrp.Position, at = os.clock() }
@@ -1019,7 +1159,9 @@ _G.RJR_SeatConfirmed = function(seat)
     local seatMoved = (seat.Position - st.seatPos).Magnitude
     local bodyMoved = (hrp.Position - st.bodyPos).Magnitude
     if seatMoved > SEAT_DRIFT and bodyMoved < BODY_STILL then
-        if os.clock() - st.at >= SeatPhantomState.grace then return false end
+        if os.clock() - st.at >= SeatPhantomState.grace then
+            return false
+        end
     elseif os.clock() - st.at >= SeatPhantomState.grace then
         st.seatPos, st.bodyPos, st.at = seat.Position, hrp.Position, os.clock()
     end
@@ -1027,7 +1169,9 @@ _G.RJR_SeatConfirmed = function(seat)
 end
 _G.RJR_BreakPhantomSeat = function(seat)
     local char, hrp, hum = GetCharacterParts()
-    if not hum then return false end
+    if not hum then
+        return false
+    end
     local Target = seat or hum.SeatPart
     pcall(function()
         hum.Sit = false
@@ -1037,7 +1181,9 @@ _G.RJR_BreakPhantomSeat = function(seat)
         local Weld = Target:FindFirstChild("SeatWeld")
         local p1 = Weld and Weld.Part1
         if Weld and ((not p1) or (p1:IsA("BasePart") and char and p1:IsDescendantOf(char))) then
-            pcall(function() Weld:Destroy() end)
+            pcall(function()
+                Weld:Destroy()
+            end)
         end
     end
     if hrp then
@@ -1048,20 +1194,28 @@ _G.RJR_BreakPhantomSeat = function(seat)
         end)
     end
     ClearHover()
-    if Target then SeatPhantomState.since[Target] = nil end
+    if Target then
+        SeatPhantomState.since[Target] = nil
+    end
     task.wait(0.15)
     local _, _, hum2 = GetCharacterParts()
     return hum2 == nil or not hum2.Sit
 end
 end
 local function CheckItem(Item, Mode)
-    if not Character or not HRP or not HD then return nil end
+    if not Character or not HRP or not HD then
+        return nil
+    end
     if Mode == "Find" then
         for _, v in ipairs(Character:GetChildren()) do
-            if string.find(v.Name, Item, 1, true) then return v end
+            if string.find(v.Name, Item, 1, true) then
+                return v
+            end
         end
         for _, v in ipairs(LocalPlayer.Backpack:GetChildren()) do
-            if string.find(v.Name, Item, 1, true) then return v end
+            if string.find(v.Name, Item, 1, true) then
+                return v
+            end
         end
     else
         return Character:FindFirstChild(Item) or LocalPlayer.Backpack:FindFirstChild(Item)
@@ -1070,23 +1224,36 @@ end
 local function CheckSkill(Weapon, Key)
     local ok, result = pcall(function()
         local Item = CheckItem(Weapon)
-        if not Item then return false end
+        if not Item then
+            return false
+        end
         local Weapon2 = Item.ToolTip
         local Skills = nil
-        if Weapon2 == "Melee" then Skills = _G.SkillMelee
-        elseif Weapon2 == "Sword" then Skills = _G.SkillSword
-        elseif Weapon2 == "Blox Fruit" then Skills = _G.SkillFruit
-        elseif Weapon2 == "Gun" then Skills = _G.SkillGun end
-        if not Skills then return false end
+        if Weapon2 == "Melee" then
+            Skills = _G.SkillMelee
+        elseif Weapon2 == "Sword" then
+            Skills = _G.SkillSword
+        elseif Weapon2 == "Blox Fruit" then
+            Skills = _G.SkillFruit
+        elseif Weapon2 == "Gun" then
+            Skills = _G.SkillGun
+        end
+        if not Skills then
+            return false
+        end
         for _, v in ipairs(Skills) do
-            if v == Key then return true end
+            if v == Key then
+                return true
+            end
         end
         return false
     end)
     return ok and result
 end
 local function Equip_Auto(Tool)
-    if not Character or not HRP or not HD then return end
+    if not Character or not HRP or not HD then
+        return
+    end
     if HD.Health > 0 and LocalPlayer:FindFirstChild("Backpack") then
         if Tool == "Melee" or Tool == "Sword" or Tool == "Gun" or Tool == "Blox Fruit" then
             for i, v in pairs(LocalPlayer.Backpack:GetChildren()) do
@@ -1113,9 +1280,14 @@ local function HasDragonstormEquipped()
 end
 local function Skill_Auto(Key)
     local Code
-    if Key == "Space" then Code = Enum.KeyCode.Space
-    else Code = Enum.KeyCode[Key:upper()] end
-    if not Code then return end
+    if Key == "Space" then
+        Code = Enum.KeyCode.Space
+    else
+        Code = Enum.KeyCode[Key:upper()]
+    end
+    if not Code then
+        return
+    end
     VirtualInputManager:SendKeyEvent(true, Code, false, game)
     task.wait(0.1)
     VirtualInputManager:SendKeyEvent(false, Code, false, game)
@@ -1130,14 +1302,20 @@ local function CoolDown_Chack(Cooldown)
     return Cooldown.Size.X.Scale == 0
 end
 local function CoolDown_Auto()
-    if SkillCoolDown then return end
+    if SkillCoolDown then
+        return
+    end
     if tick() - LastAllWeapon >= 10 then
         SkillCoolDown = true
         LastAllWeapon = tick()
-        Equip_Auto("Melee"); task.wait()
-        Equip_Auto("Sword"); task.wait()
-        Equip_Auto("Gun"); task.wait()
-        Equip_Auto("Blox Fruit"); task.wait(0.5)
+        Equip_Auto("Melee")
+        task.wait()
+        Equip_Auto("Sword")
+        task.wait()
+        Equip_Auto("Gun")
+        task.wait()
+        Equip_Auto("Blox Fruit")
+        task.wait(0.5)
         SkillCoolDown = false
     end
     local Skills = LocalPlayer.PlayerGui.Main.Skills
@@ -1165,10 +1343,14 @@ local function CoolDown_Auto()
     end
 end
 local function Haki_Auto()
-    if not _G.AutoBuso then return end
+    if not _G.AutoBuso then
+        return
+    end
     if Character and HRP then
         if not Character:FindFirstChild("HasBuso") then
-            pcall(function() CommF:InvokeServer("Buso") end)
+            pcall(function()
+                CommF:InvokeServer("Buso")
+            end)
         end
     end
 end
@@ -1178,12 +1360,17 @@ local function CheckSkillTable(v)
         local isArray = #v > 0
         if isArray then
             for _, v in ipairs(v) do
-                if type(v) == "string" and v ~= "" then result[#result + 1] = v end
+                if type(v) == "string" and v ~= "" then
+                    result[#result + 1] = v
+                end
             end
         else
             for k, v in pairs(v) do
-                if v == true and type(k) == "string" then result[#result + 1] = k
-                elseif type(v) == "string" and v ~= "" then result[#result + 1] = v end
+                if v == true and type(k) == "string" then
+                    result[#result + 1] = k
+                elseif type(v) == "string" and v ~= "" then
+                    result[#result + 1] = v
+                end
             end
         end
     elseif type(v) == "string" and v ~= "" then
@@ -1192,7 +1379,9 @@ local function CheckSkillTable(v)
     return result
 end
 local function Attack_Clone(inst)
-    if typeof(cloneref) == "function" then return cloneref(inst) end
+    if typeof(cloneref) == "function" then
+        return cloneref(inst)
+    end
     return inst
 end
 local function Attack_CaptureRemote(R)
@@ -1206,8 +1395,12 @@ do
     for _, name in ipairs(folders) do
         local folder = RS:FindFirstChild(name)
         if folder then
-            for _, child in ipairs(folder:GetChildren()) do Attack_CaptureRemote(child) end
-            folder.ChildAdded:Connect(function(child) Attack_CaptureRemote(child) end)
+            for _, child in ipairs(folder:GetChildren()) do
+                Attack_CaptureRemote(child)
+            end
+            folder.ChildAdded:Connect(function(child)
+                Attack_CaptureRemote(child)
+            end)
         end
     end
 end
@@ -1216,7 +1409,9 @@ local function Attack_EnsureRemotes()
         local modules = RS:FindFirstChild("Modules")
         AttackNet = modules and modules:FindFirstChild("Net")
     end
-    if not AttackNet then return false end
+    if not AttackNet then
+        return false
+    end
     if not AttackRegisterAttack then
         AttackRegisterAttack = AttackNet:FindFirstChild("RE/RegisterAttack") or AttackNet:FindFirstChild("RegisterAttack")
     end
@@ -1261,9 +1456,13 @@ local function Attack_BuildHitList(character, origin)
 end
 local function Attack_GetSeed()
     local now = os.clock()
-    if AttackSeedCache and (now - AttackSeedAt) < 1 then return AttackSeedCache end
+    if AttackSeedCache and (now - AttackSeedAt) < 1 then
+        return AttackSeedCache
+    end
     if AttackSeedRemote then
-        local ok, seed = pcall(function() return AttackSeedRemote:InvokeServer() end)
+        local ok, seed = pcall(function()
+            return AttackSeedRemote:InvokeServer()
+        end)
         if ok and seed then
             AttackSeedCache = seed
             AttackSeedAt = now
@@ -1273,23 +1472,37 @@ local function Attack_GetSeed()
     return AttackSeedCache or 1
 end
 local function Attack_Auto()
-    if not Character or not HRP or not HD then return end
+    if not Character or not HRP or not HD then
+        return
+    end
     local tool = Character:FindFirstChildOfClass("Tool")
-    if not tool then return end
+    if not tool then
+        return
+    end
     local WT = tool:GetAttribute("WeaponType")
-    if WT ~= "Melee" and WT ~= "Sword" then return end
-    if not Attack_EnsureRemotes() then return end
+    if WT ~= "Melee" and WT ~= "Sword" then
+        return
+    end
+    if not Attack_EnsureRemotes() then
+        return
+    end
     local hitList = Attack_BuildHitList(Character, HRP.Position)
-    if #hitList == 0 then return end
+    if #hitList == 0 then
+        return
+    end
     pcall(function()
-        local okNet, netApi = pcall(function() return require(AttackNet) end)
+        local okNet, netApi = pcall(function()
+            return require(AttackNet)
+        end)
         if okNet and netApi and netApi.RemoteEvent then
             pcall(netApi.RemoteEvent, netApi, "RegisterHit", true)
         end
         AttackRegisterAttack:FireServer()
         local primaryModel = hitList[1][1]
         local head = primaryModel and primaryModel:FindFirstChild("Head")
-        if not head then return end
+        if not head then
+            return
+        end
         if _G.FastAttack_Mode == "1" then
             AttackRegisterHit:FireServer(head, hitList)
         else
@@ -1307,21 +1520,35 @@ local function Attack_Auto()
     end)
 end
 local function TargetPos(inst)
-    if not inst then return nil end
-    if inst:IsA("BasePart") then return inst.Position end
+    if not inst then
+        return nil
+    end
+    if inst:IsA("BasePart") then
+        return inst.Position
+    end
     if inst:IsA("Model") then
         local primary = inst.PrimaryPart
-        if primary then return primary.Position end
+        if primary then
+            return primary.Position
+        end
         local part = inst:FindFirstChildWhichIsA("BasePart")
-        if part then return part.Position end
+        if part then
+            return part.Position
+        end
     end
-    local ok, center = pcall(function() return inst:GetBoundingBox() end)
-    if ok and center then return center.Position end
+    local ok, center = pcall(function()
+        return inst:GetBoundingBox()
+    end)
+    if ok and center then
+        return center.Position
+    end
     return nil
 end
 local HeartPosCache = { inst = nil, part = nil }
 local function GetHeartPos(Heart)
-    if not Heart then return nil end
+    if not Heart then
+        return nil
+    end
     if HeartPosCache.inst ~= Heart then
         HeartPosCache.inst = Heart
         HeartPosCache.part = nil
@@ -1337,9 +1564,15 @@ local function GetHeartPos(Heart)
         end
         HeartPosCache.part = part
     end
-    if part and part.Parent then return part.Position end
+    if part and part.Parent then
+        return part.Position
+    end
     return nil
 end
+
+-- ============================================================
+-- Leviathan Heart detection & validation
+-- ============================================================
 local function IsFrozenHeartHarpooned()
     local mapFolder = game:GetService("Workspace"):FindFirstChild("Map")
     if not mapFolder then return false end
@@ -1347,18 +1580,26 @@ local function IsFrozenHeartHarpooned()
     if not heart then return false end
     if heart:GetAttribute("Harpooned") == true then return true end
     for _, d in ipairs(heart:GetDescendants()) do
-        if d:GetAttribute("Harpooned") == true then return true end
+        if d:GetAttribute("Harpooned") == true then
+            return true
+        end
     end
     return false
 end
+
 local function HeartIsValid(heart)
     if not heart or not heart.Parent then return false end
-    if heart:IsA("BasePart") then return heart.Transparency < 1 end
+    if heart:IsA("BasePart") then
+        return heart.Transparency < 1
+    end
     for _, d in ipairs(heart:GetDescendants()) do
-        if d:IsA("BasePart") and d.Transparency < 1 then return true end
+        if d:IsA("BasePart") and d.Transparency < 1 then
+            return true
+        end
     end
     return false
 end
+
 local function Leviathan_CommF()
     local CommF2 = CommF
     if not CommF2 then
@@ -1370,10 +1611,16 @@ end
 local BribeCache = nil
 local BribeCacheAt = 0
 local function GetBribeStatus()
-    if BribeCache and os.clock() - BribeCacheAt < 2 then return BribeCache end
+    if BribeCache and os.clock() - BribeCacheAt < 2 then
+        return BribeCache
+    end
     local CommF2 = Leviathan_CommF()
-    if not CommF2 then return nil end
-    local ok, result = pcall(function() return CommF2:InvokeServer("InfoLeviathan", "1") end)
+    if not CommF2 then
+        return nil
+    end
+    local ok, result = pcall(function()
+        return CommF2:InvokeServer("InfoLeviathan", "1")
+    end)
     if ok then
         local n = tonumber(result)
         if n then
@@ -1389,20 +1636,30 @@ local function GetBribeStatus()
 end
 local function DoBribe()
     local CommF2 = Leviathan_CommF()
-    if not CommF2 then return nil end
-    local ok, result = pcall(function() return CommF2:InvokeServer("InfoLeviathan", "2") end)
-    if ok then return result end
+    if not CommF2 then
+        return nil
+    end
+    local ok, result = pcall(function()
+        return CommF2:InvokeServer("InfoLeviathan", "2")
+    end)
+    if ok then
+        return result
+    end
     return nil
 end
 local function BribeUntilDone()
     local S0 = GetBribeStatus()
-    if S0 == 5 or S0 == -1 or S0 == nil then return end
+    if S0 == 5 or S0 == -1 or S0 == nil then
+        return
+    end
     for i = 1, 4 do
         SetStatus("Sobornando al espía (intento " .. i .. "/4)")
         DoBribe()
         task.wait(0.5)
         local S = GetBribeStatus()
-        if S == 5 or S == -1 or S == nil then break end
+        if S == 5 or S == -1 or S == nil then
+            break
+        end
     end
 end
 local BoatDealerCF = CFrame.new(-16917.1523, 8.59936905, 511.799042)
@@ -1412,32 +1669,52 @@ local CruiseWP_B = CFrame.new(-90000, 30.0003204, -1244.8584)
 local CruiseWP_Far = CFrame.new(-9000000000, 30.0003204, -1244.8584)
 local SailArriveDist = 40
 local function IsBeastHunterBoat(boat)
-    if not boat then return false end
+    if not boat then
+        return false
+    end
     return boat.Name == "Beast Hunter"
 end
 local function BoatOwnerMatch(boat, player)
     local Owner = boat and boat:FindFirstChild("Owner")
-    if not Owner or not player then return false end
-    if Owner.Value == player then return true end
-    if typeof(Owner.Value) == "string" and Owner.Value == player.Name then return true end
-    if tostring(Owner.Value) == player.Name then return true end
+    if not Owner or not player then
+        return false
+    end
+    if Owner.Value == player then
+        return true
+    end
+    if typeof(Owner.Value) == "string" and Owner.Value == player.Name then
+        return true
+    end
+    if tostring(Owner.Value) == player.Name then
+        return true
+    end
     return false
 end
 local function BoatOf(seat)
     local node = seat
     while node do
-        if node.Parent and node.Parent.Name == "Boats" then return node end
+        if node.Parent and node.Parent.Name == "Boats" then
+            return node
+        end
         node = node.Parent
     end
     return nil
 end
 local function AbandonIfTooFar(seat)
-    if not seat or not seat.Parent then return false end
+    if not seat or not seat.Parent then
+        return false
+    end
     local boat = BoatOf(seat)
-    if not boat or not IsBeastHunterBoat(boat) then return false end
-    if not BoatOwnerMatch(boat, LocalPlayer) then return false end
+    if not boat or not IsBeastHunterBoat(boat) then
+        return false
+    end
+    if not BoatOwnerMatch(boat, LocalPlayer) then
+        return false
+    end
     local _, hrp = GetCharacterParts()
-    if not hrp then return false end
+    if not hrp then
+        return false
+    end
     if (hrp.Position - seat.Position).Magnitude > BoatFindRange then
         _G.RJR_AbandonedBoats[boat] = true
         SetStatus("Barco a más de " .. BoatFindRange .. ", lo abandono y compro otro")
@@ -1447,25 +1724,39 @@ local function AbandonIfTooFar(seat)
     return false
 end
 local function IsBoatDead(boat)
-    if not boat then return false end
+    if not boat then
+        return false
+    end
     local Humanoid = boat:FindFirstChild("Humanoid")
     if Humanoid then
         if Humanoid:IsA("ValueBase") then
-            local ok, v = pcall(function() return Humanoid.Value end)
-            if ok and v ~= nil then return v <= 0 end
+            local ok, v = pcall(function()
+                return Humanoid.Value
+            end)
+            if ok and v ~= nil then
+                return v <= 0
+            end
         elseif Humanoid:IsA("Humanoid") then
             return Humanoid.Health <= 0
         end
     end
     local Health = boat:FindFirstChild("Health")
     if Health and Health:IsA("ValueBase") then
-        local ok2, v2 = pcall(function() return Health.Value end)
-        if ok2 and v2 ~= nil then return v2 <= 0 end
+        local ok2, v2 = pcall(function()
+            return Health.Value
+        end)
+        if ok2 and v2 ~= nil then
+            return v2 <= 0
+        end
     end
     local HRPValue = boat:FindFirstChild("HumanoidRootPart")
     if HRPValue and HRPValue:IsA("ValueBase") then
-        local ok3, v3 = pcall(function() return HRPValue.Value end)
-        if ok3 and v3 ~= nil then return v3 <= 0 end
+        local ok3, v3 = pcall(function()
+            return HRPValue.Value
+        end)
+        if ok3 and v3 ~= nil then
+            return v3 <= 0
+        end
     end
     return false
 end
@@ -1473,7 +1764,9 @@ _G.RJR_AbandonedBoats = _G.RJR_AbandonedBoats or setmetatable({}, { __mode = "k"
 local function OwnedBoatsOf(player)
     local result = {}
     local boats = workspace:FindFirstChild("Boats")
-    if not boats or not player then return result end
+    if not boats or not player then
+        return result
+    end
     for _, boat in ipairs(boats:GetChildren()) do
         if IsBeastHunterBoat(boat) and BoatOwnerMatch(boat, player)
         and not _G.RJR_AbandonedBoats[boat] then
@@ -1483,14 +1776,22 @@ local function OwnedBoatsOf(player)
     return result
 end
 local function OwnBoatUnusable(player, isCrew)
-    if _G.RJR_Resetting then return true end
+    if _G.RJR_Resetting then
+        return true
+    end
     local boats = OwnedBoatsOf(player)
-    if #boats == 0 then return false end
+    if #boats == 0 then
+        return false
+    end
     local _, hrp = GetCharacterParts()
-    if not hrp and not isCrew then return false end
+    if not hrp and not isCrew then
+        return false
+    end
     for _, boat in ipairs(boats) do
         if not IsBoatDead(boat) then
-            if isCrew then return false end
+            if isCrew then
+                return false
+            end
             local seat = boat:FindFirstChild("VehicleSeat") or boat:FindFirstChildWhichIsA("BasePart", true)
             if hrp and seat and (seat.Position - hrp.Position).Magnitude <= BoatFindRange then
                 return false
@@ -1501,10 +1802,14 @@ local function OwnBoatUnusable(player, isCrew)
 end
 local function GetOwnBoat(includeDead)
     local boats = workspace:FindFirstChild("Boats")
-    if not boats then return nil end
+    if not boats then
+        return nil
+    end
     local _, hrp = GetCharacterParts()
     local myPos = hrp and hrp.Position
-    if not myPos then return nil end
+    if not myPos then
+        return nil
+    end
     for _, boat in ipairs(boats:GetChildren()) do
         local owner = boat:FindFirstChild("Owner")
         if owner and (owner.Value == LocalPlayer or tostring(owner.Value) == LocalPlayer.Name) then
@@ -1523,12 +1828,18 @@ local function GetOwnBoat(includeDead)
 end
 local function GetCaptainBoat()
     local boats = workspace:FindFirstChild("Boats")
-    if not boats then return nil end
+    if not boats then
+        return nil
+    end
     local captain = Players:FindFirstChild(_G.FollowTarget)
-    if not captain then return nil end
+    if not captain then
+        return nil
+    end
     local _, hrp = GetCharacterParts()
     local myPos = hrp and hrp.Position
-    if not myPos then return nil end
+    if not myPos then
+        return nil
+    end
     for _, boat in ipairs(boats:GetChildren()) do
         local owner = boat:FindFirstChild("Owner")
         if owner and (owner.Value == captain or tostring(owner.Value) == captain.Name)
@@ -1551,19 +1862,25 @@ local function GetCaptainHRP()
 end
 local function KeepFacing()
     local _, hrpNow = GetCharacterParts()
-    if hrpNow then return hrpNow.CFrame - hrpNow.CFrame.Position end
+    if hrpNow then
+        return hrpNow.CFrame - hrpNow.CFrame.Position
+    end
     return CFrame.new()
 end
 local function LiveSeatCF(seat)
     return function()
-        if not seat or not seat.Parent then return nil end
+        if not seat or not seat.Parent then
+            return nil
+        end
         return seat.CFrame
     end
 end
 local function LiveCaptainTopCF(height)
     return function()
         local capHrp = GetCaptainHRP()
-        if not capHrp then return nil end
+        if not capHrp then
+            return nil
+        end
         return CFrame.new(capHrp.Position + Vector3.new(0, height or 35, 0)) * KeepFacing()
     end
 end
@@ -1572,7 +1889,9 @@ local function LiveHeartCF(height)
         local Map = workspace:FindFirstChild("Map")
         local Heart = Map and Map:FindFirstChild("FrozenHeart")
         local hp = Heart and GetHeartPos(Heart)
-        if not hp then return nil end
+        if not hp then
+            return nil
+        end
         return (CFrame.new(hp) * CFrame.new(0, height or 35, 0)) * KeepFacing()
     end
 end
@@ -1582,19 +1901,25 @@ local function LiveGateCF(height)
         local Gate = Map and Map:FindFirstChild("LeviathanGate")
         local Watcher = Gate and Gate:FindFirstChild("FrozenWatcherPart")
         local wp = Watcher and TargetPos(Watcher)
-        if not wp then return nil end
+        if not wp then
+            return nil
+        end
         return (CFrame.new(wp) * CFrame.new(0, height or 5, 0)) * KeepFacing()
     end
 end
 local function LiveSelfCF(minY)
     return function()
         local _, hrp = GetCharacterParts()
-        if not hrp then return nil end
+        if not hrp then
+            return nil
+        end
         return CFrame.new(hrp.Position.X, math.max(hrp.Position.Y, minY or 50), hrp.Position.Z) * KeepFacing()
     end
 end
 local function LiveFixedCF(cf)
-    return function() return cf end
+    return function()
+        return cf
+    end
 end
 _G.RJR_KenLoopGen = 0
 _G.RJR_StartKenLoop = function()
@@ -1607,7 +1932,9 @@ _G.RJR_StartKenLoop = function()
                 pcall(function()
                     local Remotes = RS:FindFirstChild("Remotes")
                     local CommE2 = Remotes and Remotes:FindFirstChild("CommE")
-                    if CommE2 then CommE2:FireServer("Ken", true) end
+                    if CommE2 then
+                        CommE2:FireServer("Ken", true)
+                    end
                 end)
             end
         end
@@ -1618,32 +1945,44 @@ local function GetCannons(boat)
     local cannons = {}
     if boat then
         for _, child in ipairs(boat:GetChildren()) do
-            if child.Name == "Cannon" then table.insert(cannons, child) end
+            if child.Name == "Cannon" then
+                table.insert(cannons, child)
+            end
         end
     end
     return cannons
 end
 local function IsSeatOccupied(seat)
-    if not seat then return false end
+    if not seat then
+        return false
+    end
     local Weld = seat:FindFirstChild("SeatWeld")
     if Weld then
         local p1 = Weld.Part1
         if p1 and p1:IsA("BasePart") and p1:IsDescendantOf(workspace) then
             local ownerChar = p1:FindFirstAncestorWhichIsA("Model")
             local hum = ownerChar and ownerChar:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then return true end
+            if hum and hum.Health > 0 then
+                return true
+            end
         end
-        pcall(function() Weld:Destroy() end)
+        pcall(function()
+            Weld:Destroy()
+        end)
     end
     for _, p in ipairs(Players:GetPlayers()) do
         local char = p.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum and hum.SeatPart == seat and hum.Sit then return true end
+        if hum and hum.SeatPart == seat and hum.Sit then
+            return true
+        end
     end
     return false
 end
 local function CountTeammatesOnBoat(boat)
-    if not boat or not boat.Parent then return 0 end
+    if not boat or not boat.Parent then
+        return 0
+    end
     local Count = 0
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer then
@@ -1658,14 +1997,18 @@ local function CountTeammatesOnBoat(boat)
     if Count == 0 then
         for _, cannon in ipairs(GetCannons(boat)) do
             local seat = cannon:FindFirstChild("Seat")
-            if IsSeatOccupied(seat) then Count = Count + 1 end
+            if IsSeatOccupied(seat) then
+                Count = Count + 1
+            end
         end
     end
     return Count
 end
 local function IsSittingOn(seat)
     local _, _, hum = GetCharacterParts()
-    if not hum or not seat or not seat.Parent then return false end
+    if not hum or not seat or not seat.Parent then
+        return false
+    end
     return hum.SeatPart == seat
 end
 local function IsOnBoat()
@@ -1674,11 +2017,15 @@ local function IsOnBoat()
 end
 local RestoreWallClip = nil
 local function Unseat()
-    if RestoreWallClip then pcall(RestoreWallClip) end
+    if RestoreWallClip then
+        pcall(RestoreWallClip)
+    end
     ClearHover()
     for _ = 1, 3 do
         local _, hrp, hum = GetCharacterParts()
-        if not hum or (not hum.Sit and hum.SeatPart == nil) then return true end
+        if not hum or (not hum.Sit and hum.SeatPart == nil) then
+            return true
+        end
         pcall(function()
             local char = LocalPlayer.Character
             local seat = hum and hum.SeatPart
@@ -1697,7 +2044,9 @@ local function Unseat()
             end)
         end
         if hrp then
-            pcall(function() hrp.CFrame = hrp.CFrame + Vector3.new(0, 10, 0) end)
+            pcall(function()
+                hrp.CFrame = hrp.CFrame + Vector3.new(0, 10, 0)
+            end)
         end
         local UnseatStart = os.clock()
         while os.clock() - UnseatStart < 2 do
@@ -1717,13 +2066,21 @@ local function Unseat()
 end
 local function BoardSeat(seat, timeout)
     timeout = timeout or 15
-    if not seat or not seat.Parent then return false end
-    if AbandonIfTooFar(seat) then return false end
+    if not seat or not seat.Parent then
+        return false
+    end
+    if AbandonIfTooFar(seat) then
+        return false
+    end
     local start = os.clock()
     local Deadline = start + timeout
     while _G.AutoLeviathanFull and os.clock() < Deadline do
-        if not seat or not seat.Parent then return false end
-        if AbandonIfTooFar(seat) then return false end
+        if not seat or not seat.Parent then
+            return false
+        end
+        if AbandonIfTooFar(seat) then
+            return false
+        end
         local _, hrp, hum = GetCharacterParts()
         if hum and hum.SeatPart == seat then
             ClearHover()
@@ -1745,14 +2102,18 @@ local function BoardSeat(seat, timeout)
                         Stall.pos, Stall.at = hrp.Position, os.clock()
                     elseif os.clock() - Stall.at > 4 then
                         _G.RJR_BoardStall = nil
-                        if _G.RJR_RecoverLock then _G.RJR_RecoverLock("no avanzo al subir al asiento") end
+                        if _G.RJR_RecoverLock then
+                            _G.RJR_RecoverLock("no avanzo al subir al asiento")
+                        end
                         return false
                     end
                 else
                     _G.RJR_BoardStall = nil
                 end
                 _tp(LiveSeatCF(seat), function()
-                    if (not _G.AutoLeviathanFull) or (not seat or not seat.Parent) then return true end
+                    if (not _G.AutoLeviathanFull) or (not seat or not seat.Parent) then
+                        return true
+                    end
                     local _, _, humNow = GetCharacterParts()
                     return humNow ~= nil and humNow.SeatPart ~= nil
                 end)
@@ -1769,7 +2130,9 @@ local function ForceUnseat(Seconds)
     local Deadline = os.clock() + (Seconds or 10)
     while _G.AutoLeviathanFull and os.clock() < Deadline do
         local _, _, hum = GetCharacterParts()
-        if not hum or (not hum.Sit and hum.SeatPart == nil) then return true end
+        if not hum or (not hum.Sit and hum.SeatPart == nil) then
+            return true
+        end
         Unseat()
         task.wait(0.3)
     end
@@ -1779,8 +2142,12 @@ end
 local function BoardSeatRetry(seat, timeout, attempts)
     attempts = attempts or 3
     for _ = 1, attempts do
-        if not seat or not seat.Parent then return false end
-        if BoardSeat(seat, timeout) then return true end
+        if not seat or not seat.Parent then
+            return false
+        end
+        if BoardSeat(seat, timeout) then
+            return true
+        end
         Unseat()
         task.wait(0.5)
     end
@@ -1834,20 +2201,26 @@ local function BuyOwnBoat(Message)
     end
     if not Arrived then
         DebugDumpBoats()
+        print("[DEBUG] BuyOwnBoat no llegó al vendedor de barcos", tostring(select(2, GetCharacterParts()) and select(2, GetCharacterParts()).Position or nil))
         SetStatus("No llegué al vendedor de barcos: reintentando")
         return false
     end
     local CommF2 = Leviathan_CommF()
     if CommF2 then
-        pcall(function() CommF2:InvokeServer("BuyBoat", "Beast Hunter") end)
+        pcall(function()
+            CommF2:InvokeServer("BuyBoat", "Beast Hunter")
+        end)
     end
     task.wait(1)
     DebugDumpBoats()
+    print("[DEBUG] BuyOwnBoat llamó a BuyBoat, esperando el barco nuevo")
     return true
 end
 local function NearestPlayerDistance(boat)
     local _, hrp = GetCharacterParts()
-    if not hrp then return math.huge end
+    if not hrp then
+        return math.huge
+    end
     local Min = math.huge
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer then
@@ -1858,7 +2231,9 @@ local function NearestPlayerDistance(boat)
                 local OnThisBoat = hum and hum.SeatPart ~= nil and boat ~= nil and hum.SeatPart:IsDescendantOf(boat)
                 if not OnThisBoat then
                     local d = (root.Position - hrp.Position).Magnitude
-                    if d < Min then Min = d end
+                    if d < Min then
+                        Min = d
+                    end
                 end
             end
         end
@@ -1887,6 +2262,7 @@ local function RebuyBoatAndBoard()
         task.wait(0.5)
     end
     DebugDumpBoats()
+    print("[DEBUG] RebuyBoatAndBoard: no apareció barco nuevo en 30 s")
     return nil, nil
 end
 local LastSailAt = 0
@@ -1896,16 +2272,21 @@ local CruiseStalls = 0
 local CruiseToB = true
 local function SailBoatStream(seat, speed)
     speed = speed or _G.BoatSpeed or 150
-    if not seat or not seat.Parent then return false end
+    if not seat or not seat.Parent then
+        return false
+    end
     LastSailAt = os.clock()
     local _, hrp = GetCharacterParts()
-    if not hrp then return false end
+    if not hrp then
+        return false
+    end
     local dt = RunService.Heartbeat:Wait() or (1 / 60)
     if (seat.Position or hrp.Position).Y < 0 then
         SetStatus("Barco hundido (Y<0): lo abandono y compro otro")
         pcall(function()
             if seat.Parent then
                 _G.RJR_AbandonedBoats[seat.Parent] = true
+                print("[Leviathan] Barco con Y<0 abandonado: " .. seat.Parent.Name)
             end
         end)
         Unseat()
@@ -1935,12 +2316,16 @@ local function SailBoatStream(seat, speed)
                 CruiseStalls = 0
                 CruiseCheckPos = nil
                 CruiseCheckAt = os.clock()
-                if _G.RJR_RecoverLock then _G.RJR_RecoverLock("el barco no avanza") end
+                if _G.RJR_RecoverLock then
+                    _G.RJR_RecoverLock("el barco no avanza")
+                end
             else
                 SetStatus("Crucero atascado: bajo y vuelvo a subir para reiniciar")
                 Unseat()
                 task.wait(0.3)
-                if seat.Parent then BoardSeatRetry(seat, 10) end
+                if seat.Parent then
+                    BoardSeatRetry(seat, 10)
+                end
                 CruiseCheckPos = nil
             end
         else
@@ -1964,7 +2349,9 @@ local function SailBoatTurn(seat, targetPos, speed, FixedY)
     speed = speed or _G.BoatSpeed or 250
     local pos = seat.Position
     local flat = Vector3.new(targetPos.X - pos.X, 0, targetPos.Z - pos.Z)
-    if flat.Magnitude < 0.5 then return end
+    if flat.Magnitude < 0.5 then
+        return
+    end
     LastSailAt = os.clock()
     local dt = RunService.Heartbeat:Wait() or 1 / 60
     local yaw = math.atan2(flat.X, flat.Z) + math.pi
@@ -1976,9 +2363,15 @@ local SeaAPI = {}
 do
 local Sea_MobStillAlive
 local SEA_EVENT_OPTIONS = {
-    "Shark", "Piranha", "Fish Crew Member", "Terrorshark",
-    "Sea Beast", "Ghost Ship", "Pirate Brigade Ship",
-    "Pirate Grand Brigade Ship", "Pirate Basic Ship",
+    "Shark",
+    "Piranha",
+    "Fish Crew Member",
+    "Terrorshark",
+    "Sea Beast",
+    "Ghost Ship",
+    "Pirate Brigade Ship",
+    "Pirate Grand Brigade Ship",
+    "Pirate Basic Ship",
 }
 local SEA_EVENT_OPTIONS_BY_MOB = {
     ["Shark"] = "Shark",
@@ -1995,11 +2388,16 @@ local function Sea_NormalizeSelection(Value)
     local Raw = {}
     if type(Value) == "table" then
         for _, Name in ipairs(Value) do
-            if type(Name) == "string" and Name ~= "" then Raw[#Raw + 1] = Name end
+            if type(Name) == "string" and Name ~= "" then
+                Raw[#Raw + 1] = Name
+            end
         end
         for Key, Flag in pairs(Value) do
-            if Flag == true and type(Key) == "string" then Raw[#Raw + 1] = Key
-            elseif type(Flag) == "string" and Flag ~= "" then Raw[#Raw + 1] = Flag end
+            if Flag == true and type(Key) == "string" then
+                Raw[#Raw + 1] = Key
+            elseif type(Flag) == "string" and Flag ~= "" then
+                Raw[#Raw + 1] = Flag
+            end
         end
     elseif type(Value) == "string" and Value ~= "" then
         Raw[1] = Value
@@ -2015,14 +2413,20 @@ local function Sea_NormalizeSelection(Value)
 end
 local function Sea_SelectionSet()
     local Clean = Sea_NormalizeSelection(_G.HuntSelectEvents)
-    if #Clean == 0 then return nil end
+    if #Clean == 0 then
+        return nil
+    end
     local Set = {}
-    for _, Name in ipairs(Clean) do Set[Name] = true end
+    for _, Name in ipairs(Clean) do
+        Set[Name] = true
+    end
     return Set
 end
 local function Sea_SelectionAllows(MobName)
     local Option = SEA_EVENT_OPTIONS_BY_MOB[MobName]
-    if not Option then return true end
+    if not Option then
+        return true
+    end
     local Set = Sea_SelectionSet()
     return Set == nil or Set[Option] == true
 end
@@ -2066,23 +2470,25 @@ local function Sea_Mob(MaxDistance, Exclude)
     return Best, BestRoot, BestSkill
 end
 Sea_MobStillAlive = function(Mob)
-    if not Mob or not Mob.Parent then return false end
-    local Health = Mob:FindFirstChild("Health")
-    if Health and Health:IsA("ValueBase") and Health.Value <= 0 then return false end
-    local Humanoid = Mob:FindFirstChildOfClass("Humanoid")
-    if Humanoid and Humanoid.Health <= 0 then return false end
-    if Health and Health:IsA("ValueBase") then return true end
-    if Humanoid then return true end
-    for _, d in ipairs(Mob:GetDescendants()) do
-        if d:IsA("Humanoid") then return d.Health > 0 end
-        if d.Name == "Health" and d:IsA("ValueBase") then return d.Value > 0 end
+    if not Mob or not Mob.Parent then
+        return false
     end
-    return false
+    local Health = Mob:FindFirstChild("Health")
+    if Health and Health:IsA("ValueBase") and Health.Value <= 0 then
+        return false
+    end
+    local Humanoid = Mob:FindFirstChildOfClass("Humanoid")
+    if Humanoid and Humanoid.Health <= 0 then
+        return false
+    end
+    return (Health ~= nil and Health:IsA("ValueBase")) or (Humanoid ~= nil)
 end
 local FaceTargetCF = (function()
     local Cached = { model = nil, part = nil, at = 0 }
     return function(standPos, model)
-        if not model or not model.Parent or model:IsA("BasePart") then return nil end
+        if not model or not model.Parent or model:IsA("BasePart") then
+            return nil
+        end
         local now = os.clock()
         if Cached.model ~= model or now - Cached.at > 2 then
             Cached.model, Cached.at, Cached.part = model, now, nil
@@ -2106,14 +2512,20 @@ local FaceTargetCF = (function()
             Cached.part = best
         end
         local part = Cached.part
-        if not part or not part.Parent then return nil end
+        if not part or not part.Parent then
+            return nil
+        end
         local flat = Vector3.new(part.Position.X - standPos.X, 0, part.Position.Z - standPos.Z)
-        if flat.Magnitude < 1 then return nil end
+        if flat.Magnitude < 1 then
+            return nil
+        end
         return CFrame.lookAt(standPos, standPos + flat.Unit)
     end
 end)()
 local function Sea_Stand(Mob, Root)
-    if not Root then return nil end
+    if not Root then
+        return nil
+    end
     local standPos
     if Mob.Parent and Mob.Parent.Name == "SeaBeasts" then
         standPos = Vector3.new(Root.Position.X, 120, Root.Position.Z)
@@ -2123,7 +2535,9 @@ local function Sea_Stand(Mob, Root)
     return FaceTargetCF(standPos, Mob) or CFrame.new(standPos)
 end
 local function Sea_EventRoot(Mob)
-    if not Mob then return nil end
+    if not Mob then
+        return nil
+    end
     return Mob:FindFirstChild("HumanoidRootPart")
         or Mob:FindFirstChild("RootPart")
         or Mob.PrimaryPart
@@ -2132,15 +2546,18 @@ local function Sea_EventRoot(Mob)
 end
 
 -- ============================================================
--- Dragonstorm
+-- Dragonstorm (corrected)
 -- ============================================================
 local ShootGunEvent = nil
 local Validator2 = nil
 local shootFunc, idx, dragonReady = nil, {}, false
 local initDragonErrorReported = false
+
+-- [DRAGONSTORM ENHANCED] module-level state
 local DragonLastFire     = 0
 local DragonFireLock     = false
 local DragonShootRetries = 0
+-- [/DRAGONSTORM ENHANCED]
 
 local VALID_SEA_ENEMIES = {
     "Terrorshark", "Shark", "Piranha",
@@ -2149,47 +2566,15 @@ local VALID_SEA_ENEMIES = {
     "PirateBasic",
 }
 
-local function IsPlayerOwnedBoat(model)
-    if not model or not model.Parent then return false end
-    if model.Parent.Name ~= "Boats" then return false end
-    local owner = model:FindFirstChild("Owner")
-    return owner ~= nil and owner.Value ~= nil and tostring(owner.Value) ~= ""
-end
-
-local function GetMobHP(model)
-    if not model then return nil end
-    local hp = model:FindFirstChild("Health")
-    if hp and hp:IsA("ValueBase") then return hp.Value end
-    local hum = model:FindFirstChildOfClass("Humanoid")
-    if hum then return hum.Health end
-    for _, d in ipairs(model:GetDescendants()) do
-        if d:IsA("Humanoid") then return d.Health end
-    end
-    for _, d in ipairs(model:GetDescendants()) do
-        if d.Name == "Health" and d:IsA("ValueBase") then return d.Value end
-    end
-    return nil
-end
-
-local function IsValidSeaEnemyName(name)
-    if not name then return false end
-    if table.find(VALID_SEA_ENEMIES, name) then return true end
-    local low = tostring(name):lower()
-    if low:find("pirate") or low:find("brigade") then return true end
-    return false
-end
-
-local function GetShipAimPart(model)
-    local engine = model:FindFirstChild("Engine")
-    if engine and engine:IsA("BasePart") then return engine end
-    return nil
-end
-
 local function initDragon()
-    if dragonReady then return true end
+    if dragonReady then
+        return true
+    end
     local success, err = pcall(function()
         local cc = require(RS:WaitForChild("Controllers"):WaitForChild("CombatController"))
-        if not cc or not cc.Attack then error("CombatController.Attack no existe") end
+        if not cc or not cc.Attack then
+            error("CombatController.Attack no existe")
+        end
         for _, v in ipairs(debug.getupvalues(cc.Attack)) do
             if type(v) == "function" then
                 for i, uv in ipairs(debug.getupvalues(v)) do
@@ -2214,132 +2599,172 @@ local function initDragon()
     if not initDragonErrorReported then
         initDragonErrorReported = true
         warn("[Dragonstorm] initDragon fallo: " .. tostring(err))
+        warn("[Dragonstorm] El juego probablemente actualizo CombatController. Reintentando cada 5 s.")
     end
     return false
 end
 
-local function ensureDragonRemotes()
-    if not ShootGunEvent then
-        local modules = RS:FindFirstChild("Modules")
-        local net = modules and modules:FindFirstChild("Net")
-        ShootGunEvent = net and net:FindFirstChild("RE/ShootGunEvent")
-    end
-    if not Validator2 then
-        local remotes = RS:FindFirstChild("Remotes")
-        Validator2 = remotes and remotes:FindFirstChild("Validator2")
-    end
-    return ShootGunEvent ~= nil and Validator2 ~= nil
-end
-
+-- [DRAGONSTORM ENHANCED] health check to auto-recover stale shootFunc
 local function DragonStillHealthy()
     if not shootFunc or not Validator2 or not ShootGunEvent then return false end
-    local ok, healthy = pcall(function()
+    local ok = pcall(function()
         local v = debug.getupvalue(shootFunc, idx.u20)
         return type(v) == "number"
     end)
-    if not ok or not healthy then return false end
+    if not ok then return false end
     if not Validator2.Parent or not ShootGunEvent.Parent then return false end
     return true
 end
+-- [/DRAGONSTORM ENHANCED]
 
+-- [DRAGONSTORM ENHANCED] rewritten fireShot:
+--   * rate-limited
+--   * mutual exclusion
+--   * optional multi-part hit list
+--   * auto-recovers from a stale shootFunc
+--   * preserves the original (pos, part) single-hit signature when
+--     DragonMultiPartHit is off
 local function fireShot(pos, hit)
     if not pos then return false end
     if not initDragon() then return false end
-    if not ensureDragonRemotes() then return false end
     if not DragonStillHealthy() then
         dragonReady = false
         shootFunc, idx = nil, {}
         return false
     end
-    local primary
+
+    -- Rate limit
+    local now = os.clock()
+    local interval = _G.DragonFireInterval or 0.10
+    if now - DragonLastFire < interval then
+        return false
+    end
+    if DragonFireLock then return false end
+    DragonFireLock = true
+    DragonLastFire = now
+
+    -- Build hit list
+    local parts = {}
     if typeof(hit) == "Instance" and hit:IsA("BasePart") then
-        primary = hit
+        parts[1] = hit
     elseif type(hit) == "table" then
         for _, p in ipairs(hit) do
             if typeof(p) == "Instance" and p:IsA("BasePart") then
-                primary = p
-                break
+                parts[#parts + 1] = p
             end
         end
-    elseif typeof(hit) == "Instance" and hit:IsA("Model") then
-        primary = hit.PrimaryPart
+    end
+    if #parts == 0 and typeof(hit) == "Instance" and hit:IsA("Model") then
+        local primary = hit.PrimaryPart
             or hit:FindFirstChild("HumanoidRootPart")
             or hit:FindFirstChildWhichIsA("BasePart", true)
+        if primary then parts[1] = primary end
     end
-    if not primary or not primary.Parent then return false end
-    local shots = math.floor(tonumber(_G.DragonShotsPerBurst) or 3)
-    if shots < 1 then shots = 1 end
-    if shots > 10 then shots = 10 end
-    local u20 = debug.getupvalue(shootFunc, idx.u20)
-    local u21 = debug.getupvalue(shootFunc, idx.u21)
-    local u22 = debug.getupvalue(shootFunc, idx.u22)
-    local u23 = debug.getupvalue(shootFunc, idx.u23)
-    local u24 = debug.getupvalue(shootFunc, idx.u24)
-    local u25 = debug.getupvalue(shootFunc, idx.u25)
-    local u26 = debug.getupvalue(shootFunc, idx.u26)
-    if not (type(u20) == "number" and type(u21) == "number" and type(u22) == "number"
-        and type(u23) == "number" and type(u24) == "number"
-        and type(u25) == "number" and type(u26) == "number") then
-        dragonReady = false
-        shootFunc, idx = nil, {}
+    if #parts == 0 or not parts[1].Parent then
+        DragonFireLock = false
         return false
     end
-    local tokens = table.create(shots)
-    for i = 1, shots do
+
+    if _G.DragonMultiPartHit then
+        local model = parts[1]:FindFirstAncestorWhichIsA("Model")
+        if model then
+            local limit = math.max(1, math.min(_G.DragonMultiPartLimit or 12, 30))
+            local expanded = {}
+            for _, p in ipairs(model:GetDescendants()) do
+                if p:IsA("BasePart") and p.Transparency < 1 then
+                    expanded[#expanded + 1] = p
+                    if #expanded >= limit then break end
+                end
+            end
+            if #expanded > 0 then parts = expanded end
+        end
+    end
+
+    -- Seed computation (identical math to original)
+    local ok = pcall(function()
+        local u20 = debug.getupvalue(shootFunc, idx.u20)
+        local u21 = debug.getupvalue(shootFunc, idx.u21)
+        local u22 = debug.getupvalue(shootFunc, idx.u22)
+        local u23 = debug.getupvalue(shootFunc, idx.u23)
+        local u24 = debug.getupvalue(shootFunc, idx.u24)
+        local u25 = debug.getupvalue(shootFunc, idx.u25)
+        local u26 = debug.getupvalue(shootFunc, idx.u26)
+        if not (u20 and u21 and u22 and u23 and u24 and u25 and u26) then
+            error("upvalues missing")
+        end
         local u79 = u25 * u21
         local u80 = (u24 * u21 + u25 * u20) % u22
         u80 = (u80 * u22 + u79) % u23
         u24 = math.floor(u80 / u22)
         u25 = u80 - u24 * u22
         u26 = u26 + 1
-        tokens[i] = {
-            token = math.floor(u80 / u23 * 16777215),
-            seq   = u26,
-        }
-    end
-    debug.setupvalue(shootFunc, idx.u24, u24)
-    debug.setupvalue(shootFunc, idx.u25, u25)
-    debug.setupvalue(shootFunc, idx.u26, u26)
-    local anyOk = false
-    for i = 1, shots do
-        if not primary.Parent then break end
-        local t = tokens[i]
-        local ok = pcall(function()
-            Validator2:FireServer(t.token, t.seq)
-            ShootGunEvent:FireServer(pos, { primary })
-        end)
-        if ok then
-            anyOk = true
+        debug.setupvalue(shootFunc, idx.u24, u24)
+        debug.setupvalue(shootFunc, idx.u25, u25)
+        debug.setupvalue(shootFunc, idx.u26, u26)
+        Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
+        ShootGunEvent:FireServer(pos, parts)
+    end)
+
+    DragonFireLock = false
+    if not ok then
+        DragonShootRetries = DragonShootRetries + 1
+        if DragonShootRetries >= 3 then
             DragonShootRetries = 0
-        else
-            DragonShootRetries = DragonShootRetries + 1
-            if DragonShootRetries >= 5 then
-                DragonShootRetries = 0
-                dragonReady = false
-                shootFunc, idx = nil, {}
-                return false
+            dragonReady = false
+            shootFunc, idx = nil, {}
+        end
+        return false
+    end
+    DragonShootRetries = 0
+    return true
+end
+-- [/DRAGONSTORM ENHANCED]
+
+local SeaBoatModelsCache, SeaBoatModelsAt
+local function getAllPlayerBoatModels()
+    local now = os.clock()
+    if SeaBoatModelsCache and (now - SeaBoatModelsAt) < 0.5 then
+        return SeaBoatModelsCache
+    end
+    local models = {}
+    local boats = workspace:FindFirstChild("Boats")
+    if boats then
+        for _, v in ipairs(boats:GetChildren()) do
+            local owner = v:FindFirstChild("Owner")
+            if owner and owner.Value and tostring(owner.Value) ~= "" then
+                models[v.Name] = true
             end
         end
     end
-    return anyOk
+    SeaBoatModelsCache, SeaBoatModelsAt = models, now
+    return models
 end
 
 local function targetOwnerAlive(part)
     if not part or not part.Parent then return false end
     local model = part:FindFirstAncestorWhichIsA("Model")
     if not model then return true end
-    local hpVal = GetMobHP(model)
-    if hpVal ~= nil and hpVal <= 0 then return false end
+    local hum = model:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Health <= 0 then return false end
+    local hp = model:FindFirstChild("Health")
+    if hp and hp:IsA("ValueBase") and hp.Value <= 0 then return false end
     return true
 end
 
 local AttackRange = 2500
 local SeaTargetCache, SeaTargetAt, SeaTargetModel
 
+-- Returns (part, model). Picks the exact server-valid hit part per entity:
+--   * Leviathan segment  -> "Leviathan Segment"
+--   * Sea Beast          -> "HumanoidRootPart" (fallback PrimaryPart)
+--   * Pirate boats       -> "Engine"
+--   * ground mobs        -> "HumanoidRootPart" (fallback first BasePart)
 local function getClosestSeaTarget()
     local now = os.clock()
     if SeaTargetCache and (now - SeaTargetAt) < 0.2 then
-        if targetOwnerAlive(SeaTargetCache) then return SeaTargetCache, SeaTargetModel end
+        if targetOwnerAlive(SeaTargetCache) then
+            return SeaTargetCache, SeaTargetModel
+        end
         SeaTargetCache, SeaTargetModel = nil, nil
     end
     local char = LocalPlayer.Character
@@ -2348,21 +2773,28 @@ local function getClosestSeaTarget()
     if not myHRP then return nil, nil end
     local myPos = myHRP.Position
     local best, bestModel, bestDist = nil, nil, AttackRange
+    local playerBoats = getAllPlayerBoatModels()
     local selectionSet = Sea_SelectionSet()
+
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
             local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
             local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
-            local allowed = isLeviathan or configName == nil
+            local allowed = isLeviathan
+                or configName == nil
                 or (selectionSet == nil or selectionSet[configName] == true)
             if allowed then
-                local hpVal = GetMobHP(e)
-                local alive = hpVal == nil or hpVal > 0
+                local hp = e:FindFirstChild("Health")
+                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
                 if alive then
                     local part
-                    if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
-                    part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
+                    if isLeviathan then
+                        part = e:FindFirstChild("Leviathan Segment")
+                    end
+                    part = part
+                        or e:FindFirstChild("HumanoidRootPart")
+                        or e.PrimaryPart
                     if part and part:IsA("BasePart") then
                         local d = (part.Position - myPos).Magnitude
                         if d < bestDist then
@@ -2373,19 +2805,27 @@ local function getClosestSeaTarget()
             end
         end
     end
+
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, e in ipairs(enemies:GetChildren()) do
-            if IsValidSeaEnemyName(e.Name)
-                and not IsPlayerOwnedBoat(e)
+            if table.find(VALID_SEA_ENEMIES, e.Name)
+                and not playerBoats[e.Name]
                 and Sea_SelectionAllows(e.Name) then
-                local hpVal = GetMobHP(e)
-                local alive = hpVal == nil or hpVal > 0
+                local hp = e:FindFirstChild("Health")
+                local hum = e:FindFirstChildOfClass("Humanoid")
+                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
+                    or (hum and hum.Health > 0)
                 if alive then
-                    local shipPart = GetShipAimPart(e)
+                    local engine = e:FindFirstChild("Engine")
+                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
                     local part
-                    if shipPart then part = shipPart
-                    else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
+                    if isBoat then
+                        part = engine
+                    else
+                        part = e:FindFirstChild("HumanoidRootPart")
+                            or e:FindFirstChildWhichIsA("BasePart", true)
+                    end
                     if part and part:IsA("BasePart") then
                         local d = (part.Position - myPos).Magnitude
                         if d < bestDist then
@@ -2400,65 +2840,10 @@ local function getClosestSeaTarget()
     return best, bestModel
 end
 
-local function getAllSeaTargets()
-    local targets = {}
-    local char = LocalPlayer.Character
-    if not char then return targets end
-    local myHRP = char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then return targets end
-    local myPos = myHRP.Position
-    local selectionSet = Sea_SelectionSet()
-    local Range = 2500
-    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
-    if seaBeasts then
-        for _, e in ipairs(seaBeasts:GetChildren()) do
-            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
-            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
-            local allowed = isLeviathan or configName == nil
-                or (selectionSet == nil or selectionSet[configName] == true)
-            if allowed then
-                local hpVal = GetMobHP(e)
-                local alive = hpVal == nil or hpVal > 0
-                if alive then
-                    local part
-                    if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
-                    part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
-                    if part and part:IsA("BasePart") then
-                        local d = (part.Position - myPos).Magnitude
-                        if d < Range then
-                            table.insert(targets, {part = part, model = e, dist = d, isLeviathan = isLeviathan})
-                        end
-                    end
-                end
-            end
-        end
-    end
-    local enemies = workspace:FindFirstChild("Enemies")
-    if enemies then
-        for _, e in ipairs(enemies:GetChildren()) do
-            if IsValidSeaEnemyName(e.Name)
-                and not IsPlayerOwnedBoat(e)
-                and Sea_SelectionAllows(e.Name) then
-                local hpVal = GetMobHP(e)
-                local alive = hpVal == nil or hpVal > 0
-                if alive then
-                    local shipPart = GetShipAimPart(e)
-                    local part
-                    if shipPart then part = shipPart
-                    else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
-                    if part and part:IsA("BasePart") then
-                        local d = (part.Position - myPos).Magnitude
-                        if d < Range then
-                            table.insert(targets, {part = part, model = e, dist = d})
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return targets
-end
-
+-- [DRAGONSTORM ENHANCED] Leviathan-only target resolver.
+-- Reuses the same hit-part rules as getClosestSeaTarget but only ever
+-- returns the Leviathan. This is what stops Dragonstorm from wasting
+-- shots on nearby Sharks / Piranhas during the boss fight.
 local function getLeviathanTarget()
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if not seaBeasts then return nil, nil end
@@ -2470,8 +2855,8 @@ local function getLeviathanTarget()
     local best, bestModel, bestDist = nil, nil, AttackRange
     for _, e in ipairs(seaBeasts:GetChildren()) do
         if e.Name == "Leviathan Segment" or e.Name == "Leviathan" then
-            local hpVal = GetMobHP(e)
-            local alive = hpVal == nil or hpVal > 0
+            local hp = e:FindFirstChild("Health")
+            local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
             if alive then
                 local part = e:FindFirstChild("Leviathan Segment")
                     or e:FindFirstChild("HumanoidRootPart")
@@ -2487,10 +2872,13 @@ local function getLeviathanTarget()
     end
     return best, bestModel
 end
+-- [/DRAGONSTORM ENHANCED]
 
 local DragonAttackRunning = false
 local function StartDragonAttack()
-    if DragonAttackRunning then return end
+    if DragonAttackRunning then
+        return
+    end
     DragonAttackRunning = true
     task.spawn(function()
         local WarnedOnce = false
@@ -2507,69 +2895,52 @@ local function StartDragonAttack()
         local lastDiag = 0
         while _G.DragonGunFarm do
             local ok, err = pcall(function()
-                ensureDragonRemotes()
-                if not ShootGunEvent or not Validator2 then return end
+                if not ShootGunEvent then
+                    local modules = RS:FindFirstChild("Modules")
+                    local net = modules and modules:FindFirstChild("Net")
+                    ShootGunEvent = net and net:FindFirstChild("RE/ShootGunEvent")
+                end
+                if not Validator2 then
+                    local remotes = RS:FindFirstChild("Remotes")
+                    Validator2 = remotes and remotes:FindFirstChild("Validator2")
+                end
+                if not ShootGunEvent or not Validator2 then
+                    return
+                end
                 local char = LocalPlayer.Character
                 if not char then return end
                 local tool = char:FindFirstChildOfClass("Tool")
                 if not tool or tool.Name ~= "Dragonstorm" then
-                    if not IsOnBoat() then Equip_Auto("Dragonstorm") end
+                    if not IsOnBoat() then
+                        Equip_Auto("Dragonstorm")
+                    end
                     return
                 end
-                if TpActive or Tweening then return end
-                local now = os.clock()
-                local interval = _G.DragonFireInterval or 0.30
-                if now - DragonLastFire < interval then return end
-                local all = getAllSeaTargets()
-                if #all == 0 then
+                -- Priority: Leviathan first, then nearest sea event.
+                local target, targetModel = getLeviathanTarget()
+                if not target then
+                    target, targetModel = getClosestSeaTarget()
+                end
+                if not target then
                     if os.clock() - lastDiag > 2 then
                         lastDiag = os.clock()
                         print("[Dragonstorm] sin objetivo dentro de rango")
                     end
                     return
                 end
-                table.sort(all, function(a, b) return a.dist < b.dist end)
-                local maxTargets
-                if _G.DragonMultiTarget == false then
-                    maxTargets = 1
-                else
-                    maxTargets = math.floor(tonumber(_G.DragonMaxTargetsPerBurst) or 10)
-                    if maxTargets < 1 then maxTargets = 1 end
-                    if maxTargets > 20 then maxTargets = 20 end
-                end
-                local multiRange = tonumber(_G.DragonMultiRange) or 400
-                if multiRange < 50 then multiRange = 50 end
-                if multiRange > 3000 then multiRange = 3000 end
-                local primary = all[1]
-                local picked = {}
-                for i = 1, #all do
-                    if #picked >= maxTargets then break end
-                    local t = all[i]
-                    if t.part and t.part.Parent then
-                        if i == 1 then
-                            table.insert(picked, t)
-                        else
-                            local d = (t.part.Position - primary.part.Position).Magnitude
-                            if d <= multiRange then
-                                table.insert(picked, t)
-                            end
-                        end
-                    end
-                end
-                if #picked == 0 then return end
-                DragonLastFire = now
-                for i = 1, #picked do
-                    local t = picked[i]
-                    if t.part and t.part.Parent then
-                        fireShot(t.part.Position, t.part)
-                    end
+                local fired = fireShot(target.Position, target)
+                if not fired and os.clock() - lastDiag > 2 then
+                    lastDiag = os.clock()
+                    print("[Dragonstorm] disparo rechazado para "
+                        .. (targetModel and targetModel.Name or target.Name))
                 end
             end)
             if not ok and os.clock() - lastDiag > 2 then
                 lastDiag = os.clock()
                 warn("[Dragonstorm] error en bucle: " .. tostring(err))
             end
-            task.wait(0.05)
+            -- fireShot is rate-limited internally; still yield.
+            task.wait(_G.DragonFireInterval or 0.10)
         end
         DragonAttackRunning = false
     end)
@@ -2578,13 +2949,13 @@ end
 -- End Dragonstorm
 -- ============================================================
 
--- [FIXED] FightSeaEvent: always TP to the mob even when DragonGunFarm is on,
--- so the character actually leaves the boat when a sea event appears.
 local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
     local start = os.clock()
     local function CurrentStand()
         local r = Sea_EventRoot(Mob)
-        if not r then return nil end
+        if not r then
+            return nil
+        end
         return Sea_Stand(Mob, r)
     end
     while _G.AutoLeviathanFull and os.clock() - start < 600 do
@@ -2592,19 +2963,18 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
             SetStatus("El capitán volvió al barco: dejo de pelear y vuelvo")
             break
         end
-        if not Character or not HRP or not HD or HD.Health <= 0 then break end
+        if not Character or not HRP or not HD or HD.Health <= 0 then
+            break
+        end
         if not Mob or not Mob.Parent or not Sea_MobStillAlive(Mob) then
-            if Mob then SetStatus("Evento marino derrotado: " .. Mob.Name) end
+            if Mob then
+                SetStatus("Evento marino derrotado: " .. Mob.Name)
+            end
             break
         end
         SetStatus("Farmeo marino: " .. Mob.Name .. " (llevo " .. math.floor(os.clock() - start) .. " s)")
-        if _G.DragonGunFarm then
-            AttackModel = nil
-            AttackStandFn = nil
-        else
-            AttackModel = Mob
-            AttackStandFn = CurrentStand
-        end
+        AttackModel = Mob
+        AttackStandFn = CurrentStand
         local _, _, humSE = GetCharacterParts()
         if humSE and (humSE.Sit or humSE.SeatPart ~= nil) then
             SetStatus("Farmeo marino: comprobando salir del asiento")
@@ -2648,15 +3018,34 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
     task.wait(0.3)
 end
 local function Leviathan_IsDead(model)
-    local hpVal = GetMobHP(model)
-    if hpVal ~= nil then return hpVal <= 0 end
+    local Hum = model:FindFirstChildOfClass("Humanoid")
+    if Hum and Hum.Health <= 0 then
+        return true
+    end
+    local Health = model:FindFirstChild("Health")
+    if Health and (Health:IsA("NumberValue") or Health:IsA("IntValue")) and Health.Value <= 0 then
+        return true
+    end
     return false
 end
 local function Leviathan_GetHP(model)
-    return GetMobHP(model)
+    if not model then
+        return nil
+    end
+    local Hum = model:FindFirstChildOfClass("Humanoid")
+    if Hum then
+        return Hum.Health
+    end
+    local Health = model:FindFirstChild("Health")
+    if Health and (Health:IsA("NumberValue") or Health:IsA("IntValue")) then
+        return Health.Value
+    end
+    return nil
 end
 local function Leviathan_RootPart(model)
-    if not model then return nil end
+    if not model then
+        return nil
+    end
     return model:FindFirstChild("HumanoidRootPart")
         or model:FindFirstChild("RootPart")
         or model.PrimaryPart
@@ -2705,7 +3094,9 @@ local function Leviathan_Stand(model, part)
         or model.PrimaryPart
         or model:FindFirstChild("Head")
         or part
-    if not Root then return nil end
+    if not Root then
+        return nil
+    end
     local standPos = Vector3.new(Root.Position.X, Root.Position.Y + 75, Root.Position.Z)
     return FaceTargetCF(standPos, model) or CFrame.new(standPos)
 end
@@ -2717,7 +3108,9 @@ task.spawn(function()
         task.wait(0.5)
         if Leviathan_Find() then
             LastSeenAt = os.clock()
-            if not LeviathanPartsAt then LeviathanPartsAt = LastSeenAt end
+            if not LeviathanPartsAt then
+                LeviathanPartsAt = LastSeenAt
+            end
         elseif os.clock() - LastSeenAt > 15 then
             LeviathanWaitDone = false
             LeviathanPartsAt = nil
@@ -2726,7 +3119,9 @@ task.spawn(function()
 end)
 local function FightLeviathan(ShouldBreak, WaitSec)
     local model, part = Leviathan_Find()
-    if not model then return false end
+    if not model then
+        return false
+    end
     if not LeviathanWaitDone then
         WaitSec = WaitSec or 10
         local Since = LeviathanPartsAt or os.clock()
@@ -2747,8 +3142,12 @@ local function FightLeviathan(ShouldBreak, WaitSec)
     local MissingSince = nil
     local MissingGrace = 15
     while _G.AutoLeviathanFull and os.clock() - start < 900 do
-        if ShouldBreak and ShouldBreak() then break end
-        if not Character or not HRP or not HD or HD.Health <= 0 then break end
+        if ShouldBreak and ShouldBreak() then
+            break
+        end
+        if not Character or not HRP or not HD or HD.Health <= 0 then
+            break
+        end
         local HeartMap = workspace:FindFirstChild("Map")
         if HeartMap and HeartMap:FindFirstChild("FrozenHeart") then
             Killed = true
@@ -2794,10 +3193,16 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                 local FleeY = hrp and (hrp.Position.Y + 1050) or nil
                 local EscStart = os.clock()
                 while _G.AutoLeviathanFull and os.clock() - EscStart < 600 do
-                    if ShouldBreak and ShouldBreak() then break end
-                    if not Character or not HRP or not HD or HD.Health <= 0 then break end
+                    if ShouldBreak and ShouldBreak() then
+                        break
+                    end
+                    if not Character or not HRP or not HD or HD.Health <= 0 then
+                        break
+                    end
                     model, part = Leviathan_Find()
-                    if not model then break end
+                    if not model then
+                        break
+                    end
                     local H = HD and HD.Health
                     if H and H >= 5000 then
                         SetStatus("Vida recuperada: sigo atacando")
@@ -2827,7 +3232,9 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                 local HPNow = Leviathan_GetHP(model)
                 SetStatus("Atacando al Leviathan: " .. model.Name .. (HPNow and (" - vida " .. string.format("%.0f", HPNow)) or ""))
                 local function CurrentStand()
-                    if not model.Parent or Leviathan_IsDead(model) then return nil end
+                    if not model.Parent or Leviathan_IsDead(model) then
+                        return nil
+                    end
                     local _, p = Leviathan_Find()
                     return Leviathan_Stand(model, p or part)
                 end
@@ -2844,23 +3251,27 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                     end
                     FightTarget = { CF = Stand, At = os.clock() }
                 end
+                -- [DRAGONSTORM ENHANCED] Leviathan branch:
+                --   * Uses getLeviathanTarget() so Dragonstorm can never
+                --     fire at a nearby sea event during the boss fight.
+                --   * Only fires if Dragonstorm is already the equipped tool,
+                --     which removes the equip/fire race that produced
+                --     rejected shots in the original code.
                 if _G.DragonGunLeviathan and CheckItem("Dragonstorm") then
                     if HasDragonstormEquipped() then
-                        local now = os.clock()
-                        local interval = _G.DragonFireInterval or 0.30
-                        if now - DragonLastFire >= interval then
-                            DragonLastFire = now
-                            local lvPart, lvModel = getLeviathanTarget()
-                            if lvPart then
-                                local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
-                                local aimPos = aimPart and aimPart.Position or lvPart.Position
-                                fireShot(aimPos, lvPart)
-                            end
+                        local lvPart, lvModel = getLeviathanTarget()
+                        if lvPart then
+                            local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
+                            local aimPos = aimPart and aimPart.Position or lvPart.Position
+                            fireShot(aimPos, lvPart)
                         end
                     else
-                        if not IsOnBoat() then Equip_Auto("Dragonstorm") end
+                        if not IsOnBoat() then
+                            Equip_Auto("Dragonstorm")
+                        end
                     end
                 else
+                -- [/DRAGONSTORM ENHANCED]
                     local Distance = Stand and (Stand.Position - HRP.Position).Magnitude or 0
                     if Distance <= 80 then
                         pcall(CoolDown_Auto)
@@ -2892,9 +3303,10 @@ SeaAPI.Leviathan_Stand = Leviathan_Stand
 SeaAPI.FightLeviathan = FightLeviathan
 SeaAPI.SeaEventOptions = SEA_EVENT_OPTIONS
 SeaAPI.NormalizeSelection = Sea_NormalizeSelection
+-- [DRAGONSTORM ENHANCED] expose the new resolver + health check
 SeaAPI.GetLeviathanTarget = getLeviathanTarget
 SeaAPI.GetClosestSeaTarget = getClosestSeaTarget
-SeaAPI.GetAllSeaTargets = getAllSeaTargets
+-- [/DRAGONSTORM ENHANCED]
 do
     local RawSelection = _G.HuntSelectEvents
     local CleanSelection = Sea_NormalizeSelection(RawSelection)
@@ -2913,534 +3325,36 @@ do
     end
 end
 end
-
--- [SEA EVENT PANEL] Draggable on-screen list (replaces ESP)
-do
-    local PanelAPI = {}
-    local Active = setmetatable({}, { __mode = "k" })
-    local ModelMaxHP = setmetatable({}, { __mode = "k" })
-    local PanelFrame, ScrollingFrame, TitleLabel, RootGui
-    local UPDATE_INTERVAL = 0.20
-
-    local COLORS = {
-        LeviathanSegment = Color3.fromRGB(190, 70, 255),
-        Leviathan = Color3.fromRGB(190, 70, 255),
-        SeaBeast1 = Color3.fromRGB(255, 90, 40),
-        Terrorshark = Color3.fromRGB(255, 140, 0),
-        Shark = Color3.fromRGB(255, 220, 80),
-        Piranha = Color3.fromRGB(120, 200, 255),
-        ["Fish Crew Member"] = Color3.fromRGB(80, 220, 140),
-        FishBoat = Color3.fromRGB(200, 200, 200),
-        PirateBrigade = Color3.fromRGB(255, 90, 90),
-        PirateGrandBrigade = Color3.fromRGB(220, 40, 40),
-        PirateBasic = Color3.fromRGB(200, 120, 120),
-    }
-    local function GetColor(n) return COLORS[n] or Color3.fromRGB(255, 255, 255) end
-
-    local DISPLAY_NAMES = {
-        ["SeaBeast1"] = "Sea Beast",
-        ["FishBoat"] = "Ghost Ship",
-        ["PirateBrigade"] = "Pirate Brigade Ship",
-        ["PirateGrandBrigade"] = "Pirate Grand Brigade Ship",
-        ["PirateBasic"] = "Pirate Basic Ship",
-        ["Leviathan Segment"] = "Leviathan",
-    }
-    local VALID_NAMES = {
-        ["Leviathan Segment"] = true, ["Leviathan"] = true, ["SeaBeast1"] = true,
-        ["Terrorshark"] = true, ["Shark"] = true, ["Piranha"] = true,
-        ["Fish Crew Member"] = true, ["FishBoat"] = true,
-        ["PirateBrigade"] = true, ["PirateGrandBrigade"] = true, ["PirateBasic"] = true,
-    }
-    local MAX_HP_NAMES = {
-        "MaxHealth", "MaxHp", "MaxHP", "HealthMax",
-        "TotalHealth", "TotalHp", "TotalHP", "MaxHitpoints",
-        "MaxHPValue", "HealthMaximum", "HPMax", "MaxH",
-    }
-    local MAX_HP_ATTRS = {"MaxHealth", "MaxHp", "MaxHP", "HealthMax", "TotalHealth", "MaxH"}
-
-    local function ReadNum(v)
-        if type(v) == "number" then return v end
-        if typeof(v) == "Instance" and v:IsA("ValueBase") then
-            local ok, n = pcall(function() return v.Value end)
-            if ok and type(n) == "number" then return n end
-        end
-        return nil
-    end
-    local function FindDeep(root, name, cls)
-        if not root then return nil end
-        local d = root:FindFirstChild(name)
-        if d and (not cls or d:IsA(cls)) then return d end
-        for _, x in ipairs(root:GetDescendants()) do
-            if x.Name == name and (not cls or x:IsA(cls)) then return x end
-        end
-        return nil
-    end
-    local function FindHum(root)
-        if not root then return nil end
-        local h = root:FindFirstChildOfClass("Humanoid")
-        if h then return h end
-        for _, d in ipairs(root:GetDescendants()) do
-            if d:IsA("Humanoid") then return d end
-        end
-        return nil
-    end
-
-    local function GetHealthOf(model)
-        local hum = FindHum(model)
-        if hum then
-            local h = tonumber(hum.Health)
-            local mh = tonumber(hum.MaxHealth)
-            if h and mh and mh > 0 then
-                if not ModelMaxHP[model] or mh > ModelMaxHP[model] then
-                    ModelMaxHP[model] = mh
-                end
-                return h, ModelMaxHP[model]
-            end
-        end
-        local hp = model:FindFirstChild("Health")
-        if not (hp and hp:IsA("ValueBase")) then hp = FindDeep(model, "Health", "ValueBase") end
-        if not hp then
-            for _, a in ipairs({"Health", "Hp", "HP"}) do
-                local v = model:GetAttribute(a)
-                if type(v) == "number" and v >= 0 then
-                    local mv = ModelMaxHP[model]
-                    if not mv then
-                        for _, mn in ipairs(MAX_HP_ATTRS) do
-                            local m = model:GetAttribute(mn)
-                            if type(m) == "number" and m > 0 then mv = m break end
-                        end
-                        if mv then ModelMaxHP[model] = mv end
-                    end
-                    return v, mv or v
-                end
-            end
-            return nil, nil
-        end
-        local cur = ReadNum(hp)
-        if cur == nil then return nil, nil end
-        local maxv = nil
-        if hp.Parent then
-            for _, name in ipairs(MAX_HP_NAMES) do
-                local n = ReadNum(hp.Parent:FindFirstChild(name))
-                if n and n > 0 then maxv = n break end
-            end
-        end
-        if not maxv then
-            for _, d in ipairs(model:GetDescendants()) do
-                if d:IsA("ValueBase") then
-                    for _, name in ipairs(MAX_HP_NAMES) do
-                        if d.Name == name then
-                            local n = ReadNum(d)
-                            if n and n > 0 then maxv = n break end
-                        end
-                    end
-                end
-                if maxv then break end
-            end
-        end
-        if not maxv then
-            for _, a in ipairs(MAX_HP_ATTRS) do
-                local v = hp:GetAttribute(a)
-                if type(v) == "number" and v > 0 then maxv = v break end
-            end
-        end
-        if not maxv then
-            for _, a in ipairs(MAX_HP_ATTRS) do
-                local v = model:GetAttribute(a)
-                if type(v) == "number" and v > 0 then maxv = v break end
-            end
-        end
-        local cached = ModelMaxHP[model]
-        if maxv and maxv > 0 then
-            if not cached or maxv > cached then ModelMaxHP[model] = maxv end
-            maxv = ModelMaxHP[model]
-        elseif cached then
-            maxv = cached
-        else
-            maxv = cur
-        end
-        return cur, maxv
-    end
-
-    local function FormatHP(n)
-        if type(n) ~= "number" then return "?" end
-        if n ~= n or n == math.huge or n == -math.huge then return "?" end
-        if n == math.floor(n) then return string.format("%d", n) end
-        return string.format("%.1f", n)
-    end
-
-    local function IsMobile()
-        local ui = game:GetService("UserInputService")
-        return ui.TouchEnabled and not ui.KeyboardEnabled
-    end
-
-    local function EnsureRoot()
-        if RootGui and RootGui.Parent then return RootGui end
-        local parent
-        if gethui then
-            local ok, hui = pcall(gethui)
-            if ok and hui then parent = hui end
-        end
-        if not parent then pcall(function() parent = game:GetService("CoreGui") end) end
-        local ok = false
-        if parent then
-            ok = pcall(function()
-                RootGui = Instance.new("ScreenGui")
-                RootGui.Name = "RJR_SeaEventPanel"
-                RootGui.ResetOnSpawn = false
-                RootGui.IgnoreGuiInset = true
-                RootGui.DisplayOrder = 997
-                RootGui.Parent = parent
-            end)
-        end
-        if not ok or not RootGui or not RootGui.Parent then
-            RootGui = Instance.new("ScreenGui")
-            RootGui.Name = "RJR_SeaEventPanel"
-            RootGui.ResetOnSpawn = false
-            RootGui.IgnoreGuiInset = true
-            RootGui.DisplayOrder = 997
-            RootGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-        end
-        return RootGui
-    end
-
-    local function BuildPanel()
-        if PanelFrame and PanelFrame.Parent then return end
-        local root = EnsureRoot()
-        local mobile = IsMobile()
-        local baseW = mobile and 260 or 300
-        local baseH = mobile and 240 or 280
-        PanelFrame = Instance.new("Frame")
-        PanelFrame.Name = "SeaEventPanel"
-        PanelFrame.Size = UDim2.fromOffset(baseW, baseH)
-        PanelFrame.Position = UDim2.fromOffset(20, 120)
-        PanelFrame.BackgroundColor3 = Color3.fromRGB(20, 18, 28)
-        PanelFrame.BackgroundTransparency = 0.08
-        PanelFrame.BorderSizePixel = 0
-        PanelFrame.Active = true
-        PanelFrame.Parent = root
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 10)
-        corner.Parent = PanelFrame
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(150, 60, 255)
-        stroke.Thickness = 1.5
-        stroke.Transparency = 0.2
-        stroke.Parent = PanelFrame
-        local titleBar = Instance.new("Frame")
-        titleBar.Name = "TitleBar"
-        titleBar.Size = UDim2.new(1, 0, 0, mobile and 30 or 28)
-        titleBar.BackgroundColor3 = Color3.fromRGB(150, 60, 255)
-        titleBar.BackgroundTransparency = 0.85
-        titleBar.BorderSizePixel = 0
-        titleBar.Parent = PanelFrame
-        local tc = Instance.new("UICorner")
-        tc.CornerRadius = UDim.new(0, 10)
-        tc.Parent = titleBar
-        TitleLabel = Instance.new("TextLabel")
-        TitleLabel.BackgroundTransparency = 1
-        TitleLabel.Size = UDim2.new(1, -72, 1, 0)
-        TitleLabel.Position = UDim2.fromOffset(10, 0)
-        TitleLabel.Font = Enum.Font.GothamBold
-        TitleLabel.TextSize = 13
-        TitleLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
-        TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-        TitleLabel.Text = "Sea Events (0)"
-        TitleLabel.Parent = titleBar
-        local closeBtn = Instance.new("TextButton")
-        closeBtn.Size = UDim2.fromOffset(mobile and 28 or 22, mobile and 28 or 22)
-        closeBtn.Position = UDim2.new(1, mobile and -32 or -26, 0.5, mobile and -14 or -11)
-        closeBtn.BackgroundColor3 = Color3.fromRGB(220, 70, 70)
-        closeBtn.BackgroundTransparency = 0.3
-        closeBtn.Text = "X"
-        closeBtn.Font = Enum.Font.GothamBold
-        closeBtn.TextSize = 12
-        closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        closeBtn.AutoButtonColor = false
-        closeBtn.BorderSizePixel = 0
-        closeBtn.Parent = titleBar
-        local cc1 = Instance.new("UICorner")
-        cc1.CornerRadius = UDim.new(1, 0)
-        cc1.Parent = closeBtn
-        closeBtn.MouseButton1Click:Connect(function()
-            _G.SeaEventESPPanel = false
-            SaveConfig()
-            PanelAPI.Hide()
-        end)
-        local collapseBtn = Instance.new("TextButton")
-        collapseBtn.Size = UDim2.fromOffset(mobile and 28 or 22, mobile and 28 or 22)
-        collapseBtn.Position = UDim2.new(1, mobile and -64 or -52, 0.5, mobile and -14 or -11)
-        collapseBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
-        collapseBtn.BackgroundTransparency = 0.3
-        collapseBtn.Text = "_"
-        collapseBtn.Font = Enum.Font.GothamBold
-        collapseBtn.TextSize = 12
-        collapseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        collapseBtn.AutoButtonColor = false
-        collapseBtn.BorderSizePixel = 0
-        collapseBtn.Parent = titleBar
-        local cc2 = Instance.new("UICorner")
-        cc2.CornerRadius = UDim.new(1, 0)
-        cc2.Parent = collapseBtn
-        ScrollingFrame = Instance.new("ScrollingFrame")
-        ScrollingFrame.Name = "Rows"
-        ScrollingFrame.Size = UDim2.new(1, -8, 1, -(mobile and 34 or 32))
-        ScrollingFrame.Position = UDim2.fromOffset(4, mobile and 32 or 30)
-        ScrollingFrame.BackgroundTransparency = 1
-        ScrollingFrame.BorderSizePixel = 0
-        ScrollingFrame.ScrollBarThickness = 6
-        ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(150, 60, 255)
-        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-        ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        ScrollingFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-        ScrollingFrame.Parent = PanelFrame
-        local pad = Instance.new("UIPadding")
-        pad.PaddingTop = UDim.new(0, 2)
-        pad.PaddingBottom = UDim.new(0, 2)
-        pad.PaddingLeft = UDim.new(0, 2)
-        pad.PaddingRight = UDim.new(0, 2)
-        pad.Parent = ScrollingFrame
-        local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 3)
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Parent = ScrollingFrame
-        local dragging, dragStart, startPos = false, nil, nil
-        titleBar.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1
-                or i.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                dragStart = Vector2.new(i.Position.X, i.Position.Y)
-                startPos = PanelFrame.Position
-            end
-        end)
-        titleBar.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1
-                or i.UserInputType == Enum.UserInputType.Touch then
-                dragging = false
-            end
-        end)
-        local uis = game:GetService("UserInputService")
-        uis.InputChanged:Connect(function(i)
-            if not dragging then return end
-            if i.UserInputType == Enum.UserInputType.MouseMovement
-                or i.UserInputType == Enum.UserInputType.Touch then
-                local now = Vector2.new(i.Position.X, i.Position.Y)
-                local delta = now - dragStart
-                local screen = RootGui.AbsoluteSize
-                if screen.X <= 0 then
-                    screen = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
-                end
-                local size = PanelFrame.AbsoluteSize
-                local bx = startPos.X.Scale * screen.X + startPos.X.Offset
-                local by = startPos.Y.Scale * screen.Y + startPos.Y.Offset
-                local nx = math.clamp(bx + delta.X, -size.X + math.min(40, size.X * 0.5), screen.X - math.min(40, size.X * 0.5))
-                local ny = math.clamp(by + delta.Y, 0, screen.Y - math.min(40, size.Y * 0.5))
-                PanelFrame.Position = UDim2.fromOffset(math.floor(nx), math.floor(ny))
-            end
-        end)
-        local collapsed = false
-        local expandedH = baseH
-        collapseBtn.MouseButton1Click:Connect(function()
-            collapsed = not collapsed
-            ScrollingFrame.Visible = not collapsed
-            PanelFrame.Size = UDim2.fromOffset(baseW, collapsed and (mobile and 30 or 28) or expandedH)
-        end)
-    end
-
-    local function CreateRow(model, order)
-        local mobile = IsMobile()
-        local rowH = mobile and 42 or 38
-        local row = Instance.new("Frame")
-        row.Name = "Row_" .. tostring(order)
-        row.Size = UDim2.new(1, -2, 0, rowH)
-        row.BackgroundColor3 = Color3.fromRGB(30, 28, 40)
-        row.BackgroundTransparency = 0.3
-        row.BorderSizePixel = 0
-        row.LayoutOrder = order
-        row.Parent = ScrollingFrame
-        local c = Instance.new("UICorner")
-        c.CornerRadius = UDim.new(0, 6)
-        c.Parent = row
-        local nameLbl = Instance.new("TextLabel")
-        nameLbl.BackgroundTransparency = 1
-        nameLbl.Size = UDim2.new(1, -70, 0, 16)
-        nameLbl.Position = UDim2.fromOffset(6, 2)
-        nameLbl.Font = Enum.Font.GothamBold
-        nameLbl.TextSize = 12
-        nameLbl.TextColor3 = GetColor(model.Name)
-        nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-        nameLbl.Text = DISPLAY_NAMES[model.Name] or model.Name
-        nameLbl.Parent = row
-        local distLbl = Instance.new("TextLabel")
-        distLbl.BackgroundTransparency = 1
-        distLbl.Size = UDim2.fromOffset(60, 16)
-        distLbl.Position = UDim2.new(1, -66, 0, 2)
-        distLbl.Font = Enum.Font.Gotham
-        distLbl.TextSize = 11
-        distLbl.TextColor3 = Color3.fromRGB(200, 200, 210)
-        distLbl.TextXAlignment = Enum.TextXAlignment.Right
-        distLbl.Text = ""
-        distLbl.Parent = row
-        local hpLbl = Instance.new("TextLabel")
-        hpLbl.BackgroundTransparency = 1
-        hpLbl.Size = UDim2.new(1, -12, 0, 12)
-        hpLbl.Position = UDim2.fromOffset(6, 17)
-        hpLbl.Font = Enum.Font.Gotham
-        hpLbl.TextSize = 10
-        hpLbl.TextColor3 = Color3.fromRGB(220, 220, 230)
-        hpLbl.TextXAlignment = Enum.TextXAlignment.Left
-        hpLbl.Text = ""
-        hpLbl.Parent = row
-        local barBg = Instance.new("Frame")
-        barBg.Size = UDim2.new(1, -12, 0, 5)
-        barBg.Position = UDim2.new(0, 6, 1, -8)
-        barBg.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-        barBg.BorderSizePixel = 0
-        barBg.Parent = row
-        local bc = Instance.new("UICorner")
-        bc.CornerRadius = UDim.new(0, 2)
-        bc.Parent = barBg
-        local barFill = Instance.new("Frame")
-        barFill.Size = UDim2.new(1, 0, 1, 0)
-        barFill.BackgroundColor3 = Color3.fromRGB(80, 220, 120)
-        barFill.BorderSizePixel = 0
-        barFill.Parent = barBg
-        local fc = Instance.new("UICorner")
-        fc.CornerRadius = UDim.new(0, 2)
-        fc.Parent = barFill
-        return {
-            frame = row, nameLabel = nameLbl, hpLabel = hpLbl,
-            distLabel = distLbl, barFill = barFill, barBg = barBg,
-        }
-    end
-
-    local function Update()
-        if not _G.SeaEventESPPanel then
-            if PanelFrame then pcall(function() PanelFrame:Destroy() end) end
-            PanelFrame, ScrollingFrame, TitleLabel = nil, nil, nil
-            for model, data in pairs(Active) do
-                pcall(function() data.frame:Destroy() end)
-                Active[model] = nil
-            end
-            return
-        end
-        BuildPanel()
-        if not ScrollingFrame then return end
-        local char = LocalPlayer.Character
-        if not char then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        local myPos = hrp.Position
-        local range = tonumber(_G.SeaEventESPMaxRange) or 5000
-        local found = {}
-        local function process(model)
-            if not model or not model.Parent then return end
-            if not VALID_NAMES[model.Name] then return end
-            local part = model.PrimaryPart
-                or model:FindFirstChild("HumanoidRootPart")
-                or model:FindFirstChild("RootPart")
-                or model:FindFirstChild("Head")
-                or model:FindFirstChildWhichIsA("BasePart", true)
-            if not part then return end
-            local hp, maxHp = GetHealthOf(model)
-            if hp ~= nil and hp <= 0 then return end
-            local d = (part.Position - myPos).Magnitude
-            if d > range then return end
-            table.insert(found, {model = model, dist = d})
-        end
-        local SeaBeasts = workspace:FindFirstChild("SeaBeasts")
-        if SeaBeasts then for _, m in ipairs(SeaBeasts:GetChildren()) do process(m) end end
-        local Enemies = workspace:FindFirstChild("Enemies")
-        if Enemies then for _, m in ipairs(Enemies:GetChildren()) do process(m) end end
-        table.sort(found, function(a, b) return a.dist < b.dist end)
-        local seen = {}
-        for i, entry in ipairs(found) do
-            local m = entry.model
-            seen[m] = true
-            local data = Active[m]
-            if not data then
-                data = CreateRow(m, i)
-                Active[m] = data
-            end
-            data.frame.LayoutOrder = i
-            pcall(function()
-                local hp, maxHp = GetHealthOf(m)
-                data.nameLabel.Text = DISPLAY_NAMES[m.Name] or m.Name
-                data.nameLabel.TextColor3 = GetColor(m.Name)
-                if hp ~= nil then
-                    local pct = (maxHp and maxHp > 0) and math.floor(hp / maxHp * 100 + 0.5) or 0
-                    data.hpLabel.Text = string.format("HP %s / %s (%d%%)", FormatHP(hp), FormatHP(maxHp or hp), pct)
-                    if maxHp and maxHp > 0 then
-                        local ratio = math.clamp(hp / maxHp, 0, 1)
-                        data.barFill.Size = UDim2.new(ratio, 0, 1, 0)
-                        local r, g, b
-                        if ratio > 0.5 then
-                            r = math.floor(255 * (1 - (ratio - 0.5) * 2)); g = 220; b = 80
-                        else
-                            r = 220; g = math.floor(80 + 140 * (ratio * 2)); b = 60
-                        end
-                        data.barFill.BackgroundColor3 = Color3.fromRGB(r, g, b)
-                    else
-                        data.barFill.Size = UDim2.new(0, 0, 1, 0)
-                    end
-                else
-                    data.hpLabel.Text = "HP unknown"
-                    data.barFill.Size = UDim2.new(0, 0, 1, 0)
-                end
-                data.distLabel.Text = string.format("%dm", math.floor(entry.dist))
-            end)
-        end
-        for model, data in pairs(Active) do
-            if not seen[model] or not model.Parent then
-                pcall(function() data.frame:Destroy() end)
-                Active[model] = nil
-            end
-        end
-        if TitleLabel then
-            TitleLabel.Text = string.format("Sea Events (%d)", #found)
-        end
-    end
-
-    task.spawn(function()
-        while true do
-            task.wait(UPDATE_INTERVAL)
-            pcall(Update)
-        end
-    end)
-    PanelAPI.Update = Update
-    PanelAPI.Hide = function()
-        if PanelFrame then pcall(function() PanelFrame:Destroy() end) end
-        PanelFrame, ScrollingFrame, TitleLabel = nil, nil, nil
-    end
-    PanelAPI.Show = function()
-        _G.SeaEventESPPanel = true
-        Update()
-    end
-    _G.RJR_SeaEventPanel = PanelAPI
-end
-
 _G.RJR_BoatDeadArmed = true
 _G.RJR_BoatDeadMonitorRunning = false
 _G.RJR_Resetting = false
 _G.RJR_LeviathanPresent = function()
     local MapL = workspace:FindFirstChild("Map")
-    if not MapL then return SeaAPI.Leviathan_SegmentsExist() end
-    if MapL:FindFirstChild("LeviathanGate") or MapL:FindFirstChild("FrozenHeart") then return true end
+    if not MapL then
+        return SeaAPI.Leviathan_SegmentsExist()
+    end
+    if MapL:FindFirstChild("LeviathanGate") or MapL:FindFirstChild("FrozenHeart") then
+        return true
+    end
     return SeaAPI.Leviathan_SegmentsExist()
 end
 _G.RJR_ResetCharacterAtTiki = function(reason)
-    if _G.RJR_Resetting then return end
+    if _G.RJR_Resetting then
+        return
+    end
     if _G.RJR_LeviathanPresent() then
         SetStatus("Leviathan, puerta o corazón presentes: no reinicio")
         return
     end
     _G.RJR_Resetting = true
+
     local HasBoat = GetOwnBoat() ~= nil
     local _, hrpNow = GetCharacterParts()
     local InWater = hrpNow ~= nil and hrpNow.Position.Y < 5
     local _, _, humNow = GetCharacterParts()
     local StillSeated = humNow ~= nil and (humNow.Sit or humNow.SeatPart ~= nil)
     local ShouldWaitForEvents = HasBoat and not InWater and not StillSeated
+
     if ShouldWaitForEvents then
         local WaitStart = os.clock()
         local MaxWait = 20
@@ -3453,9 +3367,14 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
                 math.floor(MaxWait - (os.clock() - WaitStart)) .. "s)")
             task.wait(1)
         end
+        if LastEventName and os.clock() - WaitStart >= MaxWait then
+            print("[Leviathan] Timeout esperando evento marino (" .. LastEventName ..
+                "); reinicio de todas formas")
+        end
     else
         SetStatus(reason .. ": sin barco, reinicio directo")
     end
+
     if _G.RJR_LeviathanPresent() then
         SetStatus("Leviathan, puerta o corazón presentes: no reinicio")
         _G.RJR_Resetting = false
@@ -3466,25 +3385,34 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
     pcall(ClearHover)
     pcall(function()
         local CommF2 = Leviathan_CommF()
-        if CommF2 then CommF2:InvokeServer("SetLastSpawnPoint", "Tiki") end
+        if CommF2 then
+            CommF2:InvokeServer("SetLastSpawnPoint", "Tiki")
+        end
     end)
     local _, _, hum = GetCharacterParts()
     if hum and hum.Health > 0 then
-        pcall(function() hum.Health = 0 end)
+        pcall(function()
+            hum.Health = 0
+        end)
     end
     local Deadline = os.clock() + 20
     while os.clock() < Deadline do
         local _, h, hm = GetCharacterParts()
-        if h and hm and hm.Health > 0 then break end
+        if h and hm and hm.Health > 0 then
+            break
+        end
         task.wait(0.2)
     end
     for _, boat in ipairs(OwnedBoatsOf(LocalPlayer)) do
         _G.RJR_AbandonedBoats[boat] = true
+        print("[Leviathan] Reinicio hecho, barco viejo abandonado: " .. boat.Name)
     end
     _G.RJR_Resetting = false
 end
 _G.RJR_StartBoatDeadMonitor = function()
-    if _G.RJR_BoatDeadMonitorRunning then return end
+    if _G.RJR_BoatDeadMonitorRunning then
+        return
+    end
     _G.RJR_BoatDeadMonitorRunning = true
     task.spawn(function()
         local StartAt = os.clock()
@@ -3512,7 +3440,9 @@ _G.RJR_StartBoatDeadMonitor = function()
                     elseif SawRealBoat then
                         Gone = true
                     end
-                    if Gone and (isCaptain or _G.RJR_Resetting or not SelfAlive) then Gone = false end
+                    if Gone and (isCaptain or _G.RJR_Resetting or not SelfAlive) then
+                        Gone = false
+                    end
                     if Gone then
                         BoatGoneSince = BoatGoneSince or os.clock()
                         if os.clock() - BoatGoneSince >= 10 then
@@ -3535,7 +3465,9 @@ _G.RJR_StartBoatDeadMonitor = function()
                                 CaptainDeathAt = os.clock()
                             end
                         end
-                        if CaptainDied and not SelfAlive then CaptainDeathFollowed = true end
+                        if CaptainDied and not SelfAlive then
+                            CaptainDeathFollowed = true
+                        end
                         if CaptainDied and not CaptainDeathFollowed and not Trigger
                             and os.clock() - CaptainDeathAt >= 1.5
                             and not _G.RJR_Resetting then
@@ -3543,7 +3475,9 @@ _G.RJR_StartBoatDeadMonitor = function()
                         end
                     end
                 end
-                if Trigger and _G.RJR_LeviathanPresent and _G.RJR_LeviathanPresent() then Trigger = nil end
+                if Trigger and _G.RJR_LeviathanPresent and _G.RJR_LeviathanPresent() then
+                    Trigger = nil
+                end
                 if Trigger then
                     if _G.RJR_BoatDeadArmed and os.clock() - StartAt > 8 then
                         if _G.RJR_Resetting then
@@ -3553,7 +3487,9 @@ _G.RJR_StartBoatDeadMonitor = function()
                             LastResetAt = os.clock()
                             SawRealBoat = false
                             BoatGoneSince = nil
-                            if Trigger == CaptainDeathReason then CaptainDeathFollowed = true end
+                            if Trigger == CaptainDeathReason then
+                                CaptainDeathFollowed = true
+                            end
                             task.spawn(_G.RJR_ResetCharacterAtTiki, Trigger)
                         end
                     elseif not _G.RJR_BoatDeadArmed and os.clock() - LastResetAt > 120 then
@@ -3574,8 +3510,12 @@ end
 do
 local RecoverLock = { running = false, tries = 0, since = 0 }
 local function RecoverPositionLock(reason)
-    if RecoverLock.running or not _G.AutoLeviathanFull then return end
-    if os.clock() - (RecoverLock.lastAt or 0) < 30 then return end
+    if RecoverLock.running or not _G.AutoLeviathanFull then
+        return
+    end
+    if os.clock() - (RecoverLock.lastAt or 0) < 30 then
+        return
+    end
     RecoverLock.lastAt = os.clock()
     RecoverLock.running = true
     task.spawn(function()
@@ -3587,7 +3527,9 @@ local function RecoverPositionLock(reason)
             RecoverLock.tries = 0
             RecoverLock.since = os.clock()
         end
-        if Phantom then RecoverLock.tries = RecoverLock.tries + 1 end
+        if Phantom then
+            RecoverLock.tries = RecoverLock.tries + 1
+        end
         SetStatus("Personaje bloqueado en el sitio (" .. tostring(reason or "?") .. "): lo libero")
         pcall(function()
             local _, _, hum = GetCharacterParts()
@@ -3598,8 +3540,14 @@ local function RecoverPositionLock(reason)
         local Freed = false
         while os.clock() < FreedAt do
             local _, _, hum = GetCharacterParts()
-            if not hum then Freed = true break end
-            if not hum.Sit and hum.SeatPart == nil then Freed = true break end
+            if not hum then
+                Freed = true
+                break
+            end
+            if not hum.Sit and hum.SeatPart == nil then
+                Freed = true
+                break
+            end
             task.wait(0.2)
         end
         if ((not Freed) or RecoverLock.tries >= 2) and _G.AutoLeviathanFull and not _G.RJR_Resetting then
@@ -3616,6 +3564,9 @@ local function RecoverPositionLock(reason)
             end
         end
         end)
+        if not ok then
+            print("[Leviathan] RecoverPositionLock: error, se libera el flag")
+        end
         RecoverLock.running = false
     end)
 end
@@ -3649,7 +3600,8 @@ task.spawn(function()
                 else
                     WaterStuckCount = 0
                 end
-                if WaterStuckCount >= 4 and os.clock() - WaterLastRecover > 20 then
+                if WaterStuckCount >= 4
+                    and os.clock() - WaterLastRecover > 20 then
                     WaterLastRecover = os.clock()
                     WaterStuckCount = 0
                     pcall(function()
@@ -3700,9 +3652,13 @@ end
 
 local function HarpoonHeart()
     local boat = GetOwnBoat()
-    if not boat then return false end
+    if not boat then
+        return false
+    end
     local DriverSeat = boat:FindFirstChild("VehicleSeat")
-    if not DriverSeat then return false end
+    if not DriverSeat then
+        return false
+    end
     local Map = workspace:FindFirstChild("Map")
     local Heart = Map and Map:FindFirstChild("FrozenHeart")
     local HeartPos = GetHeartPos(Heart)
@@ -3730,7 +3686,8 @@ local function HarpoonHeart()
         local Map2 = workspace:FindFirstChild("Map")
         local CurrentHeart = Map2 and Map2:FindFirstChild("FrozenHeart")
         local CurrentHeartPos = CurrentHeart and GetHeartPos(CurrentHeart)
-        if not CurrentHeart or not CurrentHeartPos or not HeartIsValid(CurrentHeart) then
+        if not CurrentHeart or not CurrentHeartPos
+            or not HeartIsValid(CurrentHeart) then
             SetStatus("Enganche fallido: no hay corazón")
             break
         end
@@ -3742,8 +3699,13 @@ local function HarpoonHeart()
             local H = workspace:FindFirstChild("Map")
                 and workspace.Map:FindFirstChild("FrozenHeart")
             local P = H and GetHeartPos(H)
-            if not H or not P or not HeartIsValid(H) then break end
-            if (P - LastCheck).Magnitude < 8 then Stable = true break end
+            if not H or not P or not HeartIsValid(H) then
+                break
+            end
+            if (P - LastCheck).Magnitude < 8 then
+                Stable = true
+                break
+            end
             LastCheck = P
         end
         if not Stable then
@@ -3754,22 +3716,32 @@ local function HarpoonHeart()
                 break
             end
             SetStatus("Enganche: subo al timón (intento " .. Fires + 1 .. ")")
-            if not BoardSeatRetry(DriverSeat) then break end
+            if not BoardSeatRetry(DriverSeat) then
+                break
+            end
             SetStatus("Enganche: navego a X+300 del corazón (intento " .. Fires + 1 .. ")")
             local ApproachStart = os.clock()
             while _G.AutoLeviathanFull and os.clock() - ApproachStart < 60 do
-                if not DriverSeat or not DriverSeat.Parent then break end
+                if not DriverSeat or not DriverSeat.Parent then
+                    break
+                end
                 local HeartNow = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("FrozenHeart")
                 local HeartPosNow = HeartNow and GetHeartPos(HeartNow)
-                if not HeartPosNow then break end
+                if not HeartPosNow then
+                    break
+                end
                 local pos = DriverSeat.Position
                 local TargetPoint = Vector3.new(HeartPosNow.X + 300, BoatStartY, HeartPosNow.Z)
                 local flat = Vector3.new(TargetPoint.X - pos.X, 0, TargetPoint.Z - pos.Z)
                 local dist = flat.Magnitude
                 SetStatus("Enganche: navegando a X+300 del corazón (dist " .. math.floor(dist) .. ")")
-                if dist < 10 then break end
+                if dist < 10 then
+                    break
+                end
                 SailBoatTurn(DriverSeat, TargetPoint, _G.BoatSpeed, BoatStartY)
-                if not IsSittingOn(DriverSeat) then break end
+                if not IsSittingOn(DriverSeat) then
+                    break
+                end
             end
             if not IsSittingOn(DriverSeat) then
                 SetStatus("Enganche: no estoy en el timón, salto esta ronda")
@@ -3778,22 +3750,30 @@ local function HarpoonHeart()
             SetStatus("Enganche: apunto la proa al corazón (intento " .. Fires + 1 .. ")")
             local AdjustStart = os.clock()
             while _G.AutoLeviathanFull and os.clock() - AdjustStart < 15 do
-                if not DriverSeat or not DriverSeat.Parent then break end
+                if not DriverSeat or not DriverSeat.Parent then
+                    break
+                end
                 if not IsSittingOn(DriverSeat) then
                     SetStatus("Enganche: me caí del asiento, dejo de girar")
                     break
                 end
                 local HeartNow = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("FrozenHeart")
                 local HeartPosNow = HeartNow and GetHeartPos(HeartNow)
-                if not HeartPosNow then break end
+                if not HeartPosNow then
+                    break
+                end
                 local pos = DriverSeat.Position
                 local flat = Vector3.new(HeartPosNow.X - pos.X, 0, HeartPosNow.Z - pos.Z)
-                if flat.Magnitude < 0.5 then break end
+                if flat.Magnitude < 0.5 then
+                    break
+                end
                 DriverSeat.CFrame = CFrame.new(pos.X, BoatStartY, pos.Z) * CFrame.Angles(0, AimYaw(flat), 0)
                 local dir = flat.Unit
                 local look = DriverSeat.CFrame.LookVector
                 local dot = math.clamp(look.X * dir.X + look.Z * dir.Z, -1, 1)
-                if math.acos(dot) <= 0.02 then break end
+                if math.acos(dot) <= 0.02 then
+                    break
+                end
                 task.wait()
             end
             SetStatus("Enganche: bajo al asiento del arpón (intento " .. Fires + 1 .. ")")
@@ -3856,7 +3836,9 @@ local function HarpoonHeart()
                 SetStatus("Enganche: espero el resultado (disparo " .. Fires .. ", esperando " .. math.floor(os.clock() - PostWaitStart) .. " s)")
                 task.wait(0.5)
             end
-            if GrabbedNow then break end
+            if GrabbedNow then
+                break
+            end
             SetStatus("Enganche fallido: bajo del arpón para reintentar")
             if not Unseat() then
                 SetStatus("No pude bajar del arpón: intento la siguiente ronda")
@@ -3878,16 +3860,22 @@ end
 local function RestorePlayerState()
     ClearHover()
     pcall(function()
-        if RestoreWallClip then RestoreWallClip() end
+        if RestoreWallClip then
+            RestoreWallClip()
+        end
     end)
 end
 local function OpenLeviathanGate()
     local Map = workspace:FindFirstChild("Map")
     local Gate = Map and Map:FindFirstChild("LeviathanGate")
     local Watcher = Gate and Gate:FindFirstChild("FrozenWatcherPart")
-    if not Watcher then return false end
+    if not Watcher then
+        return false
+    end
     local WatcherPos = TargetPos(Watcher)
-    if not WatcherPos then return false end
+    if not WatcherPos then
+        return false
+    end
     _tp(LiveGateCF(5), function()
         return (not _G.AutoLeviathanFull) or SeaAPI.Leviathan_SegmentsExist()
     end)
@@ -3900,7 +3888,9 @@ local function OpenLeviathanGate()
             return true
         end
         local _, hrpA = GetCharacterParts()
-        if hrpA and (hrpA.Position - WatcherPos).Magnitude < 150 then break end
+        if hrpA and (hrpA.Position - WatcherPos).Magnitude < 150 then
+            break
+        end
         task.wait(0.5)
     end
     local CommF2 = Leviathan_CommF()
@@ -3916,7 +3906,9 @@ local function OpenLeviathanGate()
             LastInvoke = os.clock()
             Fires = Fires + 1
             SetStatus("Abriendo la puerta del Leviathan (intento " .. Fires .. ", cada 10 s)")
-            pcall(function() CommF2:InvokeServer("OpenLeviathanGate") end)
+            pcall(function()
+                CommF2:InvokeServer("OpenLeviathanGate")
+            end)
         end
         task.wait(1)
     end
@@ -3956,10 +3948,14 @@ local function SailToCF(seat, TargetCF, Speed, HeartCheck)
     local SailStalls = 0
     while _G.AutoLeviathanFull and os.clock() - start < 900 do
         LastSailAt = os.clock()
-        if not seat or not seat.Parent or not IsSittingOn(seat) then break end
+        if not seat or not seat.Parent or not IsSittingOn(seat) then
+            break
+        end
         if HeartCheck and os.clock() - LastHeartCheckAt >= 1 then
             LastHeartCheckAt = os.clock()
-            if not HeartCheck(seat) then break end
+            if not HeartCheck(seat) then
+                break
+            end
         end
         if os.clock() - LastCheckAt >= 30 then
             local Moved = (seat.Position - LastCheckPos).Magnitude
@@ -3969,7 +3965,9 @@ local function SailToCF(seat, TargetCF, Speed, HeartCheck)
                     SailStalls = 0
                     LastCheckPos = seat.Position
                     LastCheckAt = os.clock()
-                    if _G.RJR_RecoverLock then _G.RJR_RecoverLock("el barco no avanza volviendo a Tiki") end
+                    if _G.RJR_RecoverLock then
+                        _G.RJR_RecoverLock("el barco no avanza volviendo a Tiki")
+                    end
                     break
                 end
                 SetStatus("Menos de 200 en 30 s: bajo y vuelvo a subir para reiniciar")
@@ -3979,7 +3977,9 @@ local function SailToCF(seat, TargetCF, Speed, HeartCheck)
                     LastCheckAt = os.clock()
                 else
                     task.wait(0.5)
-                    if not BoardSeatRetry(seat) then break end
+                    if not BoardSeatRetry(seat) then
+                        break
+                    end
                     LastCheckPos = seat.Position
                     LastCheckAt = os.clock()
                 end
@@ -4026,7 +4026,9 @@ local function SailToCF(seat, TargetCF, Speed, HeartCheck)
         else
             pcall(function() TurnBoatTowards(seat, TargetPos) end)
             if prim then
-                pcall(function() TurnBoatPrimTowards(prim, TargetPos) end)
+                pcall(function()
+                    TurnBoatPrimTowards(prim, TargetPos)
+                end)
             end
             pcall(function()
                 seat.Throttle = 0
@@ -4059,10 +4061,20 @@ end
 local function ReturnTiki(Speed)
     Speed = Speed or 200
     local boat = GetOwnBoat()
-    if not boat then return false end
+    if not boat then
+        print("[ReturnTiki] sin barco")
+        return false
+    end
     local DriverSeat = boat:FindFirstChild("VehicleSeat")
-    if not DriverSeat then return false end
-    if not BoardSeatRetry(DriverSeat) then return false end
+    if not DriverSeat then
+        print("[ReturnTiki] sin asiento de conductor")
+        return false
+    end
+    if not BoardSeatRetry(DriverSeat) then
+        print("[ReturnTiki] no pude subir al timón")
+        return false
+    end
+    print("[ReturnTiki] ya estoy en el timón")
     SetStatus("Volviendo a Tiki")
     local function HeartCloseCheck(seat)
         local Map = workspace:FindFirstChild("Map")
@@ -4070,11 +4082,13 @@ local function ReturnTiki(Speed)
         local HeartPos = Heart and GetHeartPos(Heart)
         if not HeartPos then
             SetStatus("Volviendo a Tiki: el corazón desapareció, cancelo")
+            print("[ReturnTiki] heart gone, interrupt leg")
             return false
         end
         local Dist = (HeartPos - seat.Position).Magnitude
         if Dist > 3000 then
             SetStatus("Volviendo a Tiki: corazón a " .. math.floor(Dist) .. " del barco, cancelo")
+            print("[ReturnTiki] heart check fail dist=" .. math.floor(Dist))
             return false
         end
         return true
@@ -4086,35 +4100,50 @@ local function ReturnTiki(Speed)
         local Heart = Map and Map:FindFirstChild("FrozenHeart")
         if not Heart then
             SetStatus("El corazón desapareció: dejo de volver a Tiki")
+            print("[ReturnTiki] heart gone, stop return")
             break
         end
         local HeartPos = Heart and GetHeartPos(Heart)
         if not HeartPos then
             SetStatus("El corazón desapareció: dejo de volver a Tiki")
+            print("[ReturnTiki] heart gone, stop return")
             break
         end
         if not DriverSeat or not DriverSeat.Parent or not IsSittingOn(DriverSeat) then
+            print("[ReturnTiki] me caí del asiento: vuelvo al timón")
             local b2 = GetOwnBoat()
-            if not b2 then break end
+            if not b2 then
+                break
+            end
             DriverSeat = b2:FindFirstChild("VehicleSeat")
-            if not DriverSeat or not BoardSeatRetry(DriverSeat) then break end
+            if not DriverSeat or not BoardSeatRetry(DriverSeat) then
+                break
+            end
         end
         local WentToHeart = false
         local BoatPos = DriverSeat.Position
         local Dist3D = (HeartPos - BoatPos).Magnitude
         if Dist3D > 3000 then
             SetStatus("Volviendo a Tiki: corazón a " .. math.floor(Dist3D) .. " — voy justo debajo del corazón")
+            print("[ReturnTiki] heart far=" .. math.floor(Dist3D) .. ", sail to heart")
             SailToCF(DriverSeat, CFrame.new(HeartPos.X, BoatPos.Y, HeartPos.Z), Speed)
             SetStatus("Debajo del corazón: espero 1.5 s")
             local HoldStart = os.clock()
-            while _G.AutoLeviathanFull and os.clock() - HoldStart < 1.5 do task.wait(0.2) end
+            while _G.AutoLeviathanFull and os.clock() - HoldStart < 1.5 do
+                task.wait(0.2)
+            end
             WentToHeart = true
         end
         if not WentToHeart then
+            print("[ReturnTiki] empieza el primer tramo")
             local R1 = SailToCF(DriverSeat, TikiWaypointCF, Speed, HeartCloseCheck)
+            print("[ReturnTiki] primer tramo terminado arrived=" .. tostring(R1))
             if R1 then
                 local R2 = SailToCF(DriverSeat, TikiReturnCF, Speed, HeartCloseCheck)
-                pcall(function() DriverSeat.CFrame = TikiReturnCF end)
+                pcall(function()
+                    DriverSeat.CFrame = TikiReturnCF
+                end)
+                print("[ReturnTiki] segundo tramo terminado arrived=" .. tostring(R2))
                 if R2 then
                     Returned = true
                     break
@@ -4128,7 +4157,9 @@ local function ReturnTiki(Speed)
     return Returned
 end
 local function WaitForTeammates(boat, DriverSeat, ShouldStop, FightEvents, NoRebuy, MaxWait, FarImmediate)
-    if FightEvents == nil then FightEvents = true end
+    if FightEvents == nil then
+        FightEvents = true
+    end
     local FarStart = nil
     local WaitStart = os.clock()
     while _G.AutoLeviathanFull do
@@ -4136,7 +4167,9 @@ local function WaitForTeammates(boat, DriverSeat, ShouldStop, FightEvents, NoReb
             SetStatus("Se agotó la espera de compañeros")
             return boat, DriverSeat, false
         end
-        if ShouldStop and ShouldStop() then return boat, DriverSeat, true end
+        if ShouldStop and ShouldStop() then
+            return boat, DriverSeat, true
+        end
         if not IsSittingOn(DriverSeat) then
             SetStatus("Esperando compañeros: el capitán sube al timón primero")
             if not BoardSeatRetry(DriverSeat) then
@@ -4168,7 +4201,9 @@ local function WaitForTeammates(boat, DriverSeat, ShouldStop, FightEvents, NoReb
                     if RebuyCd >= 60 then
                         SetStatus("El compañero más cercano está a más de 10000: vuelvo a comprar barco")
                         local b3, s3 = RebuyBoatAndBoard()
-                        if b3 and s3 then boat, DriverSeat = b3, s3 end
+                        if b3 and s3 then
+                            boat, DriverSeat = b3, s3
+                        end
                     else
                         SetStatus("Compañero lejos, recompra en espera: aguardo (" .. math.floor(60 - RebuyCd) .. " s)")
                     end
@@ -4182,7 +4217,9 @@ local function WaitForTeammates(boat, DriverSeat, ShouldStop, FightEvents, NoReb
                         FarStart = nil
                         SetStatus("Compañeros demasiado lejos: vuelvo al muelle a comprar")
                         local b3, s3 = RebuyBoatAndBoard()
-                        if b3 and s3 then boat, DriverSeat = b3, s3 end
+                        if b3 and s3 then
+                            boat, DriverSeat = b3, s3
+                        end
                     end
                 end
             else
@@ -4199,15 +4236,25 @@ local function WaitForTeammates(boat, DriverSeat, ShouldStop, FightEvents, NoReb
             end
             local Stuck = {}
             while _G.AutoLeviathanFull do
-                if ShouldStop and ShouldStop() then break end
-                if CountTeammatesOnBoat(boat) >= 4 then break end
+                if ShouldStop and ShouldStop() then
+                    break
+                end
+                if CountTeammatesOnBoat(boat) >= 4 then
+                    break
+                end
                 local M, R, S = SeaAPI.Sea_Mob(5000, Stuck)
-                if not M or not R then break end
+                if not M or not R then
+                    break
+                end
                 SeaAPI.FightSeaEvent(M, R, S)
-                if SeaAPI.Sea_MobStillAlive(M) then Stuck[M] = true end
+                if SeaAPI.Sea_MobStillAlive(M) then
+                    Stuck[M] = true
+                end
                 task.wait(0.5)
             end
-            if DriverSeat and DriverSeat.Parent then BoardSeatRetry(DriverSeat) end
+            if DriverSeat and DriverSeat.Parent then
+                BoardSeatRetry(DriverSeat)
+            end
         else
             SetStatus("Esperando compañeros a bordo (" .. tostring(CountTeammatesOnBoat(boat)) .. "/4)")
             task.wait(1)
@@ -4222,13 +4269,19 @@ local function CaptainFarmPhase()
         local SpawnStart = os.clock()
         while _G.AutoLeviathanFull and not _G.RJR_Resetting and os.clock() - SpawnStart < 20 do
             boat = GetOwnBoat()
-            if boat then break end
+            if boat then
+                break
+            end
             task.wait(0.5)
         end
     end
-    if not boat then return end
+    if not boat then
+        return
+    end
     local DriverSeat = boat:FindFirstChild("VehicleSeat")
-    if not DriverSeat then return end
+    if not DriverSeat then
+        return
+    end
     if not BoardSeatRetry(DriverSeat) then
         SetStatus("No pude subir al timón: vuelvo al bucle principal")
         return
@@ -4251,7 +4304,9 @@ local function CaptainFarmPhase()
             while _G.AutoLeviathanFull and not FarmDone do
                 task.wait(2)
                 local S = GetBribeStatus()
-                if S == nil or S ~= -1 then FarmDone = true end
+                if S == nil or S ~= -1 then
+                    FarmDone = true
+                end
             end
         end)
     end
@@ -4277,21 +4332,29 @@ local function CaptainFarmPhase()
                 local _, _, humR = GetCharacterParts()
                 if humR and humR.Health > 0 then
                     local b3, s3 = RebuyBoatAndBoard()
-                    if b3 and s3 then boat, DriverSeat = b3, s3 end
+                    if b3 and s3 then
+                        boat, DriverSeat = b3, s3
+                    end
                 end
             end
         end
         if os.clock() - LastTeamCheck >= 1 then
             LastTeamCheck = os.clock()
             if not _G.SoloSeaFarm and CountTeammatesOnBoat(boat) < 4 then
-                local b3, s3, Stopped = WaitForTeammates(boat, DriverSeat, function() return FarmDone end, true, false, nil, true)
+                local b3, s3, Stopped = WaitForTeammates(boat, DriverSeat, function()
+                    return FarmDone
+                end, true, false, nil, true)
                 boat, DriverSeat = b3, s3
-                if Stopped then break end
+                if Stopped then
+                    break
+                end
                 task.wait(0.5)
             else
                 local b2 = GetOwnBoat()
                 local s2 = b2 and b2:FindFirstChild("VehicleSeat")
-                if b2 and s2 then boat, DriverSeat = b2, s2 end
+                if b2 and s2 then
+                    boat, DriverSeat = b2, s2
+                end
             end
         end
         if os.clock() - LastMobCheck >= 0.2 then
@@ -4305,12 +4368,18 @@ local function CaptainFarmPhase()
             end
             while _G.AutoLeviathanFull and not FarmDone do
                 local M, R, S = SeaAPI.Sea_Mob(5000, Fought)
-                if not M or not R then break end
+                if not M or not R then
+                    break
+                end
                 SeaAPI.FightSeaEvent(M, R, S)
-                if SeaAPI.Sea_MobStillAlive(M) then Fought[M] = true end
+                if SeaAPI.Sea_MobStillAlive(M) then
+                    Fought[M] = true
+                end
                 task.wait(0.5)
             end
-            if DriverSeat and DriverSeat.Parent then BoardSeatRetry(DriverSeat) end
+            if DriverSeat and DriverSeat.Parent then
+                BoardSeatRetry(DriverSeat)
+            end
             LastTeamCheck = 0
             LastMobCheck = 0
         else
@@ -4323,7 +4392,9 @@ local function CaptainFarmPhase()
                 local staying = SailBoatStream(DriverSeat, _G.BoatSpeed)
                 if staying == false then
                     local b3, s3 = RebuyBoatAndBoard()
-                    if b3 and s3 then boat, DriverSeat = b3, s3 end
+                    if b3 and s3 then
+                        boat, DriverSeat = b3, s3
+                    end
                 end
             end
         end
@@ -4337,15 +4408,21 @@ local function HeartFinishPhase()
         BuyOwnBoat("Corazón presente y sin barco: voy a comprar uno")
         local BoatWaitStart = os.clock()
         while _G.AutoLeviathanFull and not _G.RJR_Resetting and os.clock() - BoatWaitStart < 30 do
-            if GetOwnBoat() then break end
+            if GetOwnBoat() then
+                break
+            end
             task.wait(0.5)
         end
     end
     local Grabbed = HarpoonHeart()
-    if not Grabbed then return end
+    if not Grabbed then
+        return
+    end
     SetStatus("Corazón enganchado: subo al barco en 5 s")
     local PreSyncStart = os.clock()
-    while _G.AutoLeviathanFull and os.clock() - PreSyncStart < 5 do task.wait(0.5) end
+    while _G.AutoLeviathanFull and os.clock() - PreSyncStart < 5 do
+        task.wait(0.5)
+    end
     local boat = GetOwnBoat()
     local DriverSeat = boat and boat:FindFirstChild("VehicleSeat")
     if DriverSeat and not IsSittingOn(DriverSeat) then
@@ -4354,7 +4431,9 @@ local function HeartFinishPhase()
     end
     SetStatus("En el timón: vuelvo a Tiki en 10 s")
     local PostBoardStart = os.clock()
-    while _G.AutoLeviathanFull and os.clock() - PostBoardStart < 10 do task.wait(0.5) end
+    while _G.AutoLeviathanFull and os.clock() - PostBoardStart < 10 do
+        task.wait(0.5)
+    end
     local Returned = ReturnTiki(120)
     local HeartLockDone = false
     if Returned then
@@ -4413,7 +4492,9 @@ local function HeartFinishPhase()
         task.wait(2)
     end
     HeartLockDone = true
-    if not _G.AutoLeviathanFull then return end
+    if not _G.AutoLeviathanFull then
+        return
+    end
     if not Unseat() then
         SetStatus("El corazón desapareció y no pude bajarme: voy igual a comprar")
     end
@@ -4422,13 +4503,17 @@ local function HeartFinishPhase()
     local SpawnStart = os.clock()
     while _G.AutoLeviathanFull and not _G.RJR_Resetting and os.clock() - SpawnStart < 20 do
         local b3 = GetOwnBoat()
-        if b3 and b3 ~= OldBoat then break end
+        if b3 and b3 ~= OldBoat then
+            break
+        end
         task.wait(0.5)
     end
 end
 local HuntStart = nil
 local function CaptainHuntPhase()
-    if HuntStart == nil then HuntStart = os.clock() end
+    if HuntStart == nil then
+        HuntStart = os.clock()
+    end
     local HuntSuccess = false
     local MapEarly = workspace:FindFirstChild("Map")
     if SeaAPI.Leviathan_SegmentsExist() or (MapEarly and MapEarly:FindFirstChild("LeviathanGate")) then
@@ -4443,13 +4528,19 @@ local function CaptainHuntPhase()
             local SpawnStart = os.clock()
             while _G.AutoLeviathanFull and not _G.RJR_Resetting and os.clock() - SpawnStart < 20 do
                 boat = GetOwnBoat()
-                if boat then break end
+                if boat then
+                    break
+                end
                 task.wait(0.5)
             end
         end
-        if not boat then return end
+        if not boat then
+            return
+        end
         DriverSeat = boat:FindFirstChild("VehicleSeat")
-        if not DriverSeat then return end
+        if not DriverSeat then
+            return
+        end
         if not BoardSeatRetry(DriverSeat) then
             SetStatus("No pude subir al timón: vuelvo al bucle principal")
             return
@@ -4505,24 +4596,34 @@ local function CaptainHuntPhase()
                 local Stuck = {}
                 while _G.AutoLeviathanFull do
                     local MapX = workspace:FindFirstChild("Map")
-                    if SeaAPI.Leviathan_SegmentsExist() or (MapX and MapX:FindFirstChild("LeviathanGate")) then break end
+                    if SeaAPI.Leviathan_SegmentsExist() or (MapX and MapX:FindFirstChild("LeviathanGate")) then
+                        break
+                    end
                     local M, R, S = SeaAPI.Sea_Mob(5000, Stuck)
-                    if not M or not R then break end
+                    if not M or not R then
+                        break
+                    end
                     SeaAPI.FightSeaEvent(M, R, S, function()
                         local MapX2 = workspace:FindFirstChild("Map")
                         return SeaAPI.Leviathan_SegmentsExist() or (MapX2 and MapX2:FindFirstChild("LeviathanGate"))
                     end)
-                    if SeaAPI.Sea_MobStillAlive(M) then Stuck[M] = true end
+                    if SeaAPI.Sea_MobStillAlive(M) then
+                        Stuck[M] = true
+                    end
                     task.wait(0.5)
                 end
-                if DriverSeat and DriverSeat.Parent then BoardSeatRetry(DriverSeat) end
+                if DriverSeat and DriverSeat.Parent then
+                    BoardSeatRetry(DriverSeat)
+                end
                 LastTeamCheck2 = 0
             end
         end
         local staying = SailBoatStream(DriverSeat, _G.BoatSpeed)
         if staying == false then
             local b3, s3 = RebuyBoatAndBoard()
-            if b3 and s3 then boat, DriverSeat = b3, s3 end
+            if b3 and s3 then
+                boat, DriverSeat = b3, s3
+            end
         end
     end
     if not HuntSuccess then
@@ -4545,7 +4646,9 @@ local function CaptainHuntPhase()
         BuyOwnBoat()
         local BoatWaitStart = os.clock()
         while _G.AutoLeviathanFull and not _G.RJR_Resetting and os.clock() - BoatWaitStart < 30 do
-            if GetOwnBoat() then break end
+            if GetOwnBoat() then
+                break
+            end
             task.wait(0.5)
         end
     end
@@ -4568,7 +4671,9 @@ local function CaptainHuntPhase()
 end
 local CaptainRunning = false
 local function StartCaptain()
-    if CaptainRunning then return end
+    if CaptainRunning then
+        return
+    end
     CaptainRunning = true
     task.spawn(function()
         while _G.AutoLeviathanFull and _G.Mode == "Capitán" do
@@ -4615,7 +4720,9 @@ local function StartCaptain()
                     end
                 end
             end)
-            if not ok then task.wait(0.5) end
+            if not ok then
+                task.wait(0.5)
+            end
             task.wait(1)
         end
         CaptainRunning = false
@@ -4626,7 +4733,9 @@ local LastLeviathanSeen = 0
 local FollowSeatsFull = false
 local function IsOnCaptainBoat(boat)
     local _, _, hum = GetCharacterParts()
-    if not hum or not hum.SeatPart then return false end
+    if not hum or not hum.SeatPart then
+        return false
+    end
     return hum.SeatPart:IsDescendantOf(boat)
 end
 local function IsCaptainOnBoat(boat)
@@ -4650,8 +4759,12 @@ local function FollowerBoardSeat(boat)
         local FlyStart = os.clock()
         while _G.AutoLeviathanFull and os.clock() - FlyStart < 30 do
             local _, hrp1 = GetCharacterParts()
-            if not hrp1 or not firstSeat or not firstSeat.Parent then break end
-            if (hrp1.Position - firstSeat.Position).Magnitude <= 500 then break end
+            if not hrp1 or not firstSeat or not firstSeat.Parent then
+                break
+            end
+            if (hrp1.Position - firstSeat.Position).Magnitude <= 500 then
+                break
+            end
             _tp(function()
                 return firstSeat.Parent and firstSeat.CFrame or nil
             end, function()
@@ -4721,7 +4834,9 @@ local function FollowerHeartWait()
     end
 end
 local function StartFollower()
-    if FollowerRunning then return end
+    if FollowerRunning then
+        return
+    end
     FollowerRunning = true
     local function CaptainBackOnBoat()
         local boat = GetCaptainBoat()
@@ -4868,7 +4983,9 @@ local function StartFollower()
                     end
                 end
             end)
-            if not ok then task.wait(0.5) end
+            if not ok then
+                task.wait(0.5)
+            end
             if FollowSeatsFull and not IsOnBoat() then
                 if GetCaptainHRP() then
                     _tp(LiveCaptainTopCF(35), function()
@@ -4887,7 +5004,9 @@ local function StartFollower()
 end
 local function GetStatusDetails()
     local lines = {}
-    if not _G.AutoLeviathanFull then return T("notstarted") end
+    if not _G.AutoLeviathanFull then
+        return T("notstarted")
+    end
     lines[#lines + 1] = T("sec.mode") .. ": " .. ModeDisplay()
     if _G.Mode == "Seguidor" then
         lines[#lines + 1] = T("detail.follow") .. ": " .. (_G.FollowTarget ~= "" and _G.FollowTarget or T("detail.no.captain"))
@@ -4925,7 +5044,9 @@ local function GetStatusDetails()
 end
 local function GetTargetStatus()
     local lines = {}
-    if not _G.AutoLeviathanFull then return T("notstarted") end
+    if not _G.AutoLeviathanFull then
+        return T("notstarted")
+    end
     local LV, part = SeaAPI.Leviathan_Find()
     if LV then
         local HP = SeaAPI.Leviathan_GetHP(LV)
@@ -4956,7 +5077,9 @@ end
 local InfoUIFrame = nil
 local InfoUIText = nil
 local function BuildInfoUIContent()
-    if not _G.ShowInfoUI then return "" end
+    if not _G.ShowInfoUI then
+        return ""
+    end
     local lines = {}
     lines[#lines + 1] = "Auto Leviathan"
     lines[#lines + 1] = "━━━━━━━━━━━━━━━━"
@@ -5004,7 +5127,9 @@ local function BuildInfoUIContent()
     return table.concat(lines, "\n")
 end
 local function CreateInfoUI()
-    if InfoUIFrame then return end
+    if InfoUIFrame then
+        return
+    end
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "AutoLeviathanInfo"
     ScreenGui.ResetOnSpawn = false
@@ -5069,17 +5194,25 @@ local function CreateInfoUI()
         end
     end)
     local initContent = BuildInfoUIContent()
-    if InfoUIText then InfoUIText.Text = initContent end
+    if InfoUIText then
+        InfoUIText.Text = initContent
+    end
     local initLines = #initContent:split("\n")
     InfoUIFrame:SetAttribute("LastText", initContent)
     InfoUIFrame:SetAttribute("LastLines", initLines)
     InfoUIFrame.Size = UDim2.new(0, 320, 0, math.max(40, initLines * 22 + 18))
 end
 local function UpdateInfoUI()
-    if not InfoUIFrame then return end
+    if not InfoUIFrame then
+        return
+    end
     local content = BuildInfoUIContent()
-    if content == InfoUIFrame:GetAttribute("LastText") then return end
-    if InfoUIText then InfoUIText.Text = content end
+    if content == InfoUIFrame:GetAttribute("LastText") then
+        return
+    end
+    if InfoUIText then
+        InfoUIText.Text = content
+    end
     local lines = #content:split("\n")
     if lines ~= InfoUIFrame:GetAttribute("LastLines") then
         InfoUIFrame.Size = UDim2.new(0, 320, 0, math.max(40, lines * 22 + 18))
@@ -5090,7 +5223,11 @@ end
 local function DestroyInfoUI()
     if InfoUIFrame then
         local parent = InfoUIFrame.Parent
-        if parent then pcall(function() parent:Destroy() end) end
+        if parent then
+            pcall(function()
+                parent:Destroy()
+            end)
+        end
         InfoUIFrame = nil
         InfoUIText = nil
     end
@@ -5099,15 +5236,21 @@ task.spawn(function()
     while true do
         task.wait(0.5)
         if _G.ShowInfoUI then
-            if not InfoUIFrame then CreateInfoUI() end
+            if not InfoUIFrame then
+                CreateInfoUI()
+            end
             UpdateInfoUI()
         else
-            if InfoUIFrame then DestroyInfoUI() end
+            if InfoUIFrame then
+                DestroyInfoUI()
+            end
         end
     end
 end)
 RunService.Heartbeat:Connect(function()
-    if tick() - LastAttackTime < 0.1 then return end
+    if tick() - LastAttackTime < 0.1 then
+        return
+    end
     if _G.AutoLeviathanFull and _G.FastAttack then
         local _, _, hum = GetCharacterParts()
         if hum and hum.SeatPart == nil and not hum.Sit then
@@ -5123,13 +5266,17 @@ local function HandleAbility(abilityType)
                 if abilityType == "V4" then
                     local Awakening = LocalPlayer:FindFirstChild("Backpack") and LocalPlayer.Backpack:FindFirstChild("Awakening")
                     if Awakening and Awakening:FindFirstChild("RemoteFunction") then
-                        pcall(function() Awakening.RemoteFunction:InvokeServer(true) end)
+                        pcall(function()
+                            Awakening.RemoteFunction:InvokeServer(true)
+                        end)
                     end
                 elseif abilityType == "V3" then
                     local Remotes = RS:FindFirstChild("Remotes")
                     local CommE2 = Remotes and Remotes:FindFirstChild("CommE")
                     if CommE2 then
-                        pcall(function() CommE2:FireServer("ActivateAbility") end)
+                        pcall(function()
+                            CommE2:FireServer("ActivateAbility")
+                        end)
                     end
                 end
             end
@@ -5148,7 +5295,9 @@ RunService.Heartbeat:Connect(function()
 end)
 local function DoRemoveFog()
     local layers = game:GetService("Lighting"):FindFirstChild("LightingLayers")
-    if layers then layers:Destroy() end
+    if layers then
+        layers:Destroy()
+    end
 end
 local PerformanceAPI = {}
 do
@@ -5197,7 +5346,9 @@ do
     end
     local FPSBoostHookDone = false
     local function ApplyFPSBoostToNew(obj)
-        if not _G.FPSBoost then return end
+        if not _G.FPSBoost then
+            return
+        end
         local ok = pcall(function()
             if obj:IsA("ParticleEmitter") then
                 if obj.Parent and obj.Parent.Name ~= "ElectricFire" then
@@ -5241,7 +5392,9 @@ do
                 local lighting = game:GetService("Lighting")
                 lighting.GlobalShadows = false
                 for _, item in ipairs(lighting:GetDescendants()) do
-                    if item:IsA("BlurEffect") then item.Enabled = false end
+                    if item:IsA("BlurEffect") then
+                        item.Enabled = false
+                    end
                 end
             end)
             pcall(function()
@@ -5285,7 +5438,9 @@ do
                 local optimizer = LocalPlayer.PlayerScripts:FindFirstChild("OptimizerClientActor")
                 if optimizer and optimizer.SendMessage then optimizer:SendMessage("Optimize", true) end
             end)
-            if FPSBoostHookDone then return end
+            if FPSBoostHookDone then
+                return
+            end
             FPSBoostHookDone = true
             task.spawn(function()
                 local worldOrigin = workspace:FindFirstChild("_WorldOrigin")
@@ -5295,7 +5450,9 @@ do
                     waited = waited + 1
                     worldOrigin = workspace:FindFirstChild("_WorldOrigin")
                 end
-                if not worldOrigin then return end
+                if not worldOrigin then
+                    return
+                end
                 worldOrigin.DescendantAdded:Connect(function(obj)
                     pcall(ApplyFPSBoostToNew, obj)
                 end)
@@ -5309,7 +5466,9 @@ local function ApplySailNoclip(on)
     if boats then
         for _, boat in ipairs(boats:GetChildren()) do
             for _, d in ipairs(boat:GetDescendants()) do
-                if d:IsA("BasePart") then d.CanCollide = not on end
+                if d:IsA("BasePart") then
+                    d.CanCollide = not on
+                end
             end
         end
     end
@@ -5348,7 +5507,9 @@ end)
 local RJR_SilentAimTarget = (function()
     local TargetPos, At = nil, 0
     local function RootOf(model)
-        if not model then return nil end
+        if not model then
+            return nil
+        end
         return model:FindFirstChild("HumanoidRootPart")
             or model:FindFirstChild("RootPart")
             or model.PrimaryPart
@@ -5356,43 +5517,78 @@ local RJR_SilentAimTarget = (function()
             or model:FindFirstChildWhichIsA("BasePart")
     end
     local function AimPoint(model, root)
-        if not model or not model.Parent then return nil end
+        if not model or not model.Parent then
+            return nil
+        end
         local seg = model:FindFirstChild("Leviathan Segment") or model:FindFirstChild("Hitbox")
-        if seg and seg:IsA("BasePart") then return seg.Position end
-        if not root then return nil end
-        local engine = model:FindFirstChild("Engine")
-        if engine and engine:IsA("BasePart") then
-            return engine.Position
+        if seg and seg:IsA("BasePart") then
+            return seg.Position
+        end
+        if not root then
+            return nil
+        end
+        if model:FindFirstChild("Engine") then
+            return Vector3.new(root.Position.X, -58, root.Position.Z)
         end
         return Vector3.new(root.Position.X, math.max(root.Position.Y, 40), root.Position.Z)
     end
     return function()
         local now = os.clock()
-        if now - At < 0.2 then return TargetPos end
+        if now - At < 0.2 then
+            return TargetPos
+        end
         At = now
         TargetPos = nil
         local _, myHRP = GetCharacterParts()
-        if not myHRP then return nil end
+        if not myHRP then
+            return nil
+        end
         local myPos = myHRP.Position
         local best, bestDist = nil, nil
         local function Consider(pos)
-            if not pos then return end
+            if not pos then
+                return
+            end
             local d = (pos - myPos).Magnitude
             if bestDist == nil or d < bestDist then
                 best, bestDist = pos, d
             end
         end
         local lvModel, lvPart = SeaAPI.Leviathan_Find()
-        if lvModel then Consider(AimPoint(lvModel, lvPart)) end
+        if lvModel then
+            Consider(AimPoint(lvModel, lvPart))
+        end
         if AttackModel and AttackModel.Parent then
             Consider(AimPoint(AttackModel, RootOf(AttackModel)))
         end
         local Mob, Root = SeaAPI.Sea_Mob(1500)
-        if Mob then Consider(AimPoint(Mob, Root)) end
+        if Mob then
+            Consider(AimPoint(Mob, Root))
+        end
         TargetPos = best
         return best
     end
 end)()
+RunService:BindToRenderStep("RJR_AimCamera", Enum.RenderPriority.Camera.Value + 1, function()
+    if not (_G.AutoLeviathanFull and _G.SilentAim and AttackModel) then
+        return
+    end
+    local aimPos = RJR_SilentAimTarget()
+    local cam = workspace.CurrentCamera
+    local _, hrpAim = GetCharacterParts()
+    if not aimPos or not cam or not hrpAim then
+        return
+    end
+    local flat = Vector3.new(aimPos.X - hrpAim.Position.X, 0, aimPos.Z - hrpAim.Position.Z)
+    if flat.Magnitude < 1 then
+        return
+    end
+    local dir = flat.Unit
+    pcall(function()
+        cam.CFrame = CFrame.lookAt(hrpAim.Position - dir * 13 + Vector3.new(0, 7, 0),
+            hrpAim.Position + dir * 30 + Vector3.new(0, 3, 0))
+    end)
+end)
 pcall(function()
     local mt = getrawmetatable(game)
     local oldNamecall = mt.__namecall
@@ -5445,6 +5641,9 @@ LocalPlayer.CharacterAdded:Connect(function()
                         Marked = Marked + 1
                     end
                 end
+                if Marked > 0 then
+                    print("[Leviathan] El capitán murió: abandonados " .. Marked .. " barcos viejos, pendientes de recompra")
+                end
             end
         end)
     end
@@ -5473,14 +5672,20 @@ local function GetCraftRecipes()
         local ok, r = pcall(function()
             return require(RS.Modules.Data.CraftingRecipes)
         end)
-        if ok then CraftRecipesCache = r end
+        if ok then
+            CraftRecipesCache = r
+        end
     end
     return CraftRecipesCache
 end
 local function GetCraftData()
     local RF = RS.Modules and RS.Modules:FindFirstChild("Net") and RS.Modules.Net:FindFirstChild("RF/GetCraftPlayerData")
-    if not RF then return nil, nil end
-    local ok, data = pcall(function() return RF:InvokeServer() end)
+    if not RF then
+        return nil, nil
+    end
+    local ok, data = pcall(function()
+        return RF:InvokeServer()
+    end)
     if ok and type(data) == "table" then
         return data.EtcItems, data.CraftProgression
     end
@@ -5503,8 +5708,12 @@ local function CheckCraftRecipe(r, Etc, Prog)
 end
 local function TryCraft(key)
     local RF = RS.Modules and RS.Modules:FindFirstChild("Net") and RS.Modules.Net:FindFirstChild("RF/Craft")
-    if not RF then return end
-    pcall(function() RF:InvokeServer("Craft", key, 1, {}) end)
+    if not RF then
+        return
+    end
+    pcall(function()
+        RF:InvokeServer("Craft", key, 1, {})
+    end)
 end
 task.spawn(function()
     while true do
@@ -5529,7 +5738,9 @@ task.spawn(function()
                         break
                     end
                 end
-                if not target then return end
+                if not target then
+                    return
+                end
                 local r = Recipes[target.Key]
                 if not r then
                     CraftStatus = TranslateStatus("Receta no encontrada: " .. target.Key)
@@ -5547,10 +5758,52 @@ task.spawn(function()
     end
 end)
 local FruitsBlackList = {}
+
+-- ============================================================
+-- Auto Roll Fruit
+-- ============================================================
+task.spawn(function()
+    local RollCooldown = 60
+    local LastRollAt = 0
+    while true do
+        task.wait(1)
+        if _G.AutoRandomFruit and HRP and HD and HD.Health > 0 then
+            if os.clock() - LastRollAt >= RollCooldown then
+                LastRollAt = os.clock()
+                local ok, result = pcall(function()
+                    return CommF:InvokeServer("Cousin", "Buy")
+                end)
+                if not ok then
+                    print("[AutoRandomFruit] InvokeServer fallo:", tostring(result))
+                elseif type(result) == "string" then
+                    print("[AutoRandomFruit] respuesta:", result)
+                end
+            end
+        end
+    end
+end)
+
+-- ============================================================
+-- Auto Store Fruits (fixed: no more spam when a fruit is full)
+-- ============================================================
+-- Root cause of the previous spam:
+--   The old LooksFull() looked for "full", "space", "no room",
+--   "inventory limit" but the game actually returns
+--   "You can only store 5 of each Blox Fruit." — none of the
+--   old substrings matched. The loop therefore never paused, kept
+--   firing StoreFruit on every fruit every second, and each call
+--   produced its own red toast on screen.
+-- Fix:
+--   * Match the real server message ("can only store") plus a
+--     couple of defensive fallbacks.
+--   * Only one StoreFruit attempt per second (break after first).
+--   * Blacklist the specific fruit name on the full response with
+--     a timestamp, retrying that fruit once per RETRY_INTERVAL.
+--   * Fall back to k.Name if the OriginalName attribute is missing.
 task.spawn(function()
     local RETRY_INTERVAL = 60
-    local StorageFull = false
-    local StorageFullAt = 0
+    local FullNotified = false
+
     local function IsFullMessage(res)
         if type(res) ~= "string" then return false end
         local low = res:lower()
@@ -5558,50 +5811,63 @@ task.spawn(function()
             or low:find("inventory full", 1, true) ~= nil
             or low:find("storage full", 1, true) ~= nil
             or low:find("no room", 1, true) ~= nil
-            or low:find("maximum", 1, true) ~= nil
     end
+
     while task.wait(1) do
         if _G.AutoStoreFruits and HRP and HD and HD.Health > 0 then
-            if StorageFull and os.clock() - StorageFullAt < RETRY_INTERVAL then
-            else
-                StorageFull = false
-                local attempted = false
-                local Containers = { LocalPlayer.Backpack, Character }
-                for _, container in ipairs(Containers) do
-                    if container and not attempted then
-                        for _, k in ipairs(container:GetChildren()) do
-                            if k:IsA("Tool") and string.find(k.Name, "Fruit", 1, true) then
-                                local originalName = k:GetAttribute("OriginalName") or k.Name
-                                local lastTried = FruitsBlackList[originalName]
-                                local now = os.clock()
-                                if not lastTried or (now - lastTried) > RETRY_INTERVAL then
-                                    local ok, result = pcall(function()
-                                        return CommF:InvokeServer("StoreFruit", originalName, k)
-                                    end)
-                                    attempted = true
-                                    if ok and IsFullMessage(result) then
-                                        FruitsBlackList[originalName] = now
-                                        StorageFull = true
-                                        StorageFullAt = now
+            local now = os.clock()
+            local attempted = false
+            local Containers = { LocalPlayer.Backpack, Character }
+            for _, container in ipairs(Containers) do
+                if container and not attempted then
+                    for _, k in ipairs(container:GetChildren()) do
+                        if k:IsA("Tool")
+                            and string.find(k.Name, "Fruit", 1, true) then
+
+                            local originalName = k:GetAttribute("OriginalName") or k.Name
+                            local lastTried = FruitsBlackList[originalName]
+
+                            if not lastTried or (now - lastTried) > RETRY_INTERVAL then
+                                local ok, result = pcall(function()
+                                    return CommF:InvokeServer(
+                                        "StoreFruit",
+                                        originalName,
+                                        k
+                                    )
+                                end)
+
+                                attempted = true
+
+                                if ok and IsFullMessage(result) then
+                                    FruitsBlackList[originalName] = now
+                                    if not FullNotified then
+                                        FullNotified = true
+                                        print("[AutoStoreFruits] Storage limit reached for "
+                                            .. tostring(originalName)
+                                            .. "; will retry in " .. RETRY_INTERVAL .. "s")
                                     end
-                                    break
                                 end
+                                break
                             end
                         end
                     end
                 end
             end
         else
-            StorageFull = false
+            FullNotified = false
         end
     end
 end)
+
 local _ = (function()
 do
     local LegacyCaptain = "\229\188\128\232\136\185"
     local LegacyFollower = "\232\183\159\233\154\143"
-    if _G.Mode == LegacyCaptain then _G.Mode = "Capitán"
-    elseif _G.Mode == LegacyFollower then _G.Mode = "Seguidor" end
+    if _G.Mode == LegacyCaptain then
+        _G.Mode = "Capitán"
+    elseif _G.Mode == LegacyFollower then
+        _G.Mode = "Seguidor"
+    end
 end
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
@@ -5609,7 +5875,9 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 local LANGUAGE_LABELS = _G.RJR_LanguageLabels or { "English", "Español", "中文" }
 local function NormalizeLanguage(value)
     local norm = _G.RJR_NormalizeLanguage
-    if norm then return norm(value) end
+    if norm then
+        return norm(value)
+    end
     return value
 end
 _G.Language = NormalizeLanguage(_G.Language) or "English"
@@ -5629,7 +5897,9 @@ do
     local MARGIN = 0.95
     local function FitWindowToViewport()
         local root = Window and Window.Root
-        if not (root and root:IsA("GuiObject")) then return end
+        if not (root and root:IsA("GuiObject")) then
+            return
+        end
         local camera = workspace.CurrentCamera
         if not camera then
             task.defer(function()
@@ -5639,7 +5909,9 @@ do
             return
         end
         local viewport = camera.ViewportSize
-        if not viewport or viewport.X <= 0 or viewport.Y <= 0 then return end
+        if not viewport or viewport.X <= 0 or viewport.Y <= 0 then
+            return
+        end
         local function FitAxis(base, viewportSize, fluentMin)
             local target = math.min(base, viewportSize * MARGIN)
             return math.max(target, math.min(fluentMin, viewportSize))
@@ -5663,9 +5935,13 @@ do
             local lastX, lastY = camera.ViewportSize.X, camera.ViewportSize.Y
             camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
                 local viewport = camera.ViewportSize
-                if viewport.X == lastX and viewport.Y == lastY then return end
+                if viewport.X == lastX and viewport.Y == lastY then
+                    return
+                end
                 lastX, lastY = viewport.X, viewport.Y
-                if Window.Maximized then return end
+                if Window.Maximized then
+                    return
+                end
                 FitWindowToViewport()
             end)
         end
@@ -5704,11 +5980,15 @@ local TabKeys = {
 local function SetSectionTitle(section, key)
     local root = section and section.Container and section.Container.Parent
     local label = root and root:FindFirstChildOfClass("TextLabel")
-    if label then label.Text = T(key) end
+    if label then
+        label.Text = T(key)
+    end
 end
 local function SetTabTitle(tab, key)
     local label = tab and tab.Frame and tab.Frame:FindFirstChildOfClass("TextLabel")
-    if label then label.Text = T(key) end
+    if label then
+        label.Text = T(key)
+    end
 end
 local ApplyLanguage
 local StatusPara = Tabs.Status:AddParagraph({
@@ -5752,13 +6032,17 @@ local rjrAutoFullLocked = false
 local SuppressModeNotify = false
 local LastLockNotice = 0
 local function NotifyLocked(key)
-    if os.clock() - LastLockNotice < 2 then return end
+    if os.clock() - LastLockNotice < 2 then
+        return
+    end
     LastLockNotice = os.clock()
     SendNotify(T("notify.locked.title"), T(key))
 end
 local SuppressLockCallback = false
 local function RevertLockedOption(option, value)
-    if not option then return end
+    if not option then
+        return
+    end
     SuppressLockCallback = true
     pcall(option.SetValue, option, value)
     SuppressLockCallback = false
@@ -5801,9 +6085,13 @@ local PlayerListOptions = {}
 local PlayerDropdown
 local PushedPlayerList
 local function SamePlayerList(a, b)
-    if not a or not b or #a ~= #b then return false end
+    if not a or not b or #a ~= #b then
+        return false
+    end
     for i = 1, #a do
-        if a[i] ~= b[i] then return false end
+        if a[i] ~= b[i] then
+            return false
+        end
     end
     return true
 end
@@ -5815,18 +6103,26 @@ local function RefreshPlayerList()
         end
     end
     table.sort(list)
-    if #list == 0 then list = { "--" } end
+    if #list == 0 then
+        list = { "--" }
+    end
     PlayerListOptions = list
     if PlayerDropdown and not SamePlayerList(PushedPlayerList, list) then
         PushedPlayerList = list
-        pcall(function() PlayerDropdown:SetValues(list) end)
+        pcall(function()
+            PlayerDropdown:SetValues(list)
+        end)
     end
     if not playerListLocked
         and (_G.FollowTarget == nil or _G.FollowTarget == "" or _G.FollowTarget == "--") then
         _G.FollowTarget = list[1] or ""
-        if _G.FollowTarget == "--" then _G.FollowTarget = "" end
+        if _G.FollowTarget == "--" then
+            _G.FollowTarget = ""
+        end
         if PlayerDropdown then
-            pcall(function() PlayerDropdown:SetValue(_G.FollowTarget) end)
+            pcall(function()
+                PlayerDropdown:SetValue(_G.FollowTarget)
+            end)
         end
         SaveConfig()
     end
@@ -5837,7 +6133,9 @@ PlayerDropdown = TeamSection:AddDropdown("follow.player", {
     Default = nil,
     Multi = false,
     Callback = function(Value)
-        if SuppressLockCallback then return end
+        if SuppressLockCallback then
+            return
+        end
         if playerListLocked then
             NotifyLocked("notify.locked.player")
             if _G.FollowTarget and _G.FollowTarget ~= "" then
@@ -5923,15 +6221,21 @@ TravelSection:AddToggle("cruise.return", {
 local MainSection = Tabs.Status:AddSection(T("sec.main"))
 SectionKeys[#SectionKeys + 1] = { element = MainSection, key = "sec.main" }
 _G.RJR_AutoFullToggle = {
-    Lock = function() rjrAutoFullLocked = true end,
-    Unlock = function() rjrAutoFullLocked = false end,
+    Lock = function()
+        rjrAutoFullLocked = true
+    end,
+    Unlock = function()
+        rjrAutoFullLocked = false
+    end,
 }
 local AutoFullToggle = MainSection:AddToggle("auto.full", {
     Title = T("auto.full"),
     Description = "",
     Default = _G.AutoLeviathanFull,
     Callback = function(State)
-        if SuppressLockCallback then return end
+        if SuppressLockCallback then
+            return
+        end
         if rjrAutoFullLocked then
             NotifyLocked("notify.locked.solo")
             RevertLockedOption(AutoFullToggle, _G.AutoLeviathanFull)
@@ -5949,7 +6253,9 @@ local AutoFullToggle = MainSection:AddToggle("auto.full", {
             end
             StatusText = T("status.on") .. " (" .. ModeDisplay() .. ")"
             _G.RJR_BoatDeadArmed = true
-            if _G.RJR_StartBoatDeadMonitor then _G.RJR_StartBoatDeadMonitor() end
+            if _G.RJR_StartBoatDeadMonitor then
+                _G.RJR_StartBoatDeadMonitor()
+            end
         else
             StopTweenAll()
             _G.RJR_ResetMapNoclipState()
@@ -5968,7 +6274,9 @@ MainSection:AddToggle("solo.seafarm", {
             _G.AutoLeviathanFull = true
             StatusPrefix = ""
             RefreshPlayerList()
-            pcall(function() AutoFullToggle:SetValue(true) end)
+            pcall(function()
+                AutoFullToggle:SetValue(true)
+            end)
             if _G.Mode == "Capitán" then
                 StartCaptain()
             else
@@ -5976,10 +6284,14 @@ MainSection:AddToggle("solo.seafarm", {
             end
             StatusText = T("status.on") .. " (" .. ModeDisplay() .. ")"
             if _G.RJR_AutoFullToggle and _G.RJR_AutoFullToggle.Lock then
-                pcall(function() _G.RJR_AutoFullToggle:Lock() end)
+                pcall(function()
+                    _G.RJR_AutoFullToggle:Lock()
+                end)
             end
             _G.RJR_BoatDeadArmed = true
-            if _G.RJR_StartBoatDeadMonitor then _G.RJR_StartBoatDeadMonitor() end
+            if _G.RJR_StartBoatDeadMonitor then
+                _G.RJR_StartBoatDeadMonitor()
+            end
         else
             StopTweenAll()
             _G.AutoLeviathanFull = false
@@ -5987,7 +6299,9 @@ MainSection:AddToggle("solo.seafarm", {
             StatusPrefix = ""
             StatusText = T("status.stopped")
             if _G.RJR_AutoFullToggle and _G.RJR_AutoFullToggle.Unlock then
-                pcall(function() _G.RJR_AutoFullToggle:Unlock() end)
+                pcall(function()
+                    _G.RJR_AutoFullToggle:Unlock()
+                end)
             end
         end
     end,
@@ -6001,7 +6315,9 @@ MainSection:AddToggle("respawn.rebuy", {
         SaveConfig()
         if State and _G.AutoLeviathanFull then
             _G.RJR_BoatDeadArmed = true
-            if _G.RJR_StartBoatDeadMonitor then _G.RJR_StartBoatDeadMonitor() end
+            if _G.RJR_StartBoatDeadMonitor then
+                _G.RJR_StartBoatDeadMonitor()
+            end
         end
     end,
 })
@@ -6012,7 +6328,11 @@ MainSection:AddToggle("info.ui", {
     Callback = function(State)
         _G.ShowInfoUI = State
         SaveConfig()
-        if State then CreateInfoUI() else DestroyInfoUI() end
+        if State then
+            CreateInfoUI()
+        else
+            DestroyInfoUI()
+        end
     end,
 })
 local StopButton = MainSection:AddButton({
@@ -6028,7 +6348,9 @@ local StopButton = MainSection:AddButton({
             SaveConfig()
         end
         if _G.RJR_AutoFullToggle and _G.RJR_AutoFullToggle.Unlock then
-            pcall(function() _G.RJR_AutoFullToggle:Unlock() end)
+            pcall(function()
+                _G.RJR_AutoFullToggle:Unlock()
+            end)
         end
         SendNotify(T("stop.btn"), T("status.stopped"))
     end,
@@ -6037,7 +6359,9 @@ ButtonKeys[#ButtonKeys + 1] = { element = StopButton, key = "stop.btn" }
 do
     local function ArrayCopy(t)
         local out = {}
-        for _, v in ipairs(CheckSkillTable(t)) do out[#out + 1] = v end
+        for _, v in ipairs(CheckSkillTable(t)) do
+            out[#out + 1] = v
+        end
         return out
     end
     local CombatSection = Tabs.Combat:AddSection(T("sec.combat"))
@@ -6117,7 +6441,9 @@ do
         Callback = function(State)
             _G.DragonGunFarm = State
             SaveConfig()
-            if State then SeaAPI.StartDragonAttack() end
+            if State then
+                SeaAPI.StartDragonAttack()
+            end
         end,
     })
     CombatSection:AddToggle("dragon.leviathan", {
@@ -6127,78 +6453,37 @@ do
         Callback = function(State)
             _G.DragonGunLeviathan = State
             SaveConfig()
-            if State then SeaAPI.InitDragon() end
+            if State then
+                SeaAPI.InitDragon()
+            end
         end,
     })
-    CombatSection:AddToggle("dragon.multitarget", {
-        Title = T("dragon.multitarget"),
-        Description = T("dragon.multitarget.desc"),
-        Default = _G.DragonMultiTarget,
+    -- [DRAGONSTORM ENHANCED] new UI controls
+    CombatSection:AddToggle("dragon.multipart", {
+        Title = T("dragon.multipart"),
+        Description = T("dragon.multipart.desc"),
+        Default = _G.DragonMultiPartHit,
         Callback = function(State)
-            _G.DragonMultiTarget = State and true or false
+            _G.DragonMultiPartHit = State
             SaveConfig()
-        end,
-    })
-    CombatSection:AddInput("dragon.maxtargets", {
-        Title = T("dragon.maxtargets"),
-        Description = T("dragon.maxtargets.desc"),
-        Default = tostring(_G.DragonMaxTargetsPerBurst),
-        Placeholder = "10",
-        Numeric = true,
-        Finished = false,
-        Callback = function(Value)
-            local n = tonumber(Value)
-            if n and n >= 1 and n <= 20 then
-                _G.DragonMaxTargetsPerBurst = math.floor(n)
-                SaveConfig()
-            end
-        end,
-    })
-    CombatSection:AddInput("dragon.multirange", {
-        Title = "Multi-Target Cluster Range (studs)",
-        Description = "Only fire at other targets within this distance of the closest target (50–3000)",
-        Default = tostring(_G.DragonMultiRange or 400),
-        Placeholder = "400",
-        Numeric = true,
-        Finished = false,
-        Callback = function(Value)
-            local n = tonumber(Value)
-            if n and n >= 50 and n <= 3000 then
-                _G.DragonMultiRange = math.floor(n)
-                SaveConfig()
-            end
-        end,
-    })
-    CombatSection:AddInput("dragon.shots", {
-        Title = T("dragon.shots"),
-        Description = T("dragon.shots.desc"),
-        Default = tostring(_G.DragonShotsPerBurst),
-        Placeholder = "3",
-        Numeric = true,
-        Finished = false,
-        Callback = function(Value)
-            local n = tonumber(Value)
-            if n and n >= 1 and n <= 10 then
-                _G.DragonShotsPerBurst = math.floor(n)
-                SaveConfig()
-            end
         end,
     })
     CombatSection:AddInput("dragon.rate", {
         Title = T("dragon.rate"),
         Description = T("dragon.rate.desc"),
         Default = tostring(_G.DragonFireInterval),
-        Placeholder = "0.30",
+        Placeholder = "0.10",
         Numeric = true,
         Finished = false,
         Callback = function(Value)
             local n = tonumber(Value)
-            if n and n >= 0.05 and n <= 2.0 then
+            if n and n >= 0.05 and n <= 1.0 then
                 _G.DragonFireInterval = n
                 SaveConfig()
             end
         end,
     })
+    -- [/DRAGONSTORM ENHANCED]
     CombatSection:AddToggle("remove.fog", {
         Title = T("remove.fog"),
         Description = T("remove.fog.desc"),
@@ -6206,7 +6491,9 @@ do
         Callback = function(State)
             _G.RemoveFog = State
             SaveConfig()
-            if State then DoRemoveFog() end
+            if State then
+                DoRemoveFog()
+            end
         end,
     })
     local HuntSection = Tabs.Combat:AddSection(T("sec.hunt"))
@@ -6216,7 +6503,9 @@ do
         Description = T("hunt.events.desc"),
         Default = _G.HuntFightEvents,
         Callback = function(State)
-            if SuppressLockCallback then return end
+            if SuppressLockCallback then
+                return
+            end
             _G.HuntFightEvents = State and true or false
             SaveConfig()
         end,
@@ -6228,7 +6517,9 @@ do
         Default = ArrayCopy(_G.HuntSelectEvents),
         Multi = true,
         Callback = function(Value)
-            if SuppressLockCallback then return end
+            if SuppressLockCallback then
+                return
+            end
             _G.HuntSelectEvents = SeaAPI.NormalizeSelection(Value)
             SaveConfig()
         end,
@@ -6244,7 +6535,9 @@ do
         Callback = function(State)
             _G.AntiDracoAura = State
             SaveConfig()
-            if State then PerformanceAPI.ApplyAntiDracoAura() end
+            if State then
+                PerformanceAPI.ApplyAntiDracoAura()
+            end
         end,
     })
     PerfSection:AddToggle("auto.fast", {
@@ -6254,7 +6547,9 @@ do
         Callback = function(State)
             _G.AutoFastMode = State
             SaveConfig()
-            if State then PerformanceAPI.ApplyAutoFastMode() end
+            if State then
+                PerformanceAPI.ApplyAutoFastMode()
+            end
         end,
     })
     PerfSection:AddToggle("fps.boost", {
@@ -6264,7 +6559,9 @@ do
         Callback = function(State)
             _G.FPSBoost = State
             SaveConfig()
-            if State then PerformanceAPI.ApplyFPSBoost() end
+            if State then
+                PerformanceAPI.ApplyFPSBoost()
+            end
         end,
     })
     local HakiSection = Tabs.Perf:AddSection(T("sec.haki"))
@@ -6302,80 +6599,6 @@ do
         Default = _G.AutoV4,
         Callback = function(State)
             _G.AutoV4 = State
-            SaveConfig()
-        end,
-    })
-    local ESPSection = Tabs.Perf:AddSection(T("sec.esp"))
-    SectionKeys[#SectionKeys + 1] = { element = ESPSection, key = "sec.esp" }
-    ESPSection:AddToggle("esp.panel", {
-        Title = T("esp.toggle"),
-        Description = T("esp.toggle.desc"),
-        Default = _G.SeaEventESPPanel,
-        Callback = function(State)
-            _G.SeaEventESPPanel = State and true or false
-            SaveConfig()
-            if not State and _G.RJR_SeaEventPanel then
-                pcall(_G.RJR_SeaEventPanel.Hide)
-            end
-        end,
-    })
-    ESPSection:AddInput("esp.maxrange", {
-        Title = T("esp.maxrange"),
-        Description = T("esp.maxrange.desc"),
-        Default = tostring(_G.SeaEventESPMaxRange),
-        Placeholder = "5000",
-        Numeric = true,
-        Finished = false,
-        Callback = function(Value)
-            local n = tonumber(Value)
-            if n and n >= 500 and n <= 20000 then
-                _G.SeaEventESPMaxRange = math.floor(n)
-                SaveConfig()
-            end
-        end,
-    })
-    ESPSection:AddToggle("esp.showhp", {
-        Title = T("esp.showhp"),
-        Description = "",
-        Default = _G.SeaEventESPShowHP,
-        Callback = function(State)
-            _G.SeaEventESPShowHP = State and true or false
-            SaveConfig()
-        end,
-    })
-    ESPSection:AddToggle("esp.showbar", {
-        Title = T("esp.showbar"),
-        Description = "",
-        Default = _G.SeaEventESPShowBar,
-        Callback = function(State)
-            _G.SeaEventESPShowBar = State and true or false
-            SaveConfig()
-        end,
-    })
-    ESPSection:AddToggle("esp.percent", {
-        Title = T("esp.percent"),
-        Description = "",
-        Default = _G.SeaEventESPShowPercent,
-        Callback = function(State)
-            _G.SeaEventESPShowPercent = State and true or false
-            SaveConfig()
-        end,
-    })
-    ESPSection:AddToggle("esp.showdist", {
-        Title = T("esp.showdist"),
-        Description = "",
-        Default = _G.SeaEventESPShowDistance,
-        Callback = function(State)
-            _G.SeaEventESPShowDistance = State and true or false
-            SaveConfig()
-        end,
-    })
-    ESPSection:AddToggle("esp.fade", {
-        Title = T("esp.fade"),
-        Description = "",
-        Default = _G.SeaEventESPFade,
-        Callback = function(State)
-            _G.SeaEventESPFade = State and true or false
             SaveConfig()
         end,
     })
@@ -6438,11 +6661,17 @@ do
     local ResetButton = Tabs.Extra:AddButton({
         Title = T("reset.data"),
         Callback = function()
-            local args = { "BlackbeardReward", "Refund", "2" }
+            local args = {
+                "BlackbeardReward",
+                "Refund",
+                "2"
+            }
             pcall(function()
                 local remotes = RS:FindFirstChild("Remotes")
                 local CommF2 = remotes and remotes:FindFirstChild("CommF_")
-                if CommF2 then CommF2:InvokeServer(unpack(args)) end
+                if CommF2 then
+                    CommF2:InvokeServer(unpack(args))
+                end
             end)
         end,
     })
@@ -6453,13 +6682,18 @@ do
     local AvatarCache = {}
     local function GetAvatarImage(userId)
         userId = tostring(userId)
-        if AvatarCache[userId] then return AvatarCache[userId] end
+        if AvatarCache[userId] then
+            return AvatarCache[userId]
+        end
         local fallback = "https://thumbnails.roblox.com/v1/users/avatar?userIds=" .. userId
             .. "&size=420x420&format=Png&isCircular=false"
         local avatarReq = (syn and syn.request) or (http and http.request) or http_request or request
         local found
         if avatarReq then
-            local ok, resp = pcall(avatarReq, { Url = fallback, Method = "GET" })
+            local ok, resp = pcall(avatarReq, {
+                Url = fallback,
+                Method = "GET",
+            })
             if ok and resp and (resp.StatusCode or resp.statusCode) == 200 then
                 local body = resp.Body or resp.body or ""
                 local okDec, data = pcall(HttpService.JSONDecode, HttpService, body)
@@ -6468,7 +6702,9 @@ do
                 end
             end
         end
-        if not found then found = fallback end
+        if not found then
+            found = fallback
+        end
         AvatarCache[userId] = found
         return found
     end
@@ -6496,11 +6732,17 @@ do
                 headers = { ["Content-Type"] = "application/json" }
                 do
                     local titleStr = title or "Auto Leviathan"
-                    local embedColor = 0x32CD32
-                    if titleStr:find("Leviathan", 1, true) then embedColor = 0x9C27B0
-                    elseif titleStr:find("Heart", 1, true) or titleStr:find("Coraz", 1, true) then embedColor = 0x1E88E5
-                    elseif titleStr:find("Bribe", 1, true) or titleStr:find("Soborno", 1, true) then embedColor = 0xFB8C00
-                    elseif titleStr:find("Players", 1, true) or titleStr:find("Jugadores", 1, true) then embedColor = 0xE53935
+                    local embedColor
+                    if titleStr:find("Leviathan", 1, true) then
+                        embedColor = 0x9C27B0
+                    elseif titleStr:find("Corazón", 1, true) or titleStr:find("Heart", 1, true) then
+                        embedColor = 0x1E88E5
+                    elseif titleStr:find("Soborno", 1, true) or titleStr:find("Bribe", 1, true) then
+                        embedColor = 0xFB8C00
+                    elseif titleStr:find("Jugadores", 1, true) or titleStr:find("Players", 1, true) then
+                        embedColor = 0xE53935
+                    else
+                        embedColor = 0x32CD32
                     end
                     local fields = {}
                     local descriptions = {}
@@ -6525,8 +6767,12 @@ do
                         { name = T("wh.field.uid"), value = string.format("[%d](https://www.roblox.com/users/%d/profile)", LocalPlayer.UserId, LocalPlayer.UserId), inline = true },
                     }
                     local finalFields = {}
-                    for _, f in ipairs(fields) do finalFields[#finalFields + 1] = f end
-                    for _, f in ipairs(userFields) do finalFields[#finalFields + 1] = f end
+                    for _, f in ipairs(fields) do
+                        finalFields[#finalFields + 1] = f
+                    end
+                    for _, f in ipairs(userFields) do
+                        finalFields[#finalFields + 1] = f
+                    end
                     local SenderName = (_G.WebhookUsername and _G.WebhookUsername ~= "") and _G.WebhookUsername or "Auto Leviathan"
                     payload = {
                         username = SenderName,
@@ -6543,7 +6789,9 @@ do
                             },
                         }}
                     }
-                    if mentionEveryone then payload.content = "@everyone" end
+                    if mentionEveryone then
+                        payload.content = "@everyone"
+                    end
                 end
                 local resp
                 if httpPost and not req then
@@ -6558,9 +6806,14 @@ do
                 end
                 local code = resp and (resp.StatusCode or resp.statusCode or resp.Status or resp.status)
                 ok = code == nil or code == 200 or code == 204
+                if not ok then
+                    print("[Webhook] envio fallido HTTP " .. tostring(code))
+                end
             end)
             WebhookSendLock = false
-            if onDone then onDone(ok) end
+            if onDone then
+                onDone(ok)
+            end
         end)
         return true
     end
@@ -6593,8 +6846,11 @@ do
                     elseif key:find("Leviathan") ~= nil and key:find("Heart") ~= nil then
                         HeartT = tostring(v)
                     elseif key:find("Scroll") ~= nil then
-                        if ScrollT == "" then ScrollT = key .. ": " .. tostring(v)
-                        else ScrollT = ScrollT .. ", " .. key .. ": " .. tostring(v) end
+                        if ScrollT == "" then
+                            ScrollT = key .. ": " .. tostring(v)
+                        else
+                            ScrollT = ScrollT .. ", " .. key .. ": " .. tostring(v)
+                        end
                     end
                 end
             end
@@ -6711,7 +6967,9 @@ do
     local SendNowButton = Tabs.Webhook:AddButton({
         Title = T("webhook.send.now"),
         Callback = function()
-            pcall(function() SendWebhookUI(BuildProgressMsg(), T("wh.title.manual")) end)
+            pcall(function()
+                SendWebhookUI(BuildProgressMsg(), T("wh.title.manual"))
+            end)
         end,
     })
     ButtonKeys[#ButtonKeys + 1] = { element = SendNowButton, key = "webhook.send.now" }
@@ -6731,7 +6989,9 @@ do
             task.wait(_G.WebhookInterval or 60)
             if _G.AutoWebhook and _G.WebhookSendProgress
                 and _G.WebhookURL and _G.WebhookURL ~= "" then
-                pcall(function() SendWebhookUI(BuildProgressMsg(), T("wh.title.progress")) end)
+                pcall(function()
+                    SendWebhookUI(BuildProgressMsg(), T("wh.title.progress"))
+                end)
             end
         end
     end)
@@ -6803,7 +7063,9 @@ do
         Multi = false,
         Callback = function(Value)
             local normalized = NormalizeLanguage(Value)
-            if not normalized or normalized == _G.Language then return end
+            if not normalized or normalized == _G.Language then
+                return
+            end
             _G.Language = normalized
             SaveConfig()
             ApplyLanguage()
@@ -6857,18 +7119,26 @@ ApplyLanguage = function()
     end
     for idx, element in pairs(Fluent.Options) do
         if T(idx) ~= idx then
-            pcall(function() element:SetTitle(T(idx)) end)
+            pcall(function()
+                element:SetTitle(T(idx))
+            end)
             local descKey = idx .. ".desc"
             if T(descKey) ~= descKey then
-                pcall(function() element:SetDesc(T(descKey)) end)
+                pcall(function()
+                    element:SetDesc(T(descKey))
+                end)
             end
         end
     end
     for _, item in ipairs(ParagraphKeys) do
-        pcall(function() item.element:SetTitle(T(item.title)) end)
+        pcall(function()
+            item.element:SetTitle(T(item.title))
+        end)
     end
     for _, item in ipairs(ButtonKeys) do
-        pcall(function() item.element:SetTitle(T(item.key)) end)
+        pcall(function()
+            item.element:SetTitle(T(item.key))
+        end)
     end
     if ModeDropdown then
         pcall(function()
@@ -6879,7 +7149,9 @@ ApplyLanguage = function()
         end)
     end
     pcall(function()
-        if _G.RJR_RefreshStatus then _G.RJR_RefreshStatus() end
+        if _G.RJR_RefreshStatus then
+            _G.RJR_RefreshStatus()
+        end
     end)
 end
 do
@@ -6889,14 +7161,24 @@ do
             local containers = {}
             if gethui then
                 local ok, hui = pcall(gethui)
-                if ok and hui then containers[#containers + 1] = hui end
+                if ok and hui then
+                    containers[#containers + 1] = hui
+                end
             end
-            pcall(function() containers[#containers + 1] = game:GetService("CoreGui") end)
+            pcall(function()
+                containers[#containers + 1] = game:GetService("CoreGui")
+            end)
             local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-            if playerGui then containers[#containers + 1] = playerGui end
+            if playerGui then
+                containers[#containers + 1] = playerGui
+            end
             for _, container in ipairs(containers) do
                 local old = container:FindFirstChild("RJR_Hub_FloatingBall")
-                if old then pcall(function() old:Destroy() end) end
+                if old then
+                    pcall(function()
+                        old:Destroy()
+                    end)
+                end
             end
         end
         local BallGui = Instance.new("ScreenGui")
@@ -6960,7 +7242,9 @@ do
         end
         local function SetMenuOpen(open)
             local root = Window and Window.Root
-            if not root then return end
+            if not root then
+                return
+            end
             root.Visible = open
             Window.Minimized = not open
             SyncBall()
@@ -6978,14 +7262,20 @@ do
             end
         end)
         UserInputService.InputChanged:Connect(function(input)
-            if not dragging then return end
+            if not dragging then
+                return
+            end
             if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
                 local now = Vector2.new(input.Position.X, input.Position.Y)
                 local step = Vector2.zero
-                if dragLast then step = now - dragLast end
+                if dragLast then
+                    step = now - dragLast
+                end
                 dragLast = now
                 movedDist = movedDist + step.Magnitude
-                if movedDist > 5 then moved = true end
+                if movedDist > 5 then
+                    moved = true
+                end
                 if step.Magnitude > 0 then
                     local screen = BallGui.AbsoluteSize
                     if screen.X <= 0 or screen.Y <= 0 then
@@ -7003,7 +7293,9 @@ do
             end
         end)
         UserInputService.InputEnded:Connect(function(input)
-            if not dragging then return end
+            if not dragging then
+                return
+            end
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = false
                 if moved then
@@ -7029,16 +7321,15 @@ Window:SelectTab(1)
 ApplyLanguage()
 task.defer(function()
     if _G.SoloSeaFarm and _G.RJR_AutoFullToggle and _G.RJR_AutoFullToggle.Lock then
-        pcall(function() _G.RJR_AutoFullToggle:Lock() end)
+        pcall(function()
+            _G.RJR_AutoFullToggle:Lock()
+        end)
     end
     if _G.DragonGunFarm then pcall(SeaAPI.StartDragonAttack) end
     if _G.RemoveFog then pcall(DoRemoveFog) end
     if _G.AntiDracoAura then pcall(PerformanceAPI.ApplyAntiDracoAura) end
     if _G.AutoFastMode then pcall(PerformanceAPI.ApplyAutoFastMode) end
     if _G.FPSBoost then pcall(PerformanceAPI.ApplyFPSBoost) end
-    if _G.SeaEventESPPanel and _G.RJR_SeaEventPanel then
-        pcall(_G.RJR_SeaEventPanel.Update)
-    end
 end)
 
 SendNotify(T("notify.title"), T("notify.ready"))
