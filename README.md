@@ -95,6 +95,10 @@ T, ModeDisplay = (function()
         ["dragon.rate.desc"] = { en = "Seconds between bursts. 0.30 is safe; lower risks rejection.", es = "Segundos entre ráfagas. 0.30 es seguro; menos puede ser rechazado.", zh = "两轮齐射之间的秒数。0.30 安全；更低有被拒绝的风险。" },
         ["dragon.shots"] = { en = "Shots per burst", es = "Disparos por ráfaga", zh = "每轮射击次数" },
         ["dragon.shots.desc"] = { en = "How many shots per burst (1-10). Shots are fired in the same frame so the server registers them all as separate events. 3 = triple damage.", es = "Cuántos disparos por ráfaga (1-10). Se disparan en el mismo frame para que el servidor los registre todos como eventos separados. 3 = triple daño.", zh = "每轮打几发（1-10）。所有发在同一帧内发出，让服务器逐一登记。3 发 = 3 倍伤害。" },
+        ["dragon.multitarget"] = { en = "Multi-Hit All Sea Events", es = "Golpear todos los eventos a la vez", zh = "同时攻击所有海上事件" },
+        ["dragon.multitarget.desc"] = { en = "Fire at every spawning sea event in the same frame (simultaneous multi-hit)", es = "Dispara a todos los eventos marinos en el mismo frame (multi-golpe simultáneo)", zh = "同一帧打全部刷新的海上事件（同时多目标）" },
+        ["dragon.maxtargets"] = { en = "Max targets per burst", es = "Máx. objetivos por ráfaga", zh = "每轮最大目标数" },
+        ["dragon.maxtargets.desc"] = { en = "Safety cap for simultaneous multi-hit (1-20)", es = "Límite de seguridad para el multi-golpe simultáneo (1-20)", zh = "同时多目标的安全上限 (1-20)" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -137,6 +141,7 @@ T, ModeDisplay = (function()
         ["sec.main"] = { en = "Main", es = "Principal", zh = "主功能" },
         ["sec.mode"] = { en = "Mode", es = "Modo", zh = "模式" },
         ["sec.performance"] = { en = "Performance & Effects", es = "Rendimiento y efectos", zh = "性能与特效" },
+        ["sec.esp"] = { en = "Sea Event ESP", es = "ESP de eventos marinos", zh = "海上事件 ESP" },
         ["sec.team"] = { en = "Teammates", es = "Compañeros", zh = "队友" },
         ["sec.travel"] = { en = "Travel Settings", es = "Ajustes de navegación", zh = "航行设置" },
         ["sel.weapon"] = { en = "Select Weapon", es = "Seleccionar arma", zh = "选择武器" },
@@ -175,6 +180,12 @@ T, ModeDisplay = (function()
         ["ui.floatingball.desc"] = { en = "Draggable button to open/close this menu (hotkey G always works)", es = "Botón arrastrable para abrir/cerrar el menú (la tecla G siempre funciona)", zh = "可拖动的悬浮球，点击开关菜单（热键 G 始终可用）" },
         ["ui.details"] = { en = "Details", es = "Detalles", zh = "详情" },
         ["ui.teammates"] = { en = "Teammates", es = "Compañeros", zh = "队友" },
+        ["esp.toggle"] = { en = "Sea Event ESP", es = "ESP de eventos marinos", zh = "海上事件 ESP" },
+        ["esp.toggle.desc"] = { en = "Show names / HP / distance over all sea events", es = "Muestra nombre / vida / distancia sobre los eventos marinos", zh = "在海上事件上显示 名称/血量/距离" },
+        ["esp.maxrange"] = { en = "ESP Max Range (studs)", es = "Rango máx. del ESP (studs)", zh = "ESP 最大范围（studs）" },
+        ["esp.maxrange.desc"] = { en = "Hide ESP labels beyond this distance (500-20000)", es = "Oculta las etiquetas más allá de esta distancia (500-20000)", zh = "超出此距离隐藏标签（500-20000）" },
+        ["esp.showhp"] = { en = "ESP: Show HP", es = "ESP: mostrar vida", zh = "ESP: 显示血量" },
+        ["esp.showdist"] = { en = "ESP: Show Distance", es = "ESP: mostrar distancia", zh = "ESP: 显示距离" },
         ["webhook.auto"] = { en = "Auto Send Progress", es = "Enviar progreso automáticamente", zh = "自动发送进度" },
         ["webhook.auto.desc"] = { en = "Send current status to webhook every 60s", es = "Envia el estado al webhook cada 60 segundos", zh = "每 60 秒发送当前状态到 webhook" },
         ["webhook.interval"] = { en = "Send Interval (s)", es = "Intervalo (segundos)", zh = "发送间隔(秒)" },
@@ -254,7 +265,9 @@ if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
 -- [DRAGONSTORM MULTI-SHOT]
 if _G.DragonShotsPerBurst == nil then _G.DragonShotsPerBurst = 3 end
 if _G.DragonFireInterval == nil then _G.DragonFireInterval = 0.30 end
--- [/DRAGONSTORM MULTI-SHOT]
+-- [DRAGONSTORM MULTI-TARGET]
+if _G.DragonMultiTarget == nil then _G.DragonMultiTarget = true end
+if _G.DragonMaxTargetsPerBurst == nil then _G.DragonMaxTargetsPerBurst = 10 end
 if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
 if _G.AutoFastMode == nil then _G.AutoFastMode = false end
@@ -274,6 +287,12 @@ if _G.SoloSeaFarm == nil then _G.SoloSeaFarm = false end
 if _G.RespawnRebuy == nil then _G.RespawnRebuy = false end
 if _G.CruiseReturn == nil then _G.CruiseReturn = true end
 if _G.HuntSelectEvents == nil then _G.HuntSelectEvents = {} end
+-- [ESP DEFAULTS]
+if _G.SeaEventESP == nil then _G.SeaEventESP = false end
+if _G.SeaEventESPMaxRange == nil then _G.SeaEventESPMaxRange = 5000 end
+if _G.SeaEventESPShowHP == nil then _G.SeaEventESPShowHP = true end
+if _G.SeaEventESPShowDistance == nil then _G.SeaEventESPShowDistance = true end
+-- [/ESP DEFAULTS]
 if _G.WebhookURL == nil then _G.WebhookURL = "" end
 if _G.WebhookUsername == nil then _G.WebhookUsername = "Auto Leviathan" end
 if _G.AutoWebhook == nil then _G.AutoWebhook = false end
@@ -551,11 +570,13 @@ local ConfigKeys = {
     "SkillMelee", "SkillSword", "SkillFruit", "SkillGun",
     "FastAttack", "DragonGunFarm", "DragonGunLeviathan",
     "DragonShotsPerBurst", "DragonFireInterval",
+    "DragonMultiTarget", "DragonMaxTargetsPerBurst",
     "RemoveFog", "AntiDracoAura", "AutoFastMode", "FPSBoost",
     "AutoBuso", "AutoKen", "AutoV3", "AutoV4",
     "BoatSpeed", "BoatHeight", "PlayerTweenSpeed", "CruiseReturn",
     "AutoCraftScrolls", "CraftQuality", "AutoRandomFruit", "AutoStoreFruits",
     "HuntFightEvents", "SoloSeaFarm", "RespawnRebuy", "HuntSelectEvents",
+    "SeaEventESP", "SeaEventESPMaxRange", "SeaEventESPShowHP", "SeaEventESPShowDistance",
     "WebhookURL", "WebhookUsername", "AutoWebhook", "WebhookInterval",
     "WebhookSendProgress", "WebhookSendBribeReady", "WebhookSendLeviathan",
     "WebhookSendHeartSpawn", "WebhookSendHeartGot", "WebhookSendLowPlayers",
@@ -2156,9 +2177,6 @@ local function initDragon()
     return false
 end
 
--- Lazily (re)fetch the two remotes fireShot needs.
--- This also makes the Leviathan branch work when DragonGunFarm is off,
--- because previously they were only initialised inside the farm loop.
 local function ensureDragonRemotes()
     if not ShootGunEvent then
         local modules = RS:FindFirstChild("Modules")
@@ -2172,7 +2190,6 @@ local function ensureDragonRemotes()
     return ShootGunEvent ~= nil and Validator2 ~= nil
 end
 
--- Health check for the cached shootFunc / PRNG upvalues.
 local function DragonStillHealthy()
     if not shootFunc or not Validator2 or not ShootGunEvent then return false end
     local ok, healthy = pcall(function()
@@ -2185,16 +2202,7 @@ local function DragonStillHealthy()
 end
 
 -- ============================================================
--- fireShot — ENHANCED SIMULTANEOUS MULTI-HIT
--- ------------------------------------------------------------
--- Fires `_G.DragonShotsPerBurst` shots at the SAME target in the
--- SAME frame (no task.wait between them). The PRNG / validator
--- state is advanced locally in a single synchronous pass and
--- committed once, so all N tokens are precomputed before any
--- remote is fired. Roblox batches the FireServer calls into the
--- same network tick, so the server receives N legitimate shots
--- (each with a distinct seq token) back-to-back and applies
--- damage N times nearly simultaneously.
+-- fireShot — SIMULTANEOUS MULTI-HIT (SAME FRAME)
 -- ============================================================
 local function fireShot(pos, hit)
     if not pos then return false end
@@ -2206,7 +2214,6 @@ local function fireShot(pos, hit)
         return false
     end
 
-    -- Resolve primary hit part
     local primary
     if typeof(hit) == "Instance" and hit:IsA("BasePart") then
         primary = hit
@@ -2230,7 +2237,6 @@ local function fireShot(pos, hit)
     if shots < 1 then shots = 1 end
     if shots > 10 then shots = 10 end
 
-    -- Read the PRNG / validator state ONCE.
     local u20 = debug.getupvalue(shootFunc, idx.u20)
     local u21 = debug.getupvalue(shootFunc, idx.u21)
     local u22 = debug.getupvalue(shootFunc, idx.u22)
@@ -2246,9 +2252,6 @@ local function fireShot(pos, hit)
         return false
     end
 
-    -- Precompute N validator tokens by advancing the PRNG locally.
-    -- Each token carries a distinct seq number, so the server sees
-    -- N legitimate shots instead of one replayed one.
     local tokens = table.create(shots)
     for i = 1, shots do
         local u79 = u25 * u21
@@ -2263,15 +2266,10 @@ local function fireShot(pos, hit)
         }
     end
 
-    -- Commit the final PRNG state atomically.
     debug.setupvalue(shootFunc, idx.u24, u24)
     debug.setupvalue(shootFunc, idx.u25, u25)
     debug.setupvalue(shootFunc, idx.u26, u26)
 
-    -- Fire every shot in the SAME frame (no task.wait between them).
-    -- Roblox queues the FireServer calls and sends them in one network
-    -- tick, so the server receives N shots back-to-back and applies
-    -- damage N times nearly simultaneously.
     local anyOk = false
     for i = 1, shots do
         if not primary.Parent then break end
@@ -2400,10 +2398,7 @@ local function getClosestSeaTarget()
 end
 
 -- ============================================================
--- getAllSeaTargets — ENHANCED MULTI-TARGET SCANNER
--- ------------------------------------------------------------
--- Returns a list of all valid sea event targets within range.
--- This allows the Dragonstorm to hit multiple enemies at once.
+-- getAllSeaTargets — MULTI-TARGET SCANNER
 -- ============================================================
 local function getAllSeaTargets()
     local targets = {}
@@ -2527,12 +2522,12 @@ local function StartDragonAttack()
                     if not IsOnBoat() then Equip_Auto("Dragonstorm") end
                     return
                 end
-                
+
                 local now = os.clock()
                 local interval = _G.DragonFireInterval or 0.30
                 if now - DragonLastFire < interval then return end
                 DragonLastFire = now
-                
+
                 local targets = getAllSeaTargets()
                 if #targets == 0 then
                     if os.clock() - lastDiag > 2 then
@@ -2541,17 +2536,28 @@ local function StartDragonAttack()
                     end
                     return
                 end
-                
-                -- Sort targets by distance (closest first)
+
                 table.sort(targets, function(a, b) return a.dist < b.dist end)
-                
-                -- Fire at up to N closest targets
-                local MaxTargets = 5 -- Limit to avoid overwhelming the server
-                for i = 1, math.min(#targets, MaxTargets) do
+
+                -- [SIMULTANEOUS MULTI-HIT]
+                -- Fire at every target in the SAME frame so that all spawning
+                -- sea events are hit together. This is the fix for "pag sabay
+                -- nag spawn" - previously we used task.wait(0.05) between each
+                -- target, which was too slow and made the burst look buggy.
+                -- Only clamp with DragonMaxTargetsPerBurst for safety.
+                local maxTargets
+                if _G.DragonMultiTarget == false then
+                    maxTargets = 1
+                else
+                    maxTargets = math.floor(tonumber(_G.DragonMaxTargetsPerBurst) or 10)
+                    if maxTargets < 1 then maxTargets = 1 end
+                    if maxTargets > 20 then maxTargets = 20 end
+                end
+                local fireCount = math.min(#targets, maxTargets)
+                for i = 1, fireCount do
                     local target = targets[i]
                     if target.part and target.part.Parent then
                         fireShot(target.part.Position, target.part)
-                        task.wait(0.05) -- Small delay between targets
                     end
                 end
             end)
@@ -2559,7 +2565,7 @@ local function StartDragonAttack()
                 lastDiag = os.clock()
                 warn("[Dragonstorm] error en bucle: " .. tostring(err))
             end
-            task.wait(0.05) -- Check frequently, rate limit handles actual firing
+            task.wait(0.05)
         end
         DragonAttackRunning = false
     end)
@@ -2886,6 +2892,7 @@ SeaAPI.SeaEventOptions = SEA_EVENT_OPTIONS
 SeaAPI.NormalizeSelection = Sea_NormalizeSelection
 SeaAPI.GetLeviathanTarget = getLeviathanTarget
 SeaAPI.GetClosestSeaTarget = getClosestSeaTarget
+SeaAPI.GetAllSeaTargets = getAllSeaTargets
 do
     local RawSelection = _G.HuntSelectEvents
     local CleanSelection = Sea_NormalizeSelection(RawSelection)
@@ -2904,6 +2911,270 @@ do
     end
 end
 end
+
+-- ============================================================
+-- [ESP] Sea Event ESP (BillboardGui based, no external deps)
+-- ============================================================
+do
+    local ESP = {}
+    local Active = setmetatable({}, { __mode = "k" })
+    local RootGui = nil
+    local ESPCurrentMax = _G.SeaEventESPMaxRange or 5000
+
+    local COLORS = {
+        LeviathanSegment = Color3.fromRGB(190, 70, 255),
+        Leviathan = Color3.fromRGB(190, 70, 255),
+        SeaBeast1 = Color3.fromRGB(255, 90, 40),
+        Terrorshark = Color3.fromRGB(255, 140, 0),
+        Shark = Color3.fromRGB(255, 220, 80),
+        Piranha = Color3.fromRGB(120, 200, 255),
+        ["Fish Crew Member"] = Color3.fromRGB(80, 220, 140),
+        FishBoat = Color3.fromRGB(200, 200, 200),
+        PirateBrigade = Color3.fromRGB(255, 90, 90),
+        PirateGrandBrigade = Color3.fromRGB(220, 40, 40),
+        PirateBasic = Color3.fromRGB(200, 120, 120),
+    }
+    local DEFAULT_COLOR = Color3.fromRGB(255, 255, 255)
+    local function GetColor(name)
+        return COLORS[name] or DEFAULT_COLOR
+    end
+
+    local function EnsureRootGui()
+        if RootGui and RootGui.Parent then return RootGui end
+        local created = false
+        local parent = nil
+        if gethui then
+            local ok, hui = pcall(gethui)
+            if ok and hui then parent = hui end
+        end
+        if not parent then
+            pcall(function() parent = game:GetService("CoreGui") end)
+        end
+        if parent then
+            local ok = pcall(function()
+                RootGui = Instance.new("ScreenGui")
+                RootGui.Name = "RJR_SeaEventESP"
+                RootGui.ResetOnSpawn = false
+                RootGui.IgnoreGuiInset = true
+                RootGui.DisplayOrder = 998
+                RootGui.Parent = parent
+                created = true
+            end)
+            if not ok then created = false end
+        end
+        if not created or not RootGui or not RootGui.Parent then
+            RootGui = Instance.new("ScreenGui")
+            RootGui.Name = "RJR_SeaEventESP"
+            RootGui.ResetOnSpawn = false
+            RootGui.IgnoreGuiInset = true
+            RootGui.DisplayOrder = 998
+            RootGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+        end
+        return RootGui
+    end
+
+    local function GetHealthOf(model)
+        local hum = model:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health and hum.MaxHealth and hum.MaxHealth > 0 then
+            return hum.Health, hum.MaxHealth
+        end
+        local hp = model:FindFirstChild("Health")
+        if hp and hp:IsA("ValueBase") then
+            local mx = model:FindFirstChild("MaxHealth")
+            local maxv = (mx and mx:IsA("ValueBase")) and mx.Value or hp.Value
+            return hp.Value, maxv
+        end
+        return nil, nil
+    end
+
+    local function FindAnchorPart(model)
+        return model.PrimaryPart
+            or model:FindFirstChild("HumanoidRootPart")
+            or model:FindFirstChild("RootPart")
+            or model:FindFirstChild("Head")
+            or model:FindFirstChildWhichIsA("BasePart", true)
+    end
+
+    local function AttachESP(model, anchor)
+        if Active[model] then return end
+        if not anchor or not anchor.Parent then return end
+
+        local color = GetColor(model.Name)
+        local root = EnsureRootGui()
+
+        local gui = Instance.new("BillboardGui")
+        gui.Name = "RJR_ESP_" .. tostring(math.random(1, 1e9))
+        gui.Adornee = anchor
+        gui.Size = UDim2.new(0, 220, 0, 52)
+        gui.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
+        gui.AlwaysOnTop = true
+        gui.LightInfluence = 0
+        gui.MaxDistance = ESPCurrentMax
+        gui.ClipsDescendants = false
+        gui.Parent = root
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Name = "NameLabel"
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Size = UDim2.new(1, 0, 0, 20)
+        nameLabel.Position = UDim2.new(0, 0, 0, 0)
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextSize = 15
+        nameLabel.TextColor3 = color
+        nameLabel.TextStrokeTransparency = 0
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+        nameLabel.TextYAlignment = Enum.TextYAlignment.Bottom
+        nameLabel.TextWrapped = true
+        nameLabel.RichText = false
+        nameLabel.Text = model.Name
+        nameLabel.Parent = gui
+
+        local hpLabel = Instance.new("TextLabel")
+        hpLabel.Name = "HpLabel"
+        hpLabel.BackgroundTransparency = 1
+        hpLabel.Size = UDim2.new(1, 0, 0, 16)
+        hpLabel.Position = UDim2.new(0, 0, 0, 20)
+        hpLabel.Font = Enum.Font.Gotham
+        hpLabel.TextSize = 13
+        hpLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+        hpLabel.TextStrokeTransparency = 0
+        hpLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        hpLabel.TextXAlignment = Enum.TextXAlignment.Center
+        hpLabel.Text = ""
+        hpLabel.Parent = gui
+
+        local distLabel = Instance.new("TextLabel")
+        distLabel.Name = "DistLabel"
+        distLabel.BackgroundTransparency = 1
+        distLabel.Size = UDim2.new(1, 0, 0, 14)
+        distLabel.Position = UDim2.new(0, 0, 0, 34)
+        distLabel.Font = Enum.Font.Gotham
+        distLabel.TextSize = 12
+        distLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+        distLabel.TextStrokeTransparency = 0
+        distLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        distLabel.TextXAlignment = Enum.TextXAlignment.Center
+        distLabel.Text = ""
+        distLabel.Parent = gui
+
+        Active[model] = {
+            gui = gui,
+            nameLabel = nameLabel,
+            hpLabel = hpLabel,
+            distLabel = distLabel,
+            anchor = anchor,
+            color = color,
+        }
+    end
+
+    local function DetachESP(model)
+        local data = Active[model]
+        if not data then return end
+        pcall(function() data.gui:Destroy() end)
+        Active[model] = nil
+    end
+
+    local VALID_NAMES = {
+        ["Leviathan Segment"] = true,
+        ["Leviathan"] = true,
+        ["SeaBeast1"] = true,
+        ["Terrorshark"] = true,
+        ["Shark"] = true,
+        ["Piranha"] = true,
+        ["Fish Crew Member"] = true,
+        ["FishBoat"] = true,
+        ["PirateBrigade"] = true,
+        ["PirateGrandBrigade"] = true,
+        ["PirateBasic"] = true,
+    }
+
+    local function ProcessModel(model, seen, myPos)
+        if not model or not model.Parent then return end
+        if not VALID_NAMES[model.Name] then return end
+        local anchor = FindAnchorPart(model)
+        if not anchor then return end
+
+        local dist = myPos and (anchor.Position - myPos).Magnitude or 0
+        if dist > ESPCurrentMax then
+            DetachESP(model)
+            return
+        end
+        seen[model] = true
+
+        if not Active[model] then AttachESP(model, anchor) end
+        local data = Active[model]
+        if not data then return end
+        if data.anchor ~= anchor or not data.anchor.Parent then
+            data.anchor = anchor
+            data.gui.Adornee = anchor
+        end
+        data.gui.MaxDistance = ESPCurrentMax
+
+        if _G.SeaEventESPShowHP then
+            local hp, maxHp = GetHealthOf(model)
+            if hp then
+                data.hpLabel.Text = string.format("HP: %s/%s",
+                    tostring(math.floor(hp)),
+                    tostring(math.floor(maxHp or hp)))
+            else
+                data.hpLabel.Text = ""
+            end
+        else
+            data.hpLabel.Text = ""
+        end
+
+        if _G.SeaEventESPShowDistance then
+            data.distLabel.Text = string.format("%dm", math.floor(dist))
+        else
+            data.distLabel.Text = ""
+        end
+    end
+
+    local function UpdateESP()
+        if not _G.SeaEventESP then
+            for model in pairs(Active) do
+                DetachESP(model)
+            end
+            return
+        end
+        ESPCurrentMax = tonumber(_G.SeaEventESPMaxRange) or 5000
+        local _, myHRP = GetCharacterParts()
+        local myPos = myHRP and myHRP.Position
+        local seen = {}
+        local SeaBeasts = workspace:FindFirstChild("SeaBeasts")
+        local Enemies = workspace:FindFirstChild("Enemies")
+        if SeaBeasts then
+            for _, model in ipairs(SeaBeasts:GetChildren()) do
+                ProcessModel(model, seen, myPos)
+            end
+        end
+        if Enemies then
+            for _, model in ipairs(Enemies:GetChildren()) do
+                ProcessModel(model, seen, myPos)
+            end
+        end
+        for model in pairs(Active) do
+            if not seen[model] or not model.Parent then
+                DetachESP(model)
+            end
+        end
+    end
+
+    task.spawn(function()
+        while true do
+            task.wait(0.15)
+            pcall(UpdateESP)
+        end
+    end)
+    ESP.Update = UpdateESP
+    ESP.Detach = DetachESP
+    _G.RJR_SeaEventESP = ESP
+end
+-- ============================================================
+-- End Sea Event ESP
+-- ============================================================
+
 _G.RJR_BoatDeadArmed = true
 _G.RJR_BoatDeadMonitorRunning = false
 _G.RJR_Resetting = false
@@ -5081,8 +5352,6 @@ task.spawn(function()
     end
 end)
 local FruitsBlackList = {}
--- [FIXED] Auto Store Fruit Spam Issue
--- Added a global StorageFull cooldown and only attempts one fruit per second to prevent spam.
 task.spawn(function()
     local RETRY_INTERVAL = 60
     local StorageFull = false
@@ -5099,7 +5368,6 @@ task.spawn(function()
     while task.wait(1) do
         if _G.AutoStoreFruits and HRP and HD and HD.Health > 0 then
             if StorageFull and os.clock() - StorageFullAt < RETRY_INTERVAL then
-                -- Skip trying to store because storage is known to be full
             else
                 StorageFull = false
                 local attempted = false
@@ -5122,7 +5390,7 @@ task.spawn(function()
                                         StorageFullAt = now
                                         print("[AutoStoreFruits] Storage limit reached; pausing attempts for " .. RETRY_INTERVAL .. "s")
                                     end
-                                    break -- Break inner loop, only try one fruit per second
+                                    break
                                 end
                             end
                         end
@@ -5668,6 +5936,30 @@ do
             if State then SeaAPI.InitDragon() end
         end,
     })
+    CombatSection:AddToggle("dragon.multitarget", {
+        Title = T("dragon.multitarget"),
+        Description = T("dragon.multitarget.desc"),
+        Default = _G.DragonMultiTarget,
+        Callback = function(State)
+            _G.DragonMultiTarget = State and true or false
+            SaveConfig()
+        end,
+    })
+    CombatSection:AddInput("dragon.maxtargets", {
+        Title = T("dragon.maxtargets"),
+        Description = T("dragon.maxtargets.desc"),
+        Default = tostring(_G.DragonMaxTargetsPerBurst),
+        Placeholder = "10",
+        Numeric = true,
+        Finished = false,
+        Callback = function(Value)
+            local n = tonumber(Value)
+            if n and n >= 1 and n <= 20 then
+                _G.DragonMaxTargetsPerBurst = math.floor(n)
+                SaveConfig()
+            end
+        end,
+    })
     CombatSection:AddInput("dragon.shots", {
         Title = T("dragon.shots"),
         Description = T("dragon.shots.desc"),
@@ -5801,6 +6093,54 @@ do
         Default = _G.AutoV4,
         Callback = function(State)
             _G.AutoV4 = State
+            SaveConfig()
+        end,
+    })
+    -- [ESP UI]
+    local ESPSection = Tabs.Perf:AddSection(T("sec.esp"))
+    SectionKeys[#SectionKeys + 1] = { element = ESPSection, key = "sec.esp" }
+    ESPSection:AddToggle("esp.toggle", {
+        Title = T("esp.toggle"),
+        Description = T("esp.toggle.desc"),
+        Default = _G.SeaEventESP,
+        Callback = function(State)
+            _G.SeaEventESP = State and true or false
+            SaveConfig()
+            if not _G.SeaEventESP and _G.RJR_SeaEventESP then
+                pcall(_G.RJR_SeaEventESP.Detach)
+            end
+        end,
+    })
+    ESPSection:AddInput("esp.maxrange", {
+        Title = T("esp.maxrange"),
+        Description = T("esp.maxrange.desc"),
+        Default = tostring(_G.SeaEventESPMaxRange),
+        Placeholder = "5000",
+        Numeric = true,
+        Finished = false,
+        Callback = function(Value)
+            local n = tonumber(Value)
+            if n and n >= 500 and n <= 20000 then
+                _G.SeaEventESPMaxRange = math.floor(n)
+                SaveConfig()
+            end
+        end,
+    })
+    ESPSection:AddToggle("esp.showhp", {
+        Title = T("esp.showhp"),
+        Description = "",
+        Default = _G.SeaEventESPShowHP,
+        Callback = function(State)
+            _G.SeaEventESPShowHP = State and true or false
+            SaveConfig()
+        end,
+    })
+    ESPSection:AddToggle("esp.showdist", {
+        Title = T("esp.showdist"),
+        Description = "",
+        Default = _G.SeaEventESPShowDistance,
+        Callback = function(State)
+            _G.SeaEventESPShowDistance = State and true or false
             SaveConfig()
         end,
     })
@@ -6473,6 +6813,7 @@ task.defer(function()
     if _G.AntiDracoAura then pcall(PerformanceAPI.ApplyAntiDracoAura) end
     if _G.AutoFastMode then pcall(PerformanceAPI.ApplyAutoFastMode) end
     if _G.FPSBoost then pcall(PerformanceAPI.ApplyFPSBoost) end
+    if _G.SeaEventESP and _G.RJR_SeaEventESP then pcall(_G.RJR_SeaEventESP.Update) end
 end)
 
 SendNotify(T("notify.title"), T("notify.ready"))
