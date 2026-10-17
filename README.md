@@ -2897,14 +2897,14 @@ end
 end
 
 -- ============================================================
--- [ESP] Sea Event ESP (BillboardGui based, no external deps)
--- ------------------------------------------------------------
--- HP FIX: GetHealthOf now tries every possible HP source and
--- returns the EXACT current / max values (no rounding to k).
+-- [ESP] Sea Event ESP — REWRITTEN (Recursive HP + Top-of-Head)
 -- ============================================================
 do
     local ESP = {}
     local Active = setmetatable({}, { __mode = "k" })
+    -- Cache max HP per model so sea beasts (whose max isn't a direct
+    -- sibling of Health) never lose it once we discover it.
+    local ModelMaxHP = setmetatable({}, { __mode = "k" })
     local RootGui = nil
     local ESPCurrentMax = _G.SeaEventESPMaxRange or 5000
 
@@ -2922,9 +2922,7 @@ do
         PirateBasic = Color3.fromRGB(200, 120, 120),
     }
     local DEFAULT_COLOR = Color3.fromRGB(255, 255, 255)
-    local function GetColor(name)
-        return COLORS[name] or DEFAULT_COLOR
-    end
+    local function GetColor(name) return COLORS[name] or DEFAULT_COLOR end
 
     local function EnsureRootGui()
         if RootGui and RootGui.Parent then return RootGui end
@@ -2960,26 +2958,28 @@ do
         return RootGui
     end
 
-    -- ========================================================
-    -- [HP FIX]
-    -- Reads the EXACT current and max HP from every plausible
-    -- source, in this priority order:
-    --   1. Humanoid.Health / Humanoid.MaxHealth  (live, scaled)
-    --   2. Health ValueBase + MaxHealth sibling
-    --   3. Health ValueBase + MaxHp / MaxHP / HealthMax sibling
-    --   4. Health ValueBase + numeric attribute MaxHealth
-    --   5. Health ValueBase (max = current, so it shows X/X)
-    -- No rounding, no floor-to-nearest-thousand.
-    -- ========================================================
-    local MAX_HP_SIBLING_NAMES = {
+    -- ============================================================
+    -- HP DETECTION (deep, cached, exact)
+    -- ------------------------------------------------------------
+    -- The old version only checked a direct sibling of `Health`.
+    -- Sea Beasts keep their max HP in a nested container so the
+    -- value was lost. This version:
+    --   1. Tries Humanoid (Health / MaxHealth).
+    --   2. Tries any Health ValueBase found DIRECTLY or nested.
+    --   3. Searches every descendant for a max-HP named value.
+    --   4. Searches model + Health instance attributes.
+    --   5. Caches the discovered max per model so it never drops.
+    -- ============================================================
+    local MAX_HP_NAMES = {
         "MaxHealth", "MaxHp", "MaxHP", "HealthMax",
-        "TotalHealth", "TotalHp", "TotalHP", "MaxHitpoints", "MaxHPValue",
+        "TotalHealth", "TotalHp", "TotalHP", "MaxHitpoints",
+        "MaxHPValue", "HealthMaximum", "HPMax", "MaxH",
     }
-    local MAX_HP_ATTR_NAMES = {
-        "MaxHealth", "MaxHp", "MaxHP", "HealthMax", "TotalHealth",
+    local MAX_HP_ATTRS = {
+        "MaxHealth", "MaxHp", "MaxHP", "HealthMax", "TotalHealth", "MaxH",
     }
 
-    local function ReadNumber(v)
+    local function ReadNum(v)
         if type(v) == "number" then return v end
         if typeof(v) == "Instance" and v:IsA("ValueBase") then
             local ok, n = pcall(function() return v.Value end)
@@ -2988,73 +2988,119 @@ do
         return nil
     end
 
+    local function FindFirstDeep(root, name, classFilter)
+        if not root then return nil end
+        local direct = root:FindFirstChild(name)
+        if direct and (not classFilter or direct:IsA(classFilter)) then return direct end
+        for _, d in ipairs(root:GetDescendants()) do
+            if d.Name == name and (not classFilter or d:IsA(classFilter)) then
+                return d
+            end
+        end
+        return nil
+    end
+
+    local function FindFirstHumanoidDeep(root)
+        if not root then return nil end
+        local h = root:FindFirstChildOfClass("Humanoid")
+        if h then return h end
+        for _, d in ipairs(root:GetDescendants()) do
+            if d:IsA("Humanoid") then return d end
+        end
+        return nil
+    end
+
     local function GetHealthOf(model)
-        -- 1. Humanoid is the most authoritative source: it is what
-        --    the game uses for the on-screen HP bar, so it will
-        --    show the exact values like 15400/15400.
-        local hum = model:FindFirstChildOfClass("Humanoid")
+        -- 1. Humanoid (most authoritative; the value the game shows on HP bars)
+        local hum = FindFirstHumanoidDeep(model)
         if hum then
             local h = tonumber(hum.Health)
             local mh = tonumber(hum.MaxHealth)
-            if h and mh and mh > 0 then
+            if h ~= nil and mh ~= nil and mh > 0 then
+                ModelMaxHP[model] = mh
                 return h, mh
-            elseif h and not mh then
-                -- Humanoid without MaxHealth: still show current
-                return h, h
             end
         end
-        -- 2. Health ValueBase + best sibling / attribute for max
+
+        -- 2. Find a Health ValueBase (direct or nested)
         local hp = model:FindFirstChild("Health")
-        local cur = ReadNumber(hp)
-        if cur == nil then
-            -- try attributes on the model
-            for _, a in ipairs(MAX_HP_ATTR_NAMES) do
+        if not (hp and hp:IsA("ValueBase")) then
+            hp = FindFirstDeep(model, "Health", "ValueBase")
+        end
+
+        if not hp then
+            -- 3. Fallback to a model attribute holding current HP
+            for _, a in ipairs({"Health", "Hp", "HP"}) do
                 local v = model:GetAttribute(a)
-                if type(v) == "number" and v > 0 then return v, v end
+                if type(v) == "number" and v >= 0 then
+                    local mv = ModelMaxHP[model]
+                    if not mv then
+                        for _, mn in ipairs(MAX_HP_ATTRS) do
+                            local m = model:GetAttribute(mn)
+                            if type(m) == "number" and m > 0 then mv = m break end
+                        end
+                    end
+                    if mv then ModelMaxHP[model] = mv end
+                    return v, mv or v
+                end
             end
             return nil, nil
         end
+
+        local cur = ReadNum(hp)
+        if cur == nil then return nil, nil end
+
+        -- 4. Search for max HP: sibling, then descendant, then attribute
         local maxv = nil
-        for _, name in ipairs(MAX_HP_SIBLING_NAMES) do
-            local node = model:FindFirstChild(name)
-            local n = ReadNumber(node)
-            if n and n > 0 then
-                maxv = n
-                break
+        local parent = hp.Parent
+        if parent then
+            for _, name in ipairs(MAX_HP_NAMES) do
+                local node = parent:FindFirstChild(name)
+                local n = ReadNum(node)
+                if n and n > 0 then maxv = n break end
             end
         end
         if not maxv then
-            for _, a in ipairs(MAX_HP_ATTR_NAMES) do
-                local v = model:GetAttribute(a)
-                if type(v) == "number" and v > 0 then
-                    maxv = v
-                    break
-                end
-            end
-        end
-        if not maxv then
-            -- also check the Health itself for a "Max" attribute
-            if hp and typeof(hp) == "Instance" then
-                for _, a in ipairs(MAX_HP_ATTR_NAMES) do
-                    local ok, v = pcall(function() return hp:GetAttribute(a) end)
-                    if ok and type(v) == "number" and v > 0 then
-                        maxv = v
-                        break
+            for _, d in ipairs(model:GetDescendants()) do
+                if d:IsA("ValueBase") then
+                    for _, name in ipairs(MAX_HP_NAMES) do
+                        if d.Name == name then
+                            local n = ReadNum(d)
+                            if n and n > 0 then maxv = n break end
+                        end
                     end
                 end
+                if maxv then break end
             end
         end
-        if not maxv then maxv = cur end
+        if not maxv then
+            for _, a in ipairs(MAX_HP_ATTRS) do
+                local v = hp:GetAttribute(a)
+                if type(v) == "number" and v > 0 then maxv = v break end
+            end
+        end
+        if not maxv then
+            for _, a in ipairs(MAX_HP_ATTRS) do
+                local v = model:GetAttribute(a)
+                if type(v) == "number" and v > 0 then maxv = v break end
+            end
+        end
+
+        -- 5. Cache / recall
+        if maxv and maxv > 0 then
+            ModelMaxHP[model] = maxv
+        elseif ModelMaxHP[model] then
+            maxv = ModelMaxHP[model]
+        else
+            maxv = cur
+        end
         return cur, maxv
     end
 
-    -- Format numbers EXACTLY, no thousand separators, no k/M
     local function FormatHP(n)
         if type(n) ~= "number" then return "?" end
         if n ~= n or n == math.huge or n == -math.huge then return "?" end
-        if n == math.floor(n) then
-            return string.format("%d", n)
-        end
+        if n == math.floor(n) then return string.format("%d", n) end
         return string.format("%.1f", n)
     end
 
@@ -3064,6 +3110,26 @@ do
             or model:FindFirstChild("RootPart")
             or model:FindFirstChild("Head")
             or model:FindFirstChildWhichIsA("BasePart", true)
+    end
+
+    -- ========================================================
+    -- TOP-OF-HEAD OFFSET
+    -- Compute the height difference between the anchor part and
+    -- the top of the model's bounding box. This makes the label
+    -- float ABOVE the head for both tiny sharks and giant sea
+    -- beasts, instead of hugging the anchor part.
+    -- ========================================================
+    local function GetTopOffset(model, anchor)
+        if not model or not anchor or not anchor.Parent then return 6 end
+        local ok, cf, size = pcall(function()
+            return model:GetBoundingBox()
+        end)
+        if not ok or not cf or not size then return 6 end
+        local topY = cf.Position.Y + size.Y * 0.5
+        local off = topY - anchor.Position.Y + 5
+        if off < 6 then off = 6 end
+        if off > 800 then off = 800 end
+        return off
     end
 
     local function AttachESP(model, anchor)
@@ -3182,12 +3248,14 @@ do
         end
         data.gui.MaxDistance = ESPCurrentMax
 
+        -- Float above the model's head
+        local topOff = GetTopOffset(model, data.anchor)
+        data.gui.StudsOffsetWorldSpace = Vector3.new(0, topOff, 0)
+
         if _G.SeaEventESPShowHP then
             local hp, maxHp = GetHealthOf(model)
             if hp ~= nil then
-                local curTxt = FormatHP(hp)
-                local maxTxt = FormatHP(maxHp or hp)
-                data.hpLabel.Text = "HP: " .. curTxt .. "/" .. maxTxt
+                data.hpLabel.Text = "HP: " .. FormatHP(hp) .. "/" .. FormatHP(maxHp or hp)
             else
                 data.hpLabel.Text = ""
             end
