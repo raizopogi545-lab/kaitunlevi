@@ -94,7 +94,7 @@ T, ModeDisplay = (function()
         ["dragon.rate"] = { en = "Burst interval (s)", es = "Intervalo entre ráfagas (s)", zh = "齐射间隔（秒）" },
         ["dragon.rate.desc"] = { en = "Seconds between bursts. 0.30 is safe; lower risks rejection.", es = "Segundos entre ráfagas. 0.30 es seguro; menos puede ser rechazado.", zh = "两轮齐射之间的秒数。0.30 安全；更低有被拒绝的风险。" },
         ["dragon.shots"] = { en = "Shots per burst", es = "Disparos por ráfaga", zh = "每轮射击次数" },
-        ["dragon.shots.desc"] = { en = "How many shots per burst (1-10). Shots are fired in the same frame so the server registers them all as separate events. 3 = triple damage.", es = "Cuántos disparos por ráfaga (1-10). Se disparan en el mismo frame para que el servidor los registre todos como eventos separados. 3 = triple daño.", zh = "每轮打几发（1-10）。所有发在同一帧内发出，让服务器逐一登记。3 发 = 3 倍伤害。" },
+        ["dragon.shots.desc"] = { en = "How many shots per burst (1-10). Shots are fired one frame apart so the server registers each one. 3 = triple damage.", es = "Cuántos disparos por ráfaga (1-10). Se disparan con un frame de separación para que el servidor los registre. 3 = triple daño.", zh = "每轮打几发（1-10）。每发之间隔一帧，让服务器逐一登记。3 发 = 3 倍伤害。" },
         ["fast.attack"] = { en = "Fast Attack", es = "Ataque rápido", zh = "快速攻击" },
         ["fast.attack.desc"] = { en = "Fast M1 attacks (not while seated)", es = "Ataques M1 rápidos (no mientras estas sentado)", zh = "近战/剑 M1 快速攻击（坐船时不攻击）" },
         ["follow.player"] = { en = "Follow Player", es = "Seguir jugador", zh = "跟随玩家" },
@@ -2172,7 +2172,10 @@ local function ensureDragonRemotes()
     return ShootGunEvent ~= nil and Validator2 ~= nil
 end
 
--- Health check for the cached shootFunc / PRNG upvalues.
+-- FIXED health check: the previous version never actually inspected
+-- the boolean returned by the pcall body, so a stale shootFunc that
+-- no longer had numeric upvalues would sail through and then every
+-- subsequent shot would silently fail.
 local function DragonStillHealthy()
     if not shootFunc or not Validator2 or not ShootGunEvent then return false end
     local ok, healthy = pcall(function()
@@ -2184,18 +2187,10 @@ local function DragonStillHealthy()
     return true
 end
 
--- ============================================================
--- fireShot — ENHANCED SIMULTANEOUS MULTI-HIT
--- ------------------------------------------------------------
--- Fires `_G.DragonShotsPerBurst` shots at the SAME target in the
--- SAME frame (no task.wait between them). The PRNG / validator
--- state is advanced locally in a single synchronous pass and
--- committed once, so all N tokens are precomputed before any
--- remote is fired. Roblox batches the FireServer calls into the
--- same network tick, so the server receives N legitimate shots
--- (each with a distinct seq token) back-to-back and applies
--- damage N times nearly simultaneously.
--- ============================================================
+-- fireShot: fires `_G.DragonShotsPerBurst` shots at the same target.
+-- Shots are spaced by exactly one frame (task.wait()) so the server
+-- registers each one as a separate event and applies damage N times.
+-- If the server rejects bursts, lower ShotsPerBurst or raise the interval.
 local function fireShot(pos, hit)
     if not pos then return false end
     if not initDragon() then return false end
@@ -2205,6 +2200,13 @@ local function fireShot(pos, hit)
         shootFunc, idx = nil, {}
         return false
     end
+
+    local now = os.clock()
+    local interval = _G.DragonFireInterval or 0.30
+    if now - DragonLastFire < interval then return false end
+    if DragonFireLock then return false end
+    DragonFireLock = true
+    DragonLastFire = now
 
     -- Resolve primary hit part
     local primary
@@ -2223,6 +2225,7 @@ local function fireShot(pos, hit)
             or hit:FindFirstChildWhichIsA("BasePart", true)
     end
     if not primary or not primary.Parent then
+        DragonFireLock = false
         return false
     end
 
@@ -2230,56 +2233,39 @@ local function fireShot(pos, hit)
     if shots < 1 then shots = 1 end
     if shots > 10 then shots = 10 end
 
-    -- Read the PRNG / validator state ONCE.
-    local u20 = debug.getupvalue(shootFunc, idx.u20)
-    local u21 = debug.getupvalue(shootFunc, idx.u21)
-    local u22 = debug.getupvalue(shootFunc, idx.u22)
-    local u23 = debug.getupvalue(shootFunc, idx.u23)
-    local u24 = debug.getupvalue(shootFunc, idx.u24)
-    local u25 = debug.getupvalue(shootFunc, idx.u25)
-    local u26 = debug.getupvalue(shootFunc, idx.u26)
-    if not (type(u20) == "number" and type(u21) == "number" and type(u22) == "number"
-        and type(u23) == "number" and type(u24) == "number"
-        and type(u25) == "number" and type(u26) == "number") then
-        dragonReady = false
-        shootFunc, idx = nil, {}
-        return false
-    end
-
-    -- Precompute N validator tokens by advancing the PRNG locally.
-    -- Each token carries a distinct seq number, so the server sees
-    -- N legitimate shots instead of one replayed one.
-    local tokens = table.create(shots)
-    for i = 1, shots do
-        local u79 = u25 * u21
-        local u80 = (u24 * u21 + u25 * u20) % u22
-        u80 = (u80 * u22 + u79) % u23
-        u24 = math.floor(u80 / u22)
-        u25 = u80 - u24 * u22
-        u26 = u26 + 1
-        tokens[i] = {
-            token = math.floor(u80 / u23 * 16777215),
-            seq   = u26,
-        }
-    end
-
-    -- Commit the final PRNG state atomically.
-    debug.setupvalue(shootFunc, idx.u24, u24)
-    debug.setupvalue(shootFunc, idx.u25, u25)
-    debug.setupvalue(shootFunc, idx.u26, u26)
-
-    -- Fire every shot in the SAME frame (no task.wait between them).
-    -- Roblox queues the FireServer calls and sends them in one network
-    -- tick, so the server receives N shots back-to-back and applies
-    -- damage N times nearly simultaneously.
     local anyOk = false
     for i = 1, shots do
         if not primary.Parent then break end
-        local t = tokens[i]
+
         local ok = pcall(function()
-            Validator2:FireServer(t.token, t.seq)
+            local u20 = debug.getupvalue(shootFunc, idx.u20)
+            local u21 = debug.getupvalue(shootFunc, idx.u21)
+            local u22 = debug.getupvalue(shootFunc, idx.u22)
+            local u23 = debug.getupvalue(shootFunc, idx.u23)
+            local u24 = debug.getupvalue(shootFunc, idx.u24)
+            local u25 = debug.getupvalue(shootFunc, idx.u25)
+            local u26 = debug.getupvalue(shootFunc, idx.u26)
+            if not (type(u20) == "number" and type(u21) == "number" and type(u22) == "number"
+                and type(u23) == "number" and type(u24) == "number"
+                and type(u25) == "number" and type(u26) == "number") then
+                error("upvalues missing")
+            end
+
+            local u79 = u25 * u21
+            local u80 = (u24 * u21 + u25 * u20) % u22
+            u80 = (u80 * u22 + u79) % u23
+            u24 = math.floor(u80 / u22)
+            u25 = u80 - u24 * u22
+            u26 = u26 + 1
+
+            debug.setupvalue(shootFunc, idx.u24, u24)
+            debug.setupvalue(shootFunc, idx.u25, u25)
+            debug.setupvalue(shootFunc, idx.u26, u26)
+
+            Validator2:FireServer(math.floor(u80 / u23 * 16777215), u26)
             ShootGunEvent:FireServer(pos, { primary })
         end)
+
         if ok then
             anyOk = true
             DragonShootRetries = 0
@@ -2289,11 +2275,19 @@ local function fireShot(pos, hit)
                 DragonShootRetries = 0
                 dragonReady = false
                 shootFunc, idx = nil, {}
+                DragonFireLock = false
                 return false
             end
         end
+
+        -- Yield exactly one frame between shots so the server registers
+        -- each one as a separate ShootGunEvent, giving N-times damage.
+        if i < shots then
+            task.wait()
+        end
     end
 
+    DragonFireLock = false
     return anyOk
 end
 
@@ -2399,77 +2393,6 @@ local function getClosestSeaTarget()
     return best, bestModel
 end
 
--- ============================================================
--- getAllSeaTargets — ENHANCED MULTI-TARGET SCANNER
--- ------------------------------------------------------------
--- Returns a list of all valid sea event targets within range.
--- This allows the Dragonstorm to hit multiple enemies at once.
--- ============================================================
-local function getAllSeaTargets()
-    local targets = {}
-    local char = LocalPlayer.Character
-    if not char then return targets end
-    local myHRP = char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then return targets end
-    local myPos = myHRP.Position
-    local playerBoats = getAllPlayerBoatModels()
-    local selectionSet = Sea_SelectionSet()
-    local Range = 2500
-
-    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
-    if seaBeasts then
-        for _, e in ipairs(seaBeasts:GetChildren()) do
-            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
-            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
-            local allowed = isLeviathan or configName == nil
-                or (selectionSet == nil or selectionSet[configName] == true)
-            if allowed then
-                local hp = e:FindFirstChild("Health")
-                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
-                if alive then
-                    local part
-                    if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
-                    part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
-                    if part and part:IsA("BasePart") then
-                        local d = (part.Position - myPos).Magnitude
-                        if d < Range then
-                            table.insert(targets, {part = part, model = e, dist = d, isLeviathan = isLeviathan})
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    local enemies = workspace:FindFirstChild("Enemies")
-    if enemies then
-        for _, e in ipairs(enemies:GetChildren()) do
-            if table.find(VALID_SEA_ENEMIES, e.Name)
-                and not playerBoats[e.Name]
-                and Sea_SelectionAllows(e.Name) then
-                local hp = e:FindFirstChild("Health")
-                local hum = e:FindFirstChildOfClass("Humanoid")
-                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
-                    or (hum and hum.Health > 0)
-                if alive then
-                    local engine = e:FindFirstChild("Engine")
-                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
-                    local part
-                    if isBoat then part = engine
-                    else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
-                    if part and part:IsA("BasePart") then
-                        local d = (part.Position - myPos).Magnitude
-                        if d < Range then
-                            table.insert(targets, {part = part, model = e, dist = d})
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return targets
-end
-
 local function getLeviathanTarget()
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if not seaBeasts then return nil, nil end
@@ -2527,39 +2450,29 @@ local function StartDragonAttack()
                     if not IsOnBoat() then Equip_Auto("Dragonstorm") end
                     return
                 end
-                
-                local now = os.clock()
-                local interval = _G.DragonFireInterval or 0.30
-                if now - DragonLastFire < interval then return end
-                DragonLastFire = now
-                
-                local targets = getAllSeaTargets()
-                if #targets == 0 then
+                local target, targetModel = getLeviathanTarget()
+                if not target then
+                    target, targetModel = getClosestSeaTarget()
+                end
+                if not target then
                     if os.clock() - lastDiag > 2 then
                         lastDiag = os.clock()
                         print("[Dragonstorm] sin objetivo dentro de rango")
                     end
                     return
                 end
-                
-                -- Sort targets by distance (closest first)
-                table.sort(targets, function(a, b) return a.dist < b.dist end)
-                
-                -- Fire at up to N closest targets
-                local MaxTargets = 5 -- Limit to avoid overwhelming the server
-                for i = 1, math.min(#targets, MaxTargets) do
-                    local target = targets[i]
-                    if target.part and target.part.Parent then
-                        fireShot(target.part.Position, target.part)
-                        task.wait(0.05) -- Small delay between targets
-                    end
+                local fired = fireShot(target.Position, target)
+                if not fired and os.clock() - lastDiag > 2 then
+                    lastDiag = os.clock()
+                    print("[Dragonstorm] disparo rechazado para "
+                        .. (targetModel and targetModel.Name or target.Name))
                 end
             end)
             if not ok and os.clock() - lastDiag > 2 then
                 lastDiag = os.clock()
                 warn("[Dragonstorm] error en bucle: " .. tostring(err))
             end
-            task.wait(0.05) -- Check frequently, rate limit handles actual firing
+            task.wait(_G.DragonFireInterval or 0.30)
         end
         DragonAttackRunning = false
     end)
@@ -2838,16 +2751,11 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                 end
                 if _G.DragonGunLeviathan and CheckItem("Dragonstorm") then
                     if HasDragonstormEquipped() then
-                        local now = os.clock()
-                        local interval = _G.DragonFireInterval or 0.30
-                        if now - DragonLastFire >= interval then
-                            DragonLastFire = now
-                            local lvPart, lvModel = getLeviathanTarget()
-                            if lvPart then
-                                local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
-                                local aimPos = aimPart and aimPart.Position or lvPart.Position
-                                fireShot(aimPos, lvPart)
-                            end
+                        local lvPart, lvModel = getLeviathanTarget()
+                        if lvPart then
+                            local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
+                            local aimPos = aimPart and aimPart.Position or lvPart.Position
+                            fireShot(aimPos, lvPart)
                         end
                     else
                         if not IsOnBoat() then Equip_Auto("Dragonstorm") end
@@ -5081,12 +4989,29 @@ task.spawn(function()
     end
 end)
 local FruitsBlackList = {}
--- [FIXED] Auto Store Fruit Spam Issue
--- Added a global StorageFull cooldown and only attempts one fruit per second to prevent spam.
+task.spawn(function()
+    local RollCooldown = 60
+    local LastRollAt = 0
+    while true do
+        task.wait(1)
+        if _G.AutoRandomFruit and HRP and HD and HD.Health > 0 then
+            if os.clock() - LastRollAt >= RollCooldown then
+                LastRollAt = os.clock()
+                local ok, result = pcall(function()
+                    return CommF:InvokeServer("Cousin", "Buy")
+                end)
+                if not ok then
+                    print("[AutoRandomFruit] InvokeServer fallo:", tostring(result))
+                elseif type(result) == "string" then
+                    print("[AutoRandomFruit] respuesta:", result)
+                end
+            end
+        end
+    end
+end)
 task.spawn(function()
     local RETRY_INTERVAL = 60
-    local StorageFull = false
-    local StorageFullAt = 0
+    local FullNotified = false
     local function IsFullMessage(res)
         if type(res) ~= "string" then return false end
         local low = res:lower()
@@ -5094,43 +5019,40 @@ task.spawn(function()
             or low:find("inventory full", 1, true) ~= nil
             or low:find("storage full", 1, true) ~= nil
             or low:find("no room", 1, true) ~= nil
-            or low:find("maximum", 1, true) ~= nil
     end
     while task.wait(1) do
         if _G.AutoStoreFruits and HRP and HD and HD.Health > 0 then
-            if StorageFull and os.clock() - StorageFullAt < RETRY_INTERVAL then
-                -- Skip trying to store because storage is known to be full
-            else
-                StorageFull = false
-                local attempted = false
-                local Containers = { LocalPlayer.Backpack, Character }
-                for _, container in ipairs(Containers) do
-                    if container and not attempted then
-                        for _, k in ipairs(container:GetChildren()) do
-                            if k:IsA("Tool") and string.find(k.Name, "Fruit", 1, true) then
-                                local originalName = k:GetAttribute("OriginalName") or k.Name
-                                local lastTried = FruitsBlackList[originalName]
-                                local now = os.clock()
-                                if not lastTried or (now - lastTried) > RETRY_INTERVAL then
-                                    local ok, result = pcall(function()
-                                        return CommF:InvokeServer("StoreFruit", originalName, k)
-                                    end)
-                                    attempted = true
-                                    if ok and IsFullMessage(result) then
-                                        FruitsBlackList[originalName] = now
-                                        StorageFull = true
-                                        StorageFullAt = now
-                                        print("[AutoStoreFruits] Storage limit reached; pausing attempts for " .. RETRY_INTERVAL .. "s")
+            local now = os.clock()
+            local attempted = false
+            local Containers = { LocalPlayer.Backpack, Character }
+            for _, container in ipairs(Containers) do
+                if container and not attempted then
+                    for _, k in ipairs(container:GetChildren()) do
+                        if k:IsA("Tool") and string.find(k.Name, "Fruit", 1, true) then
+                            local originalName = k:GetAttribute("OriginalName") or k.Name
+                            local lastTried = FruitsBlackList[originalName]
+                            if not lastTried or (now - lastTried) > RETRY_INTERVAL then
+                                local ok, result = pcall(function()
+                                    return CommF:InvokeServer("StoreFruit", originalName, k)
+                                end)
+                                attempted = true
+                                if ok and IsFullMessage(result) then
+                                    FruitsBlackList[originalName] = now
+                                    if not FullNotified then
+                                        FullNotified = true
+                                        print("[AutoStoreFruits] Storage limit reached for "
+                                            .. tostring(originalName)
+                                            .. "; will retry in " .. RETRY_INTERVAL .. "s")
                                     end
-                                    break -- Break inner loop, only try one fruit per second
                                 end
+                                break
                             end
                         end
                     end
                 end
             end
         else
-            StorageFull = false
+            FullNotified = false
         end
     end
 end)
