@@ -2499,6 +2499,44 @@ local function getLeviathanTarget()
     return best, bestModel
 end
 
+-- ============================================================
+-- getAllLeviathanTargets — MULTI-SEGMENT LEVIATHAN SCANNER
+-- ------------------------------------------------------------
+-- Returns EVERY Leviathan segment (and/or "Leviathan" model)
+-- within AttackRange so the Dragonstorm can hit them all in
+-- the same frame. Sorted closest-first.
+-- ============================================================
+local function getAllLeviathanTargets()
+    local targets = {}
+    local char = LocalPlayer.Character
+    if not char then return targets end
+    local myHRP = char:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return targets end
+    local myPos = myHRP.Position
+    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
+    if not seaBeasts then return targets end
+    for _, e in ipairs(seaBeasts:GetChildren()) do
+        if e.Name == "Leviathan Segment" or e.Name == "Leviathan" then
+            local hp = e:FindFirstChild("Health")
+            local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
+            if alive then
+                local part = e:FindFirstChild("Leviathan Segment")
+                    or e:FindFirstChild("HumanoidRootPart")
+                    or e.PrimaryPart
+                    or e:FindFirstChildWhichIsA("BasePart", true)
+                if part and part:IsA("BasePart") then
+                    local d = (part.Position - myPos).Magnitude
+                    if d < AttackRange then
+                        table.insert(targets, { part = part, model = e, dist = d })
+                    end
+                end
+            end
+        end
+    end
+    table.sort(targets, function(a, b) return a.dist < b.dist end)
+    return targets
+end
+
 local DragonAttackRunning = false
 local function StartDragonAttack()
     if DragonAttackRunning then return end
@@ -2544,15 +2582,22 @@ local function StartDragonAttack()
                 
                 -- Sort targets by distance (closest first)
                 table.sort(targets, function(a, b) return a.dist < b.dist end)
-                
-                -- Fire at up to N closest targets
-                local MaxTargets = 5 -- Limit to avoid overwhelming the server
+
+                -- [MULTI-HIT] Fire at ALL targets inside the range in the SAME frame.
+                -- No task.wait between targets so every target receives
+                -- `DragonShotsPerBurst` shots back-to-back in one network tick.
+                local MaxTargets = 10
+                local fired = 0
                 for i = 1, math.min(#targets, MaxTargets) do
                     local target = targets[i]
                     if target.part and target.part.Parent then
                         fireShot(target.part.Position, target.part)
-                        task.wait(0.05) -- Small delay between targets
+                        fired = fired + 1
                     end
+                end
+                if fired > 1 and os.clock() - lastDiag > 2 then
+                    lastDiag = os.clock()
+                    print("[Dragonstorm] multi-hit burst on " .. fired .. " targets")
                 end
             end)
             if not ok and os.clock() - lastDiag > 2 then
@@ -2842,11 +2887,27 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                         local interval = _G.DragonFireInterval or 0.30
                         if now - DragonLastFire >= interval then
                             DragonLastFire = now
-                            local lvPart, lvModel = getLeviathanTarget()
-                            if lvPart then
-                                local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
-                                local aimPos = aimPart and aimPart.Position or lvPart.Position
-                                fireShot(aimPos, lvPart)
+                            -- [MULTI-HIT] Hit EVERY Leviathan segment inside AttackRange
+                            -- in the SAME frame. Each segment receives
+                            -- `DragonShotsPerBurst` shots via fireShot().
+                            local lvTargets = getAllLeviathanTargets()
+                            local fired = 0
+                            for _, tgt in ipairs(lvTargets) do
+                                if tgt.part and tgt.part.Parent then
+                                    local aimPart = tgt.model and tgt.model:FindFirstChild("Leviathan Segment")
+                                    local aimPos = aimPart and aimPart.Position or tgt.part.Position
+                                    fireShot(aimPos, tgt.part)
+                                    fired = fired + 1
+                                end
+                            end
+                            if fired == 0 then
+                                -- Fallback: keep old single-target behaviour if nothing was found
+                                local lvPart, lvModel = getLeviathanTarget()
+                                if lvPart then
+                                    local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
+                                    local aimPos = aimPart and aimPart.Position or lvPart.Position
+                                    fireShot(aimPos, lvPart)
+                                end
                             end
                         end
                     else
@@ -2885,6 +2946,7 @@ SeaAPI.FightLeviathan = FightLeviathan
 SeaAPI.SeaEventOptions = SEA_EVENT_OPTIONS
 SeaAPI.NormalizeSelection = Sea_NormalizeSelection
 SeaAPI.GetLeviathanTarget = getLeviathanTarget
+SeaAPI.GetAllLeviathanTargets = getAllLeviathanTargets
 SeaAPI.GetClosestSeaTarget = getClosestSeaTarget
 do
     local RawSelection = _G.HuntSelectEvents
