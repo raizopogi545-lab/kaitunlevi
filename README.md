@@ -1609,7 +1609,16 @@ local function GetCannons(boat)
     local cannons = {}
     if boat then
         for _, child in ipairs(boat:GetChildren()) do
-            if child.Name == "Cannon" then table.insert(cannons, child) end
+            if child.Name == "Cannon" then
+                table.insert(cannons, child)
+            end
+        end
+        if #cannons == 0 then
+            for _, desc in ipairs(boat:GetDescendants()) do
+                if desc.Name == "Cannon" and (desc:IsA("Model") or desc:IsA("BasePart")) then
+                    table.insert(cannons, desc)
+                end
+            end
         end
     end
     return cannons
@@ -4427,54 +4436,77 @@ end
 
 local function FollowerBoardSeat(boat)
     if not boat or not boat.Parent then return false end
-    local cannons = GetCannons(boat)
     local _, hrp0, hum0 = GetCharacterParts()
-    local firstSeat = boat:FindFirstChild("VehicleSeat") or (cannons and cannons[1]) or boat.PrimaryPart
-    if not firstSeat or not hrp0 then return false end
+    if not hrp0 or not hum0 then return false end
 
-    if hum0 and hum0.SeatPart and hum0.SeatPart:IsDescendantOf(boat) then
+    if hum0.SeatPart and hum0.SeatPart:IsDescendantOf(boat) then
         FollowSeatsFull = false
         return true
     end
 
-    local distToBoat = (hrp0.Position - firstSeat.Position).Magnitude
+    -- Collect all available candidate passenger seats on the captain's boat
+    local candidateSeats = {}
+    local seenSeats = {}
+
+    -- 1. Check cannons
+    local cannons = GetCannons(boat)
+    for _, cannon in ipairs(cannons) do
+        local s = cannon:FindFirstChild("Seat") or cannon:FindFirstChildWhichIsA("Seat")
+        if s and not seenSeats[s] then
+            seenSeats[s] = true
+            table.insert(candidateSeats, s)
+        end
+    end
+
+    -- 2. Fallback: check any Seat descendant of the boat (exclude VehicleSeat and HarpoonSeat)
+    for _, desc in ipairs(boat:GetDescendants()) do
+        if desc:IsA("Seat") and not desc:IsA("VehicleSeat") and not seenSeats[desc] then
+            local pName = desc.Parent and desc.Parent.Name or ""
+            if desc.Name ~= "HarpoonSeat" and not pName:match("Harpoon") then
+                seenSeats[desc] = true
+                table.insert(candidateSeats, desc)
+            end
+        end
+    end
+
+    local referencePart = boat:FindFirstChild("VehicleSeat") or candidateSeats[1] or boat.PrimaryPart or boat:FindFirstChildWhichIsA("BasePart")
+    if not referencePart then return false end
+
+    local distToBoat = (hrp0.Position - referencePart.Position).Magnitude
     if distToBoat > BoatFindRange then
         SetStatus("Siguiendo: el barco del capitán está a más de " .. BoatFindRange .. " — no lo persigo")
         return false
     end
 
+    -- If no seats exist at all on this boat
+    if #candidateSeats == 0 then
+        SetStatus("Siguiendo: no hay asientos de pasajeros en el barco")
+        FollowSeatsFull = true
+        return false
+    end
+
+    -- Quick positioning if stuck in water or far from boat
     local inWater = hrp0.Position.Y < 15
-    if inWater or distToBoat > 35 then
+    if inWater or distToBoat > 25 then
         SetStatus("Siguiendo: acercándome al barco por aire")
         ClearHover()
-        local FlyStart = os.clock()
-        while _G.AutoLeviathanFull and os.clock() - FlyStart < 8 do
-            local _, curH = GetCharacterParts()
-            if not curH or not boat or not boat.Parent then break end
-            local curFirst = boat:FindFirstChild("VehicleSeat") or (cannons and cannons[1]) or boat.PrimaryPart
-            if not curFirst then break end
-            local curDist = (curH.Position - curFirst.Position).Magnitude
-            if curDist <= 25 and curH.Position.Y >= 16 then break end
-
-            _tp(function()
-                local b = GetCaptainBoat()
-                local p = b and (b:FindFirstChild("VehicleSeat") or b.PrimaryPart)
-                if not p then return nil end
-                return CFrame.new(p.Position + Vector3.new(0, 15, 0)) * KeepFacing()
-            end, function()
-                local _, h = GetCharacterParts()
-                local b = GetCaptainBoat()
-                local p = b and (b:FindFirstChild("VehicleSeat") or b.PrimaryPart)
-                if not h or not p then return true end
-                return (h.Position - p.Position).Magnitude <= 25 and h.Position.Y >= 16
-            end)
-            task.wait(0.05)
-        end
+        _tp(function()
+            local b = GetCaptainBoat()
+            local p = b and (b:FindFirstChild("VehicleSeat") or b.PrimaryPart or candidateSeats[1])
+            if not p then return nil end
+            return CFrame.new(p.Position + Vector3.new(0, 8, 0)) * KeepFacing()
+        end, function()
+            local _, h = GetCharacterParts()
+            local b = GetCaptainBoat()
+            local p = b and (b:FindFirstChild("VehicleSeat") or b.PrimaryPart or candidateSeats[1])
+            if not h or not p then return true end
+            return (h.Position - p.Position).Magnitude <= 15 and h.Position.Y >= 14
+        end)
     end
 
     local tried = {}
     local BoardStart = os.clock()
-    while _G.AutoLeviathanFull and os.clock() - BoardStart < 10 do
+    while _G.AutoLeviathanFull and os.clock() - BoardStart < 6 do
         local _, curHRP, curHum = GetCharacterParts()
         if curHum and curHum.SeatPart and curHum.SeatPart:IsDescendantOf(boat) then
             FollowSeatsFull = false
@@ -4482,9 +4514,8 @@ local function FollowerBoardSeat(boat)
         end
 
         local seat = nil
-        for _, cannon in ipairs(cannons) do
-            local s = cannon:FindFirstChild("Seat") or cannon:FindFirstChildWhichIsA("Seat")
-            if s and not IsSeatOccupied(s) and not SeatTakenByOther(s, curHum) and not tried[s] then
+        for _, s in ipairs(candidateSeats) do
+            if s and s.Parent and not IsSeatOccupied(s) and not SeatTakenByOther(s, curHum) and not tried[s] then
                 seat = s
                 break
             end
@@ -4492,14 +4523,13 @@ local function FollowerBoardSeat(boat)
 
         if not seat then
             local occupiedCount = 0
-            for _, cannon in ipairs(cannons) do
-                local s = cannon:FindFirstChild("Seat") or cannon:FindFirstChildWhichIsA("Seat")
-                if s and (IsSeatOccupied(s) or SeatTakenByOther(s, curHum)) then
+            for _, s in ipairs(candidateSeats) do
+                if s and s.Parent and (IsSeatOccupied(s) or SeatTakenByOther(s, curHum)) then
                     occupiedCount = occupiedCount + 1
                 end
             end
-            if occupiedCount >= #cannons and #cannons > 0 then
-                SetStatus("Siguiendo: cañones llenos (4/4) — siguiendo por aire")
+            if occupiedCount >= #candidateSeats and #candidateSeats > 0 then
+                SetStatus("Siguiendo: asientos llenos (" .. occupiedCount .. "/" .. #candidateSeats .. ") — siguiendo por aire")
                 FollowSeatsFull = true
                 return false
             else
@@ -4507,8 +4537,8 @@ local function FollowerBoardSeat(boat)
                 task.wait(0.1)
             end
         else
-            SetStatus("Siguiendo: subiendo al cañón " .. seat.Parent.Name)
-            if BoardSeat(seat, 1.2) then
+            SetStatus("Siguiendo: subiendo a " .. seat.Name .. " (" .. (seat.Parent and seat.Parent.Name or "barco") .. ")")
+            if BoardSeat(seat, 1.5) then
                 FollowSeatsFull = false
                 return true
             end
