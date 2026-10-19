@@ -20,20 +20,13 @@ local Remote = RS:FindFirstChild("Remotes")
 local CommF = Remote and Remote:FindFirstChild("CommF_")
 local T, ModeDisplay
 T, ModeDisplay = (function()
-    local LANGUAGE_LABELS = { "English", "Español", "中文" }
-    local LANG_CODE = { ["English"] = "en", ["Español"] = "es", ["中文"] = "zh" }
+    local LANGUAGE_LABELS = { "English" }
+    local LANG_CODE = { ["English"] = "en" }
     local function NormalizeLanguage(value)
-        if value == nil then return nil end
-        local v = tostring(value)
-        if LANG_CODE[v] then return v end
-        local low = v:lower()
-        if low == "chinese" or low == "zh" or low == "cn" or low == "china" then return "中文" end
-        if low == "spanish" or low == "es" or low == "español" then return "Español" end
-        if low == "english" or low == "en" then return "English" end
-        return nil
+        return "English"
     end
     local function LanguageCode()
-        return LANG_CODE[_G.Language] or "en"
+        return "en"
     end
     local LangTable = {
         ["ann.copied"] = { en = "DC link copied", es = "Enlace de Discord copiado", zh = "已复制 DC 链接" },
@@ -121,7 +114,7 @@ T, ModeDisplay = (function()
         ["notify.mode.follower"] = { en = "Follower mode: pick who to follow. The captain handles the hunt settings.", es = "Modo seguidor: elige a quién seguir. Los ajustes de caza los lleva el Capitán.", zh = "船员模式：选择要跟随的玩家，狩猎设置由船长负责。" },
         ["notify.players.refreshed"] = { en = "Player list updated.", es = "Lista de jugadores actualizada.", zh = "玩家列表已更新。" },
         ["notify.ready"] = { en = "Auto Leviathan ready", es = "Leviathan automático listo", zh = "全自动利维坦已就绪" },
-        ["notify.title"] = { en = "RJR Hub Notify", es = "RJR Hub | Aviso", zh = "RJR Hub 通知" },
+        ["notify.title"] = { en = "Raizo Hub Notify", es = "Raizo Hub | Aviso", zh = "Raizo Hub 通知" },
         ["notstarted"] = { en = "Off", es = "Desactivado", zh = "未开启" },
         ["player.tween.speed"] = { en = "Player Tween Speed", es = "Velocidad de desplazamiento", zh = "玩家 Tween 速度" },
         ["player.tween.speed.desc"] = { en = "Player travel speed on foot to boats and sea-event targets (50–500). Applies to teleports and the combat hover", es = "Velocidad a pie al ir al barco y a los eventos marinos (50-500). Afecta a los teletransportes y a la suspensión en combate", zh = "步行前往船和海上事件目标的移动速度（50–500），作用于传送与战斗悬浮" },
@@ -193,7 +186,7 @@ T, ModeDisplay = (function()
         ["webhook.url"] = { en = "Webhook URL", es = "Enlace del webhook", zh = "Webhook 链接" },
         ["webhook.url.desc"] = { en = "Discord webhook URL (auto send progress)", es = "URL de Discord donde recibir el progreso", zh = "Discord Webhook 接收链接（自动发送进度）" },
         ["webhook.username"] = { en = "Sender Name", es = "Nombre del remitente", zh = "发送者名称" },
-        ["webhook.username.desc"] = { en = "Discord sender display name (default Auto Leviathan)", es = "Nombre que se muestra en Discord (por defecto Auto Leviathan)", zh = "Discord 消息发送者显示名（默认 Auto Leviathan）" },
+        ["webhook.username.desc"] = { en = "Discord sender display name (default Raizo Auto Leviathan)", es = "Nombre que se muestra en Discord (por defecto Raizo Auto Leviathan)", zh = "Discord 消息发送者显示名（默认 Raizo Auto Leviathan）" },
         ["wh.bribe"] = { en = "Spy Bribe", es = "Soborno al espía", zh = "贿赂间谍" },
         ["wh.crafted"] = { en = "Crafting", es = "Fabricación", zh = "制作" },
         ["wh.field.display"] = { en = "Display Name", es = "Nombre visible", zh = "显示名称" },
@@ -203,10 +196,10 @@ T, ModeDisplay = (function()
         ["wh.lowplayers.desc"] = { en = "@everyone when server players (incl. you) < 5", es = "Avisa con @everyone cuando hay menos de 5 jugadores (contigo)", zh = "服务器人数(含自己)不足5人时 @everyone 通知" },
         ["wh.lowplayers.msg"] = { en = "Current players: ", es = "Jugadores actuales: ", zh = "当前人数: " },
         ["wh.material"] = { en = "Materials", es = "Materiales", zh = "材料" },
-        ["wh.msg.bribe.ready"] = { en = "[Auto Leviathan] Bribe CD ready - progress {n}/5", es = "[Auto Leviathan] Soborno disponible - progreso {n}/5", zh = "[Auto Leviathan] 贿赂CD已好 进度 {n}/5" },
-        ["wh.msg.heartgot"] = { en = "[Auto Leviathan] Heart hooked!", es = "[Auto Leviathan] Corazón enganchado", zh = "[Auto Leviathan] 已勾到心脏!" },
-        ["wh.msg.heartspawn"] = { en = "[Auto Leviathan] Heart spawned!", es = "[Auto Leviathan] El corazón apareció", zh = "[Auto Leviathan] 心脏出现!" },
-        ["wh.msg.leviathan"] = { en = "[Auto Leviathan] Leviathan spawned!", es = "[Auto Leviathan] El Leviathan apareció", zh = "[Auto Leviathan] 利维坦出现!" },
+        ["wh.msg.bribe.ready"] = { en = "[Raizo Hub] Bribe CD ready - progress {n}/5", es = "[Raizo Hub] Soborno disponible - progreso {n}/5", zh = "[Raizo Hub] 贿赂CD已好 进度 {n}/5" },
+        ["wh.msg.heartgot"] = { en = "[Raizo Hub] Heart hooked!", es = "[Raizo Hub] Corazón enganchado", zh = "[Raizo Hub] 已勾到心脏!" },
+        ["wh.msg.heartspawn"] = { en = "[Raizo Hub] Heart spawned!", es = "[Raizo Hub] El corazón apareció", zh = "[Raizo Hub] 心脏出现!" },
+        ["wh.msg.leviathan"] = { en = "[Raizo Hub] Leviathan spawned!", es = "[Raizo Hub] El Leviathan apareció", zh = "[Raizo Hub] 利维坦出现!" },
         ["wh.none"] = { en = "None", es = "Ninguno", zh = "无" },
         ["wh.scroll"] = { en = "Scrolls", es = "Pergaminos", zh = "卷轴" },
         ["wh.sendfailed"] = { en = "Send Failed", es = "Error al enviar", zh = "发送失败" },
@@ -221,14 +214,12 @@ T, ModeDisplay = (function()
     local function T(key)
         local entry = LangTable[key]
         if not entry then return key end
-        return entry[LanguageCode()] or entry.en or entry.es or entry.zh or key
+        return entry.en or entry[LanguageCode()] or entry.es or entry.zh or key
     end
     local function ModeDisplay()
         return (_G.Mode == "Capitán") and T("mode.captain") or T("mode.follower")
     end
-    _G.Language = NormalizeLanguage(_G.Language)
-        or (getgenv and NormalizeLanguage(getgenv().language))
-        or "English"
+    _G.Language = "English"
     _G.RJR_LanguageLabels = LANGUAGE_LABELS
     _G.RJR_NormalizeLanguage = NormalizeLanguage
     _G.RJR_LanguageCode = LanguageCode
@@ -275,7 +266,7 @@ if _G.RespawnRebuy == nil then _G.RespawnRebuy = false end
 if _G.CruiseReturn == nil then _G.CruiseReturn = true end
 if _G.HuntSelectEvents == nil then _G.HuntSelectEvents = {} end
 if _G.WebhookURL == nil then _G.WebhookURL = "" end
-if _G.WebhookUsername == nil then _G.WebhookUsername = "Auto Leviathan" end
+if _G.WebhookUsername == nil then _G.WebhookUsername = "Raizo Auto Leviathan" end
 if _G.AutoWebhook == nil then _G.AutoWebhook = false end
 if _G.WebhookInterval == nil then _G.WebhookInterval = 60 end
 if _G.WebhookSendProgress == nil then _G.WebhookSendProgress = false end
@@ -4916,48 +4907,57 @@ local InfoUIText = nil
 local function BuildInfoUIContent()
     if not _G.ShowInfoUI then return "" end
     local lines = {}
-    lines[#lines + 1] = "Auto Leviathan"
-    lines[#lines + 1] = "━━━━━━━━━━━━━━━━"
+    lines[#lines + 1] = "<font color=\"#00EBFF\"><b>AUTO LEVIATHAN TACTICAL MONITOR</b></font>"
+    lines[#lines + 1] = "<font color=\"#26354E\">────────────────────────────────────────</font>"
     local S = GetBribeStatus()
+    local bribeStr
     if S ~= nil then
         if S == -1 then
-            lines[#lines + 1] = T("ui.bribe") .. ": " .. T("bribe.cd")
+            bribeStr = "<font color=\"#EF4444\">" .. T("bribe.cd") .. "</font>"
         elseif S == 5 then
-            lines[#lines + 1] = T("ui.bribe") .. ": " .. T("bribe.done")
+            bribeStr = "<font color=\"#22C55E\">" .. T("bribe.done") .. "</font>"
         else
-            lines[#lines + 1] = T("ui.bribe") .. ": " .. tostring(S) .. "/5"
+            bribeStr = "<font color=\"#00EBFF\">" .. tostring(S) .. "/5</font>"
         end
     else
-        lines[#lines + 1] = T("ui.bribe") .. ": " .. T("bribe.unknown")
+        bribeStr = "<font color=\"#94A3B8\">" .. T("bribe.unknown") .. "</font>"
     end
+    lines[#lines + 1] = "<font color=\"#94A3B8\">" .. T("ui.bribe") .. ":</font> " .. bribeStr
+
     local boat = nil
     if _G.Mode == "Capitán" then
         boat = GetOwnBoat()
     else
         boat = GetCaptainBoat()
     end
+    local teamStr
     if boat then
-        lines[#lines + 1] = T("ui.teammates") .. ": " .. CountTeammatesOnBoat(boat) .. "/4"
+        teamStr = "<font color=\"#38BDF8\">" .. CountTeammatesOnBoat(boat) .. "/4</font>"
     else
-        lines[#lines + 1] = T("ui.teammates") .. ": " .. T("detail.no.boat")
+        teamStr = "<font color=\"#EF4444\">" .. T("detail.no.boat") .. "</font>"
     end
-    lines[#lines + 1] = T("ui.details") .. ": " .. (StatusText ~= "" and StatusText or "-")
+    lines[#lines + 1] = "<font color=\"#94A3B8\">" .. T("ui.teammates") .. ":</font> " .. teamStr
+
+    local detailsText = (StatusText ~= "" and StatusText or "-")
+    lines[#lines + 1] = "<font color=\"#94A3B8\">" .. T("ui.details") .. ":</font> <font color=\"#F1F5F9\">" .. detailsText .. "</font>"
+
     local LV = SeaAPI.Leviathan_Find()
     if LV then
         local HP = SeaAPI.Leviathan_GetHP(LV)
-        lines[#lines + 1] = T("tab.main") .. ": " .. LV.Name .. (HP and (" " .. T("target.hp") .. " " .. string.format("%.0f", HP)) or "")
+        lines[#lines + 1] = "<font color=\"#A855F7\"><b>" .. T("tab.main") .. ": " .. LV.Name .. (HP and (" (" .. T("target.hp") .. " " .. string.format("%.0f", HP) .. ")") or "") .. "</b></font>"
     end
+
     local Map = workspace:FindFirstChild("Map")
     local Heart = Map and Map:FindFirstChild("FrozenHeart")
     if Heart then
         local P = GetHeartPos(Heart)
         if P and IsFrozenHeartHarpooned() then
-            lines[#lines + 1] = T("target.heart") .. ": " .. T("target.hooked")
+            lines[#lines + 1] = "<font color=\"#22C55E\"><b>" .. T("target.heart") .. ": " .. T("target.hooked") .. "</b></font>"
         else
-            lines[#lines + 1] = T("target.heart") .. ": " .. T("target.spawned")
+            lines[#lines + 1] = "<font color=\"#EC4899\"><b>" .. T("target.heart") .. ": " .. T("target.spawned") .. "</b></font>"
         end
     else
-        lines[#lines + 1] = T("target.heart") .. ": " .. T("target.not.spawned")
+        lines[#lines + 1] = "<font color=\"#64748B\">" .. T("target.heart") .. ": " .. T("target.not.spawned") .. "</font>"
     end
     return table.concat(lines, "\n")
 end
@@ -4967,37 +4967,83 @@ local function CreateInfoUI()
     ScreenGui.Name = "AutoLeviathanInfo"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.IgnoreGuiInset = true
+    ScreenGui.DisplayOrder = 95
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     InfoUIFrame = Instance.new("Frame")
     InfoUIFrame.Name = "Main"
-    InfoUIFrame.BackgroundColor3 = Color3.fromRGB(25, 20, 35)
+    InfoUIFrame.BackgroundColor3 = Color3.fromRGB(11, 14, 23)
     InfoUIFrame.BackgroundTransparency = 0.05
     InfoUIFrame.BorderSizePixel = 0
-    InfoUIFrame.Position = UDim2.new(0.5, -160, 0, 12)
-    InfoUIFrame.Size = UDim2.new(0, 320, 0, 0)
+    InfoUIFrame.Position = UDim2.new(0.5, -165, 0, 14)
+    InfoUIFrame.Size = UDim2.new(0, 330, 0, 100)
+    InfoUIFrame.ClipsDescendants = true
     InfoUIFrame.Parent = ScreenGui
     local Corner = Instance.new("UICorner")
     Corner.CornerRadius = UDim.new(0, 12)
     Corner.Parent = InfoUIFrame
     local Stroke = Instance.new("UIStroke")
-    Stroke.Color = Color3.fromRGB(150, 60, 255)
-    Stroke.Thickness = 2
+    Stroke.Color = Color3.fromRGB(0, 235, 255)
+    Stroke.Thickness = 1.2
+    Stroke.Transparency = 0.3
     Stroke.Parent = InfoUIFrame
+    local StrokeGrad = Instance.new("UIGradient")
+    StrokeGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 235, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(168, 85, 247)),
+    })
+    StrokeGrad.Rotation = 45
+    StrokeGrad.Parent = Stroke
     local TitleBar = Instance.new("Frame")
     TitleBar.Name = "TitleBar"
-    TitleBar.BackgroundColor3 = Color3.fromRGB(150, 60, 255)
-    TitleBar.BackgroundTransparency = 0.9
-    TitleBar.Size = UDim2.new(1, 0, 0, 8)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(16, 21, 34)
+    TitleBar.BorderSizePixel = 0
+    TitleBar.Size = UDim2.new(1, 0, 0, 26)
     TitleBar.Parent = InfoUIFrame
-    local TitleCorner = Instance.new("UICorner")
-    TitleCorner.CornerRadius = UDim.new(0, 12)
-    TitleCorner.Parent = TitleBar
+    local TitleDot = Instance.new("Frame")
+    TitleDot.Name = "Dot"
+    TitleDot.Size = UDim2.fromOffset(6, 6)
+    TitleDot.Position = UDim2.new(0, 10, 0.5, -3)
+    TitleDot.BackgroundColor3 = Color3.fromRGB(0, 235, 255)
+    TitleDot.BorderSizePixel = 0
+    TitleDot.Parent = TitleBar
+    local DotCorner = Instance.new("UICorner")
+    DotCorner.CornerRadius = UDim.new(1, 0)
+    DotCorner.Parent = TitleDot
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Name = "Title"
+    TitleLabel.Size = UDim2.new(1, -90, 1, 0)
+    TitleLabel.Position = UDim2.new(0, 22, 0, 0)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextSize = 10
+    TitleLabel.TextColor3 = Color3.fromRGB(0, 235, 255)
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Text = "TACTICAL HUD"
+    TitleLabel.Parent = TitleBar
+    local ModeBadge = Instance.new("Frame")
+    ModeBadge.Name = "ModeBadge"
+    ModeBadge.Size = UDim2.fromOffset(64, 18)
+    ModeBadge.Position = UDim2.new(1, -74, 0.5, -9)
+    ModeBadge.BackgroundColor3 = Color3.fromRGB(24, 32, 50)
+    ModeBadge.BorderSizePixel = 0
+    ModeBadge.Parent = TitleBar
+    local ModeBadgeCorner = Instance.new("UICorner")
+    ModeBadgeCorner.CornerRadius = UDim.new(0, 6)
+    ModeBadgeCorner.Parent = ModeBadge
+    local ModeBadgeText = Instance.new("TextLabel")
+    ModeBadgeText.Size = UDim2.new(1, 0, 1, 0)
+    ModeBadgeText.BackgroundTransparency = 1
+    ModeBadgeText.Font = Enum.Font.GothamBold
+    ModeBadgeText.TextSize = 9
+    ModeBadgeText.TextColor3 = Color3.fromRGB(168, 85, 247)
+    ModeBadgeText.Text = (_G.Mode == "Capitán" and "CAPTAIN" or "FOLLOWER")
+    ModeBadgeText.Parent = ModeBadge
     InfoUIText = Instance.new("TextLabel")
     InfoUIText.BackgroundTransparency = 1
-    InfoUIText.Position = UDim2.new(0, 12, 0, 12)
-    InfoUIText.Size = UDim2.new(1, -24, 1, -18)
+    InfoUIText.Position = UDim2.new(0, 12, 0, 30)
+    InfoUIText.Size = UDim2.new(1, -24, 1, -34)
     InfoUIText.Font = Enum.Font.Gotham
-    InfoUIText.TextSize = 14
+    InfoUIText.TextSize = 12
     InfoUIText.TextColor3 = Color3.fromRGB(240, 240, 245)
     InfoUIText.TextXAlignment = Enum.TextXAlignment.Left
     InfoUIText.TextYAlignment = Enum.TextYAlignment.Top
@@ -5008,19 +5054,19 @@ local function CreateInfoUI()
     local dragOffset = Vector2.zero
     local UIS = game:GetService("UserInputService")
     InfoUIFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             local mp = Vector2.new(input.Position.X, input.Position.Y)
             dragOffset = mp - InfoUIFrame.AbsolutePosition
         end
     end)
     UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
     UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local mp = Vector2.new(input.Position.X, input.Position.Y)
             local newPos = mp - dragOffset
             InfoUIFrame.Position = UDim2.new(0, newPos.X, 0, newPos.Y)
@@ -5031,7 +5077,7 @@ local function CreateInfoUI()
     local initLines = #initContent:split("\n")
     InfoUIFrame:SetAttribute("LastText", initContent)
     InfoUIFrame:SetAttribute("LastLines", initLines)
-    InfoUIFrame.Size = UDim2.new(0, 320, 0, math.max(40, initLines * 22 + 18))
+    InfoUIFrame.Size = UDim2.new(0, 330, 0, math.max(60, initLines * 20 + 38))
 end
 local function UpdateInfoUI()
     if not InfoUIFrame then return end
@@ -5040,7 +5086,7 @@ local function UpdateInfoUI()
     if InfoUIText then InfoUIText.Text = content end
     local lines = #content:split("\n")
     if lines ~= InfoUIFrame:GetAttribute("LastLines") then
-        InfoUIFrame.Size = UDim2.new(0, 320, 0, math.max(40, lines * 22 + 18))
+        InfoUIFrame.Size = UDim2.new(0, 330, 0, math.max(60, lines * 20 + 38))
         InfoUIFrame:SetAttribute("LastLines", lines)
     end
     InfoUIFrame:SetAttribute("LastText", content)
@@ -5585,22 +5631,1592 @@ local _ = (function()
 do
     local LegacyCaptain = "\229\188\128\232\136\185"
     local LegacyFollower = "\232\183\159\233\154\143"
-    if _G.Mode == LegacyCaptain then _G.Mode = "Capitán"
-    elseif _G.Mode == LegacyFollower then _G.Mode = "Seguidor" end
+    if _G.Mode == LegacyCaptain or _G.Mode == "Captain" then _G.Mode = "Capitán"
+    elseif _G.Mode == LegacyFollower or _G.Mode == "Follower" then _G.Mode = "Seguidor" end
 end
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
-local LANGUAGE_LABELS = _G.RJR_LanguageLabels or { "English", "Español", "中文" }
+local Fluent, SaveManager, InterfaceManager = (function()
+    local TweenService = game:GetService("TweenService")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local HttpService = game:GetService("HttpService")
+    local CoreGui = game:GetService("CoreGui")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+
+    local function SafeTween(inst, duration, props, style, dir)
+        if not inst then return end
+        pcall(function()
+            local info = TweenInfo.new(
+                duration or 0.2,
+                style or Enum.EasingStyle.Quad,
+                dir or Enum.EasingDirection.Out
+            )
+            TweenService:Create(inst, info, props):Play()
+        end)
+    end
+
+    local function MakeDraggable(handle, target)
+        if not handle or not target then return end
+        local dragging = false
+        local dragStart = Vector2.zero
+        local startPos = UDim2.new()
+        handle.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = Vector2.new(input.Position.X, input.Position.Y)
+                startPos = target.Position
+                local conn
+                conn = input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                        if conn then conn:Disconnect() end
+                    end
+                end)
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local current = Vector2.new(input.Position.X, input.Position.Y)
+                local delta = current - dragStart
+                target.Position = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+    end
+
+    local LucideIcons = {
+        ["anchor"] = "rbxassetid://10709761530",
+        ["swords"] = "rbxassetid://10734975692",
+        ["activity"] = "rbxassetid://10709752035",
+        ["package"] = "rbxassetid://10734950309",
+        ["link"] = "rbxassetid://10723345518",
+        ["settings"] = "rbxassetid://10734950020",
+        ["megaphone"] = "rbxassetid://10734934585",
+        ["bell"] = "rbxassetid://10709759837",
+        ["check"] = "rbxassetid://10709790644",
+        ["chevron-down"] = "rbxassetid://10709790948",
+        ["shield"] = "rbxassetid://10734951847",
+        ["info"] = "rbxassetid://10723415903",
+    }
+
+    local function GetGuiContainer()
+        local c
+        if gethui then
+            local ok, h = pcall(gethui)
+            if ok and h then c = h end
+        end
+        if not c then pcall(function() c = CoreGui end) end
+        if not c then c = LocalPlayer:WaitForChild("PlayerGui") end
+        return c
+    end
+
+    local ScreenContainer = GetGuiContainer()
+    local oldDash = ScreenContainer:FindFirstChild("Raizo_MidnightNeon_Dashboard") or ScreenContainer:FindFirstChild("RJR_MidnightNeon_Dashboard")
+    if oldDash then pcall(function() oldDash:Destroy() end) end
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "Raizo_MidnightNeon_Dashboard"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.DisplayOrder = 100
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.Parent = ScreenContainer
+
+    local ToastContainer = Instance.new("Frame")
+    ToastContainer.Name = "ToastContainer"
+    ToastContainer.Size = UDim2.new(0, 310, 1, -40)
+    ToastContainer.Position = UDim2.new(1, -320, 1, -20)
+    ToastContainer.AnchorPoint = Vector2.new(0, 1)
+    ToastContainer.BackgroundTransparency = 1
+    ToastContainer.Parent = ScreenGui
+
+    local ToastLayout = Instance.new("UIListLayout")
+    ToastLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ToastLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    ToastLayout.Padding = UDim.new(0, 8)
+    ToastLayout.Parent = ToastContainer
+
+    local FluentLib = { Options = {} }
+    local WindowRef = nil
+
+    function FluentLib:Notify(cfg)
+        local title = cfg.Title or "Notice"
+        local content = cfg.Content or ""
+        local dur = cfg.Duration or 3
+
+        local toast = Instance.new("Frame")
+        toast.Name = "Toast"
+        toast.Size = UDim2.new(1, 0, 0, 68)
+        toast.Position = UDim2.new(1, 320, 0, 0)
+        toast.BackgroundColor3 = Color3.fromRGB(12, 16, 26)
+        toast.BackgroundTransparency = 0.05
+        toast.BorderSizePixel = 0
+        toast.ClipsDescendants = true
+        toast.Parent = ToastContainer
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = toast
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(0, 235, 255)
+        stroke.Thickness = 1.2
+        stroke.Transparency = 0.3
+        stroke.Parent = toast
+
+        local strokeGrad = Instance.new("UIGradient")
+        strokeGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 235, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(168, 85, 247))
+        })
+        strokeGrad.Rotation = 45
+        strokeGrad.Parent = stroke
+
+        local pill = Instance.new("Frame")
+        pill.Size = UDim2.new(0, 3, 1, -16)
+        pill.Position = UDim2.new(0, 8, 0, 8)
+        pill.BackgroundColor3 = Color3.fromRGB(0, 235, 255)
+        pill.BorderSizePixel = 0
+        pill.Parent = toast
+        local pillCorner = Instance.new("UICorner")
+        pillCorner.CornerRadius = UDim.new(1, 0)
+        pillCorner.Parent = pill
+
+        local tLabel = Instance.new("TextLabel")
+        tLabel.Size = UDim2.new(1, -28, 0, 20)
+        tLabel.Position = UDim2.new(0, 20, 0, 8)
+        tLabel.BackgroundTransparency = 1
+        tLabel.Font = Enum.Font.GothamBold
+        tLabel.TextSize = 12
+        tLabel.TextColor3 = Color3.fromRGB(0, 235, 255)
+        tLabel.TextXAlignment = Enum.TextXAlignment.Left
+        tLabel.Text = title
+        tLabel.Parent = toast
+
+        local dLabel = Instance.new("TextLabel")
+        dLabel.Size = UDim2.new(1, -28, 0, 32)
+        dLabel.Position = UDim2.new(0, 20, 0, 28)
+        dLabel.BackgroundTransparency = 1
+        dLabel.Font = Enum.Font.Gotham
+        dLabel.TextSize = 11
+        dLabel.TextColor3 = Color3.fromRGB(226, 232, 240)
+        dLabel.TextXAlignment = Enum.TextXAlignment.Left
+        dLabel.TextYAlignment = Enum.TextYAlignment.Top
+        dLabel.TextWrapped = true
+        dLabel.Text = content
+        dLabel.Parent = toast
+
+        local prog = Instance.new("Frame")
+        prog.Size = UDim2.new(1, 0, 0, 2)
+        prog.Position = UDim2.new(0, 0, 1, -2)
+        prog.BackgroundColor3 = Color3.fromRGB(0, 235, 255)
+        prog.BorderSizePixel = 0
+        prog.Parent = toast
+
+        SafeTween(toast, 0.3, { Position = UDim2.new(0, 0, 0, 0) }, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+        SafeTween(prog, dur, { Size = UDim2.new(0, 0, 0, 2) }, Enum.EasingStyle.Linear)
+
+        task.delay(dur, function()
+            SafeTween(toast, 0.3, { Position = UDim2.new(1, 320, 0, 0), BackgroundTransparency = 1 }, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+            task.wait(0.35)
+            pcall(function() toast:Destroy() end)
+        end)
+    end
+
+    local function CreateToggle(parentContainer, id, cfg)
+        local titleText = cfg.Title or id
+        local descText = cfg.Description or ""
+        local defaultValue = cfg.Default == true
+        local callback = cfg.Callback or function() end
+        local hasDesc = (descText ~= nil and descText ~= "")
+        local rowH = hasDesc and 48 or 38
+
+        local row = Instance.new("Frame")
+        row.Name = "Toggle_" .. id
+        row.Size = UDim2.new(1, 0, 0, rowH)
+        row.BackgroundColor3 = Color3.fromRGB(13, 17, 27)
+        row.BorderSizePixel = 0
+        row.Parent = parentContainer
+
+        local rowCorner = Instance.new("UICorner")
+        rowCorner.CornerRadius = UDim.new(0, 8)
+        rowCorner.Parent = row
+
+        local rowStroke = Instance.new("UIStroke")
+        rowStroke.Color = Color3.fromRGB(25, 34, 52)
+        rowStroke.Thickness = 1
+        rowStroke.Parent = row
+
+        local titleLabel = Instance.new("TextLabel")
+        titleLabel.Name = "Title"
+        titleLabel.Size = UDim2.new(1, -62, 0, hasDesc and 20 or rowH)
+        titleLabel.Position = UDim2.new(0, 12, 0, hasDesc and 5 or 0)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Font = Enum.Font.GothamMedium
+        titleLabel.TextSize = 12
+        titleLabel.TextColor3 = Color3.fromRGB(240, 244, 250)
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        titleLabel.Text = titleText
+        titleLabel.Parent = row
+
+        local descLabel = Instance.new("TextLabel")
+        descLabel.Name = "Description"
+        descLabel.Size = UDim2.new(1, -62, 0, 18)
+        descLabel.Position = UDim2.new(0, 12, 0, 25)
+        descLabel.BackgroundTransparency = 1
+        descLabel.Font = Enum.Font.Gotham
+        descLabel.TextSize = 10
+        descLabel.TextColor3 = Color3.fromRGB(140, 155, 175)
+        descLabel.TextXAlignment = Enum.TextXAlignment.Left
+        descLabel.TextWrapped = true
+        descLabel.Text = descText
+        descLabel.Visible = hasDesc
+        descLabel.Parent = row
+
+        local track = Instance.new("Frame")
+        track.Name = "Track"
+        track.Size = UDim2.fromOffset(40, 22)
+        track.Position = UDim2.new(1, -52, 0.5, -11)
+        track.BackgroundColor3 = defaultValue and Color3.fromRGB(0, 215, 245) or Color3.fromRGB(26, 33, 49)
+        track.BorderSizePixel = 0
+        track.Parent = row
+        local trackCorner = Instance.new("UICorner")
+        trackCorner.CornerRadius = UDim.new(1, 0)
+        trackCorner.Parent = track
+        local trackStroke = Instance.new("UIStroke")
+        trackStroke.Color = defaultValue and Color3.fromRGB(0, 235, 255) or Color3.fromRGB(42, 54, 78)
+        trackStroke.Thickness = 1
+        trackStroke.Parent = track
+
+        local thumb = Instance.new("Frame")
+        thumb.Name = "Thumb"
+        thumb.Size = UDim2.fromOffset(16, 16)
+        thumb.Position = defaultValue and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+        thumb.BackgroundColor3 = defaultValue and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(130, 145, 170)
+        thumb.BorderSizePixel = 0
+        thumb.Parent = track
+        local thumbCorner = Instance.new("UICorner")
+        thumbCorner.CornerRadius = UDim.new(1, 0)
+        thumbCorner.Parent = thumb
+
+        local ToggleObj = {
+            Value = defaultValue,
+            Row = row,
+            Track = track,
+            Thumb = thumb,
+            TitleLabel = titleLabel,
+            DescLabel = descLabel,
+        }
+
+        local function UpdateVisual(val)
+            SafeTween(track, 0.2, {
+                BackgroundColor3 = val and Color3.fromRGB(0, 215, 245) or Color3.fromRGB(26, 33, 49)
+            })
+            SafeTween(trackStroke, 0.2, {
+                Color = val and Color3.fromRGB(0, 235, 255) or Color3.fromRGB(42, 54, 78)
+            })
+            SafeTween(thumb, 0.2, {
+                Position = val and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8),
+                BackgroundColor3 = val and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(130, 145, 170)
+            })
+        end
+
+        function ToggleObj:SetValue(newVal)
+            self.Value = newVal == true
+            UpdateVisual(self.Value)
+            pcall(callback, self.Value)
+        end
+        function ToggleObj:SetTitle(newTitle)
+            titleLabel.Text = newTitle
+        end
+        function ToggleObj:SetDesc(newDesc)
+            descLabel.Text = newDesc or ""
+            local show = (newDesc ~= nil and newDesc ~= "")
+            descLabel.Visible = show
+            row.Size = UDim2.new(1, 0, 0, show and 48 or 38)
+            titleLabel.Size = UDim2.new(1, -62, 0, show and 20 or 38)
+            titleLabel.Position = UDim2.new(0, 12, 0, show and 5 or 0)
+        end
+
+        local clickBtn = Instance.new("TextButton")
+        clickBtn.Size = UDim2.new(1, 0, 1, 0)
+        clickBtn.BackgroundTransparency = 1
+        clickBtn.Text = ""
+        clickBtn.Parent = row
+
+        clickBtn.MouseButton1Click:Connect(function()
+            ToggleObj.Value = not ToggleObj.Value
+            UpdateVisual(ToggleObj.Value)
+            pcall(callback, ToggleObj.Value)
+        end)
+        clickBtn.MouseEnter:Connect(function()
+            SafeTween(row, 0.15, { BackgroundColor3 = Color3.fromRGB(18, 24, 38) })
+            SafeTween(rowStroke, 0.15, { Color = Color3.fromRGB(38, 50, 76) })
+        end)
+        clickBtn.MouseLeave:Connect(function()
+            SafeTween(row, 0.15, { BackgroundColor3 = Color3.fromRGB(13, 17, 27) })
+            SafeTween(rowStroke, 0.15, { Color = Color3.fromRGB(25, 34, 52) })
+        end)
+
+        FluentLib.Options[id] = ToggleObj
+        return ToggleObj
+    end
+
+    local function CreateDropdown(parentContainer, id, cfg)
+        local titleText = cfg.Title or id
+        local valuesList = cfg.Values or {}
+        local isMulti = cfg.Multi == true
+        local callback = cfg.Callback or function() end
+
+        local currentValue
+        if isMulti then
+            currentValue = {}
+            if type(cfg.Default) == "table" then
+                for k, v in pairs(cfg.Default) do
+                    if type(k) == "number" and type(v) == "string" then
+                        currentValue[v] = true
+                        currentValue[#currentValue + 1] = v
+                    elseif v == true and type(k) == "string" then
+                        currentValue[k] = true
+                        currentValue[#currentValue + 1] = k
+                    end
+                end
+            end
+        else
+            currentValue = cfg.Default
+        end
+
+        local row = Instance.new("Frame")
+        row.Name = "Dropdown_" .. id
+        row.Size = UDim2.new(1, 0, 0, 42)
+        row.AutomaticSize = Enum.AutomaticSize.Y
+        row.BackgroundColor3 = Color3.fromRGB(13, 17, 27)
+        row.BorderSizePixel = 0
+        row.ClipsDescendants = true
+        row.Parent = parentContainer
+
+        local rowCorner = Instance.new("UICorner")
+        rowCorner.CornerRadius = UDim.new(0, 8)
+        rowCorner.Parent = row
+
+        local rowStroke = Instance.new("UIStroke")
+        rowStroke.Color = Color3.fromRGB(25, 34, 52)
+        rowStroke.Thickness = 1
+        rowStroke.Parent = row
+
+        local rowLayout = Instance.new("UIListLayout")
+        rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        rowLayout.Padding = UDim.new(0, 4)
+        rowLayout.Parent = row
+
+        local topRow = Instance.new("Frame")
+        topRow.Name = "TopRow"
+        topRow.Size = UDim2.new(1, 0, 0, 40)
+        topRow.BackgroundTransparency = 1
+        topRow.LayoutOrder = 1
+        topRow.Parent = row
+
+        local titleLabel = Instance.new("TextLabel")
+        titleLabel.Name = "Title"
+        titleLabel.Size = UDim2.new(0.5, -10, 1, 0)
+        titleLabel.Position = UDim2.new(0, 12, 0, 0)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Font = Enum.Font.GothamMedium
+        titleLabel.TextSize = 12
+        titleLabel.TextColor3 = Color3.fromRGB(240, 244, 250)
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        titleLabel.Text = titleText
+        titleLabel.Parent = topRow
+
+        local selectorBtn = Instance.new("TextButton")
+        selectorBtn.Name = "Selector"
+        selectorBtn.Size = UDim2.new(0.48, -12, 0, 28)
+        selectorBtn.Position = UDim2.new(0.52, 0, 0.5, -14)
+        selectorBtn.BackgroundColor3 = Color3.fromRGB(18, 24, 38)
+        selectorBtn.BorderSizePixel = 0
+        selectorBtn.Text = ""
+        selectorBtn.AutoButtonColor = false
+        selectorBtn.Parent = topRow
+
+        local selCorner = Instance.new("UICorner")
+        selCorner.CornerRadius = UDim.new(0, 6)
+        selCorner.Parent = selectorBtn
+
+        local selStroke = Instance.new("UIStroke")
+        selStroke.Color = Color3.fromRGB(35, 47, 72)
+        selStroke.Thickness = 1
+        selStroke.Parent = selectorBtn
+
+        local selText = Instance.new("TextLabel")
+        selText.Name = "SelectedText"
+        selText.Size = UDim2.new(1, -26, 1, 0)
+        selText.Position = UDim2.new(0, 8, 0, 0)
+        selText.BackgroundTransparency = 1
+        selText.Font = Enum.Font.Gotham
+        selText.TextSize = 11
+        selText.TextColor3 = Color3.fromRGB(241, 245, 249)
+        selText.TextXAlignment = Enum.TextXAlignment.Left
+        selText.TextTruncate = Enum.TextTruncate.AtEnd
+        selText.Parent = selectorBtn
+
+        local chevron = Instance.new("TextLabel")
+        chevron.Name = "Chevron"
+        chevron.Size = UDim2.fromOffset(20, 20)
+        chevron.Position = UDim2.new(1, -22, 0.5, -10)
+        chevron.BackgroundTransparency = 1
+        chevron.Font = Enum.Font.GothamBold
+        chevron.TextSize = 10
+        chevron.TextColor3 = Color3.fromRGB(148, 163, 184)
+        chevron.Text = "▼"
+        chevron.Parent = selectorBtn
+
+        local listContainer = Instance.new("Frame")
+        listContainer.Name = "OptionsList"
+        listContainer.Size = UDim2.new(1, -20, 0, 0)
+        listContainer.Position = UDim2.new(0, 10, 0, 0)
+        listContainer.AutomaticSize = Enum.AutomaticSize.Y
+        listContainer.BackgroundTransparency = 1
+        listContainer.Visible = false
+        listContainer.LayoutOrder = 2
+        listContainer.Parent = row
+
+        local listLayout = Instance.new("UIListLayout")
+        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        listLayout.Padding = UDim.new(0, 3)
+        listLayout.Parent = listContainer
+
+        local listPad = Instance.new("UIPadding")
+        listPad.PaddingBottom = UDim.new(0, 8)
+        listPad.Parent = listContainer
+
+        local isOpen = false
+        local DropdownObj = {
+            Value = currentValue,
+            Values = valuesList,
+            Multi = isMulti,
+            Row = row,
+            TitleLabel = titleLabel,
+            SelectedLabel = selText,
+        }
+
+        local function GetDisplayString()
+            if isMulti then
+                local chosen = {}
+                for k, v in pairs(DropdownObj.Value) do
+                    if v == true and type(k) == "string" then chosen[#chosen + 1] = k end
+                end
+                table.sort(chosen)
+                if #chosen == 0 then return "--" end
+                if #chosen <= 2 then return table.concat(chosen, ", ") end
+                return string.format("%d selected", #chosen)
+            else
+                return tostring(DropdownObj.Value or "--")
+            end
+        end
+
+        local function RebuildOptions()
+            for _, child in ipairs(listContainer:GetChildren()) do
+                if child:IsA("GuiObject") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                    child:Destroy()
+                end
+            end
+            for _, val in ipairs(DropdownObj.Values) do
+                local optBtn = Instance.new("TextButton")
+                optBtn.Name = "Opt_" .. tostring(val)
+                optBtn.Size = UDim2.new(1, 0, 0, 28)
+                optBtn.BackgroundColor3 = Color3.fromRGB(18, 24, 38)
+                optBtn.BorderSizePixel = 0
+                optBtn.Text = ""
+                optBtn.AutoButtonColor = false
+                optBtn.Parent = listContainer
+                local optCorner = Instance.new("UICorner")
+                optCorner.CornerRadius = UDim.new(0, 6)
+                optCorner.Parent = optBtn
+
+                local isSelected = false
+                if isMulti then
+                    isSelected = (DropdownObj.Value[val] == true)
+                else
+                    isSelected = (DropdownObj.Value == val)
+                end
+
+                local optLabel = Instance.new("TextLabel")
+                optLabel.Size = UDim2.new(1, -34, 1, 0)
+                optLabel.Position = UDim2.new(0, 28, 0, 0)
+                optLabel.BackgroundTransparency = 1
+                optLabel.Font = Enum.Font.Gotham
+                optLabel.TextSize = 11
+                optLabel.TextColor3 = isSelected and Color3.fromRGB(0, 235, 255) or Color3.fromRGB(226, 232, 240)
+                optLabel.TextXAlignment = Enum.TextXAlignment.Left
+                optLabel.Text = tostring(val)
+                optLabel.Parent = optBtn
+
+                local checkMark = Instance.new("TextLabel")
+                checkMark.Size = UDim2.fromOffset(18, 18)
+                checkMark.Position = UDim2.new(0, 6, 0.5, -9)
+                checkMark.BackgroundTransparency = 1
+                checkMark.Font = Enum.Font.GothamBold
+                checkMark.TextSize = 11
+                checkMark.TextColor3 = Color3.fromRGB(0, 235, 255)
+                checkMark.Text = isSelected and "✓" or ""
+                checkMark.Parent = optBtn
+
+                optBtn.MouseButton1Click:Connect(function()
+                    if isMulti then
+                        local nowActive = not (DropdownObj.Value[val] == true)
+                        DropdownObj.Value[val] = nowActive or nil
+                        local arr = {}
+                        for k, v in pairs(DropdownObj.Value) do
+                            if v == true and type(k) == "string" then arr[#arr + 1] = k end
+                        end
+                        for i = 1, #arr do DropdownObj.Value[i] = arr[i] end
+                        for i = #arr + 1, #DropdownObj.Value do DropdownObj.Value[i] = nil end
+                        checkMark.Text = nowActive and "✓" or ""
+                        optLabel.TextColor3 = nowActive and Color3.fromRGB(0, 235, 255) or Color3.fromRGB(226, 232, 240)
+                        selText.Text = GetDisplayString()
+                        pcall(callback, DropdownObj.Value)
+                    else
+                        DropdownObj.Value = val
+                        selText.Text = GetDisplayString()
+                        isOpen = false
+                        listContainer.Visible = false
+                        chevron.Text = "▼"
+                        pcall(callback, DropdownObj.Value)
+                        RebuildOptions()
+                    end
+                end)
+                optBtn.MouseEnter:Connect(function()
+                    SafeTween(optBtn, 0.15, { BackgroundColor3 = Color3.fromRGB(24, 32, 50) })
+                end)
+                optBtn.MouseLeave:Connect(function()
+                    SafeTween(optBtn, 0.15, { BackgroundColor3 = Color3.fromRGB(18, 24, 38) })
+                end)
+            end
+        end
+
+        selText.Text = GetDisplayString()
+        RebuildOptions()
+
+        selectorBtn.MouseButton1Click:Connect(function()
+            isOpen = not isOpen
+            listContainer.Visible = isOpen
+            chevron.Text = isOpen and "▲" or "▼"
+            SafeTween(selStroke, 0.2, { Color = isOpen and Color3.fromRGB(0, 235, 255) or Color3.fromRGB(35, 47, 72) })
+        end)
+
+        function DropdownObj:SetValue(newVal)
+            if isMulti then
+                self.Value = {}
+                if type(newVal) == "table" then
+                    for k, v in pairs(newVal) do
+                        if type(k) == "number" and type(v) == "string" then
+                            self.Value[v] = true
+                            self.Value[#self.Value + 1] = v
+                        elseif v == true and type(k) == "string" then
+                            self.Value[k] = true
+                            self.Value[#self.Value + 1] = k
+                        end
+                    end
+                end
+            else
+                self.Value = newVal
+            end
+            selText.Text = GetDisplayString()
+            RebuildOptions()
+            pcall(callback, self.Value)
+        end
+        function DropdownObj:SetValues(newVals)
+            self.Values = newVals or {}
+            RebuildOptions()
+            selText.Text = GetDisplayString()
+        end
+        function DropdownObj:SetTitle(newTitle)
+            titleLabel.Text = newTitle
+        end
+        function DropdownObj:SetDesc() end
+
+        FluentLib.Options[id] = DropdownObj
+        return DropdownObj
+    end
+
+    local function CreateInput(parentContainer, id, cfg)
+        local titleText = cfg.Title or id
+        local defaultValue = cfg.Default or ""
+        local placeholder = cfg.Placeholder or ""
+        local isNumeric = cfg.Numeric == true
+        local isFinished = (cfg.Finished ~= false)
+        local callback = cfg.Callback or function() end
+
+        local row = Instance.new("Frame")
+        row.Name = "Input_" .. id
+        row.Size = UDim2.new(1, 0, 0, 42)
+        row.BackgroundColor3 = Color3.fromRGB(13, 17, 27)
+        row.BorderSizePixel = 0
+        row.Parent = parentContainer
+        local rowCorner = Instance.new("UICorner")
+        rowCorner.CornerRadius = UDim.new(0, 8)
+        rowCorner.Parent = row
+        local rowStroke = Instance.new("UIStroke")
+        rowStroke.Color = Color3.fromRGB(25, 34, 52)
+        rowStroke.Thickness = 1
+        rowStroke.Parent = row
+
+        local titleLabel = Instance.new("TextLabel")
+        titleLabel.Name = "Title"
+        titleLabel.Size = UDim2.new(0.55, -10, 1, 0)
+        titleLabel.Position = UDim2.new(0, 12, 0, 0)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Font = Enum.Font.GothamMedium
+        titleLabel.TextSize = 12
+        titleLabel.TextColor3 = Color3.fromRGB(240, 244, 250)
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        titleLabel.Text = titleText
+        titleLabel.Parent = row
+
+        local boxContainer = Instance.new("Frame")
+        boxContainer.Name = "BoxContainer"
+        boxContainer.Size = UDim2.new(0.42, -12, 0, 28)
+        boxContainer.Position = UDim2.new(0.58, 0, 0.5, -14)
+        boxContainer.BackgroundColor3 = Color3.fromRGB(18, 24, 38)
+        boxContainer.BorderSizePixel = 0
+        boxContainer.Parent = row
+        local boxCorner = Instance.new("UICorner")
+        boxCorner.CornerRadius = UDim.new(0, 6)
+        boxCorner.Parent = boxContainer
+        local boxStroke = Instance.new("UIStroke")
+        boxStroke.Color = Color3.fromRGB(35, 47, 72)
+        boxStroke.Thickness = 1
+        boxStroke.Parent = boxContainer
+
+        local textBox = Instance.new("TextBox")
+        textBox.Name = "TextBox"
+        textBox.Size = UDim2.new(1, -16, 1, 0)
+        textBox.Position = UDim2.new(0, 8, 0, 0)
+        textBox.BackgroundTransparency = 1
+        textBox.Font = Enum.Font.Gotham
+        textBox.TextSize = 11
+        textBox.TextColor3 = Color3.fromRGB(241, 245, 249)
+        textBox.PlaceholderColor3 = Color3.fromRGB(100, 116, 139)
+        textBox.PlaceholderText = placeholder
+        textBox.Text = tostring(defaultValue or "")
+        textBox.ClearTextOnFocus = false
+        textBox.Parent = boxContainer
+
+        local InputObj = {
+            Value = tostring(defaultValue or ""),
+            Row = row,
+            TextBox = textBox,
+            TitleLabel = titleLabel,
+        }
+
+        textBox.Focused:Connect(function()
+            SafeTween(boxStroke, 0.2, { Color = Color3.fromRGB(0, 235, 255), Transparency = 0 })
+        end)
+        textBox.FocusLost:Connect(function()
+            SafeTween(boxStroke, 0.2, { Color = Color3.fromRGB(35, 47, 72), Transparency = 0.3 })
+            local val = textBox.Text
+            if isNumeric then
+                val = val:gsub("[^0-9%.%-]", "")
+                textBox.Text = val
+            end
+            InputObj.Value = val
+            pcall(callback, val)
+        end)
+
+        if not isFinished then
+            textBox:GetPropertyChangedSignal("Text"):Connect(function()
+                local val = textBox.Text
+                if isNumeric then
+                    local filtered = val:gsub("[^0-9%.%-]", "")
+                    if filtered ~= val then
+                        textBox.Text = filtered
+                        val = filtered
+                    end
+                end
+                InputObj.Value = val
+                pcall(callback, val)
+            end)
+        end
+
+        function InputObj:SetValue(newVal)
+            self.Value = tostring(newVal or "")
+            textBox.Text = self.Value
+            pcall(callback, self.Value)
+        end
+        function InputObj:SetTitle(newTitle)
+            titleLabel.Text = newTitle
+        end
+        function InputObj:SetDesc() end
+
+        FluentLib.Options[id] = InputObj
+        return InputObj
+    end
+
+    local function CreateButton(parentContainer, cfg)
+        local titleText = cfg.Title or "Button"
+        local callback = cfg.Callback or function() end
+
+        local btn = Instance.new("TextButton")
+        btn.Name = "Btn_" .. titleText
+        btn.Size = UDim2.new(1, 0, 0, 36)
+        btn.BackgroundColor3 = Color3.fromRGB(22, 29, 46)
+        btn.BorderSizePixel = 0
+        btn.Text = ""
+        btn.AutoButtonColor = false
+        btn.Parent = parentContainer
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 8)
+        btnCorner.Parent = btn
+        local btnStroke = Instance.new("UIStroke")
+        btnStroke.Color = Color3.fromRGB(38, 50, 78)
+        btnStroke.Thickness = 1
+        btnStroke.Parent = btn
+
+        local btnGrad = Instance.new("UIGradient")
+        btnGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(28, 38, 60)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 24, 38)),
+        })
+        btnGrad.Rotation = 90
+        btnGrad.Parent = btn
+
+        local btnLabel = Instance.new("TextLabel")
+        btnLabel.Name = "Title"
+        btnLabel.Size = UDim2.new(1, 0, 1, 0)
+        btnLabel.BackgroundTransparency = 1
+        btnLabel.Font = Enum.Font.GothamBold
+        btnLabel.TextSize = 12
+        btnLabel.TextColor3 = Color3.fromRGB(241, 245, 249)
+        btnLabel.Text = titleText
+        btnLabel.Parent = btn
+
+        btn.MouseEnter:Connect(function()
+            SafeTween(btnStroke, 0.15, { Color = Color3.fromRGB(0, 235, 255), Transparency = 0.2 })
+            SafeTween(btnLabel, 0.15, { TextColor3 = Color3.fromRGB(0, 235, 255) })
+        end)
+        btn.MouseLeave:Connect(function()
+            SafeTween(btnStroke, 0.15, { Color = Color3.fromRGB(38, 50, 78), Transparency = 0 })
+            SafeTween(btnLabel, 0.15, { TextColor3 = Color3.fromRGB(241, 245, 249) })
+        end)
+        btn.MouseButton1Click:Connect(function()
+            SafeTween(btn, 0.08, { Size = UDim2.new(1, -4, 0, 34) })
+            task.wait(0.08)
+            SafeTween(btn, 0.08, { Size = UDim2.new(1, 0, 0, 36) })
+            pcall(callback)
+        end)
+
+        local ButtonObj = { Button = btn, TitleLabel = btnLabel }
+        function ButtonObj:SetTitle(newTitle) btnLabel.Text = newTitle end
+        return ButtonObj
+    end
+
+    local function CreateParagraph(parentContainer, cfg)
+        local titleText = cfg.Title or "Info"
+        local descText = cfg.Content or ""
+
+        local card = Instance.new("Frame")
+        card.Name = "ParagraphCard"
+        card.Size = UDim2.new(1, 0, 0, 0)
+        card.AutomaticSize = Enum.AutomaticSize.Y
+        card.BackgroundColor3 = Color3.fromRGB(14, 18, 28)
+        card.BorderSizePixel = 0
+        card.Parent = parentContainer
+        local cardCorner = Instance.new("UICorner")
+        cardCorner.CornerRadius = UDim.new(0, 8)
+        cardCorner.Parent = card
+        local cardStroke = Instance.new("UIStroke")
+        cardStroke.Color = Color3.fromRGB(26, 35, 54)
+        cardStroke.Thickness = 1
+        cardStroke.Parent = card
+        local cardPadding = Instance.new("UIPadding")
+        cardPadding.PaddingTop = UDim.new(0, 8)
+        cardPadding.PaddingBottom = UDim.new(0, 8)
+        cardPadding.PaddingLeft = UDim.new(0, 12)
+        cardPadding.PaddingRight = UDim.new(0, 12)
+        cardPadding.Parent = card
+        local cardLayout = Instance.new("UIListLayout")
+        cardLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        cardLayout.Padding = UDim.new(0, 4)
+        cardLayout.Parent = card
+
+        local titleLabel = Instance.new("TextLabel")
+        titleLabel.Name = "Title"
+        titleLabel.Size = UDim2.new(1, 0, 0, 18)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Font = Enum.Font.GothamBold
+        titleLabel.TextSize = 11
+        titleLabel.TextColor3 = Color3.fromRGB(0, 235, 255)
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        titleLabel.Text = titleText
+        titleLabel.LayoutOrder = 1
+        titleLabel.Parent = card
+
+        local contentLabel = Instance.new("TextLabel")
+        contentLabel.Name = "Content"
+        contentLabel.Size = UDim2.new(1, 0, 0, 0)
+        contentLabel.AutomaticSize = Enum.AutomaticSize.Y
+        contentLabel.BackgroundTransparency = 1
+        contentLabel.Font = Enum.Font.Gotham
+        contentLabel.TextSize = 11
+        contentLabel.TextColor3 = Color3.fromRGB(226, 232, 240)
+        contentLabel.TextXAlignment = Enum.TextXAlignment.Left
+        contentLabel.TextYAlignment = Enum.TextYAlignment.Top
+        contentLabel.TextWrapped = true
+        contentLabel.RichText = true
+        contentLabel.Text = descText
+        contentLabel.LayoutOrder = 2
+        contentLabel.Parent = card
+
+        local ParaObj = { Card = card, TitleLabel = titleLabel, ContentLabel = contentLabel }
+        function ParaObj:SetTitle(newTitle) titleLabel.Text = newTitle end
+        function ParaObj:SetDesc(newDesc) contentLabel.Text = tostring(newDesc or "") end
+        function ParaObj:SetContent(newDesc) self:SetDesc(newDesc) end
+        return ParaObj
+    end
+
+    function FluentLib:CreateWindow(cfg)
+        local appTitle = cfg.Title or "Raizo Hub | Auto Leviathan"
+        local appSub = cfg.SubTitle or "by Raizo"
+        local winSize = cfg.Size or UDim2.fromOffset(640, 510)
+
+        local MainWindow = Instance.new("Frame")
+        MainWindow.Name = "MainWindow"
+        MainWindow.Size = winSize
+        MainWindow.Position = UDim2.new(0.5, -math.floor(winSize.X.Offset / 2), 0.5, -math.floor(winSize.Y.Offset / 2))
+        MainWindow.BackgroundColor3 = Color3.fromRGB(11, 14, 22)
+        MainWindow.BorderSizePixel = 0
+        MainWindow.ClipsDescendants = false
+        MainWindow.Parent = ScreenGui
+
+        local MainCorner = Instance.new("UICorner")
+        MainCorner.CornerRadius = UDim.new(0, 14)
+        MainCorner.Parent = MainWindow
+
+        local MainStroke = Instance.new("UIStroke")
+        MainStroke.Color = Color3.fromRGB(0, 235, 255)
+        MainStroke.Thickness = 1.4
+        MainStroke.Transparency = 0.35
+        MainStroke.Parent = MainWindow
+        local MainStrokeGrad = Instance.new("UIGradient")
+        MainStrokeGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 235, 255)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(168, 85, 247)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(59, 130, 246))
+        })
+        MainStrokeGrad.Rotation = 45
+        MainStrokeGrad.Parent = MainStroke
+
+        local TopAccent = Instance.new("Frame")
+        TopAccent.Name = "TopAccent"
+        TopAccent.Size = UDim2.new(1, 0, 0, 2)
+        TopAccent.Position = UDim2.new(0, 0, 0, 0)
+        TopAccent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        TopAccent.BorderSizePixel = 0
+        TopAccent.ZIndex = 5
+        TopAccent.Parent = MainWindow
+        local TopAccentGrad = Instance.new("UIGradient")
+        TopAccentGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 235, 255)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(168, 85, 247)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 235, 255))
+        })
+        TopAccentGrad.Parent = TopAccent
+        local TopAccentCorner = Instance.new("UICorner")
+        TopAccentCorner.CornerRadius = UDim.new(0, 14)
+        TopAccentCorner.Parent = TopAccent
+
+        local Header = Instance.new("Frame")
+        Header.Name = "Header"
+        Header.Size = UDim2.new(1, 0, 0, 52)
+        Header.BackgroundColor3 = Color3.fromRGB(15, 19, 30)
+        Header.BorderSizePixel = 0
+        Header.Parent = MainWindow
+        local HeaderCorner = Instance.new("UICorner")
+        HeaderCorner.CornerRadius = UDim.new(0, 14)
+        HeaderCorner.Parent = Header
+        local HeaderBottomCover = Instance.new("Frame")
+        HeaderBottomCover.Name = "Cover"
+        HeaderBottomCover.Size = UDim2.new(1, 0, 0, 14)
+        HeaderBottomCover.Position = UDim2.new(0, 0, 1, -14)
+        HeaderBottomCover.BackgroundColor3 = Color3.fromRGB(15, 19, 30)
+        HeaderBottomCover.BorderSizePixel = 0
+        HeaderBottomCover.Parent = Header
+        local HeaderDivider = Instance.new("Frame")
+        HeaderDivider.Name = "Divider"
+        HeaderDivider.Size = UDim2.new(1, 0, 0, 1)
+        HeaderDivider.Position = UDim2.new(0, 0, 1, 0)
+        HeaderDivider.BackgroundColor3 = Color3.fromRGB(25, 33, 50)
+        HeaderDivider.BorderSizePixel = 0
+        HeaderDivider.Parent = Header
+
+        local BrandBadge = Instance.new("Frame")
+        BrandBadge.Name = "BrandBadge"
+        BrandBadge.Size = UDim2.fromOffset(32, 32)
+        BrandBadge.Position = UDim2.new(0, 14, 0.5, -16)
+        BrandBadge.BackgroundColor3 = Color3.fromRGB(20, 26, 42)
+        BrandBadge.BorderSizePixel = 0
+        BrandBadge.Parent = Header
+        local BrandCorner = Instance.new("UICorner")
+        BrandCorner.CornerRadius = UDim.new(0, 8)
+        BrandCorner.Parent = BrandBadge
+        local BrandStroke = Instance.new("UIStroke")
+        BrandStroke.Color = Color3.fromRGB(0, 235, 255)
+        BrandStroke.Thickness = 1.2
+        BrandStroke.Transparency = 0.3
+        BrandStroke.Parent = BrandBadge
+        local BrandIcon = Instance.new("ImageLabel")
+        BrandIcon.Size = UDim2.fromOffset(20, 20)
+        BrandIcon.Position = UDim2.new(0.5, -10, 0.5, -10)
+        BrandIcon.BackgroundTransparency = 1
+        BrandIcon.Image = LucideIcons["anchor"]
+        BrandIcon.ImageColor3 = Color3.fromRGB(0, 235, 255)
+        BrandIcon.Parent = BrandBadge
+
+        local TitleLabel = Instance.new("TextLabel")
+        TitleLabel.Name = "Title"
+        TitleLabel.Text = "RAIZO HUB"
+        TitleLabel.Font = Enum.Font.GothamBold
+        TitleLabel.TextSize = 15
+        TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TitleLabel.Position = UDim2.new(0, 54, 0, 10)
+        TitleLabel.Size = UDim2.new(0, 95, 0, 16)
+        TitleLabel.BackgroundTransparency = 1
+        TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        TitleLabel.Parent = Header
+
+        local SubtitleLabel = Instance.new("TextLabel")
+        SubtitleLabel.Name = "Subtitle"
+        SubtitleLabel.Text = "AUTO LEVIATHAN"
+        SubtitleLabel.Font = Enum.Font.GothamBold
+        SubtitleLabel.TextSize = 10
+        SubtitleLabel.TextColor3 = Color3.fromRGB(0, 235, 255)
+        SubtitleLabel.Position = UDim2.new(0, 54, 0, 28)
+        SubtitleLabel.Size = UDim2.new(0, 120, 0, 14)
+        SubtitleLabel.BackgroundTransparency = 1
+        SubtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        SubtitleLabel.Parent = Header
+
+        local AuthorPill = Instance.new("Frame")
+        AuthorPill.Name = "AuthorPill"
+        AuthorPill.Size = UDim2.fromOffset(78, 20)
+        AuthorPill.Position = UDim2.new(0, 195, 0.5, -10)
+        AuthorPill.BackgroundColor3 = Color3.fromRGB(24, 20, 38)
+        AuthorPill.BorderSizePixel = 0
+        AuthorPill.Parent = Header
+        local AuthorCorner = Instance.new("UICorner")
+        AuthorCorner.CornerRadius = UDim.new(0, 6)
+        AuthorCorner.Parent = AuthorPill
+        local AuthorStroke = Instance.new("UIStroke")
+        AuthorStroke.Color = Color3.fromRGB(168, 85, 247)
+        AuthorStroke.Thickness = 1
+        AuthorStroke.Transparency = 0.5
+        AuthorStroke.Parent = AuthorPill
+        local AuthorText = Instance.new("TextLabel")
+        AuthorText.Size = UDim2.new(1, 0, 1, 0)
+        AuthorText.BackgroundTransparency = 1
+        AuthorText.Font = Enum.Font.GothamMedium
+        AuthorText.TextSize = 10
+        AuthorText.TextColor3 = Color3.fromRGB(192, 132, 252)
+        AuthorText.Text = appSub
+        AuthorText.Parent = AuthorPill
+
+        local StatusPill = Instance.new("Frame")
+        StatusPill.Name = "StatusPill"
+        StatusPill.Size = UDim2.fromOffset(130, 24)
+        StatusPill.Position = UDim2.new(1, -210, 0.5, -12)
+        StatusPill.BackgroundColor3 = Color3.fromRGB(14, 18, 28)
+        StatusPill.BorderSizePixel = 0
+        StatusPill.Parent = Header
+        local StatusPillCorner = Instance.new("UICorner")
+        StatusPillCorner.CornerRadius = UDim.new(0, 12)
+        StatusPillCorner.Parent = StatusPill
+        local StatusPillStroke = Instance.new("UIStroke")
+        StatusPillStroke.Color = Color3.fromRGB(30, 40, 62)
+        StatusPillStroke.Thickness = 1
+        StatusPillStroke.Parent = StatusPill
+        local StatusDot = Instance.new("Frame")
+        StatusDot.Name = "Dot"
+        StatusDot.Size = UDim2.fromOffset(7, 7)
+        StatusDot.Position = UDim2.new(0, 9, 0.5, -3.5)
+        StatusDot.BackgroundColor3 = Color3.fromRGB(0, 235, 255)
+        StatusDot.BorderSizePixel = 0
+        StatusDot.Parent = StatusPill
+        local DotCorner = Instance.new("UICorner")
+        DotCorner.CornerRadius = UDim.new(1, 0)
+        DotCorner.Parent = StatusDot
+        local StatusLabel = Instance.new("TextLabel")
+        StatusLabel.Name = "Label"
+        StatusLabel.Size = UDim2.new(1, -22, 1, 0)
+        StatusLabel.Position = UDim2.new(0, 20, 0, 0)
+        StatusLabel.BackgroundTransparency = 1
+        StatusLabel.Font = Enum.Font.GothamBold
+        StatusLabel.TextSize = 9
+        StatusLabel.TextColor3 = Color3.fromRGB(240, 244, 250)
+        StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+        StatusLabel.Text = "STATUS: READY"
+        StatusLabel.Parent = StatusPill
+
+        local ControlsFrame = Instance.new("Frame")
+        ControlsFrame.Name = "ControlsFrame"
+        ControlsFrame.Size = UDim2.fromOffset(64, 28)
+        ControlsFrame.Position = UDim2.new(1, -74, 0.5, -14)
+        ControlsFrame.BackgroundTransparency = 1
+        ControlsFrame.Parent = Header
+
+        local MinimizeBtn = Instance.new("TextButton")
+        MinimizeBtn.Name = "Minimize"
+        MinimizeBtn.Size = UDim2.fromOffset(28, 26)
+        MinimizeBtn.Position = UDim2.new(0, 0, 0.5, -13)
+        MinimizeBtn.BackgroundColor3 = Color3.fromRGB(20, 26, 40)
+        MinimizeBtn.BorderSizePixel = 0
+        MinimizeBtn.Font = Enum.Font.GothamBold
+        MinimizeBtn.TextSize = 14
+        MinimizeBtn.TextColor3 = Color3.fromRGB(148, 163, 184)
+        MinimizeBtn.Text = "—"
+        MinimizeBtn.AutoButtonColor = false
+        MinimizeBtn.Parent = ControlsFrame
+        local MinCorner = Instance.new("UICorner")
+        MinCorner.CornerRadius = UDim.new(0, 6)
+        MinCorner.Parent = MinimizeBtn
+
+        local CloseBtn = Instance.new("TextButton")
+        CloseBtn.Name = "Close"
+        CloseBtn.Size = UDim2.fromOffset(28, 26)
+        CloseBtn.Position = UDim2.new(1, -28, 0.5, -13)
+        CloseBtn.BackgroundColor3 = Color3.fromRGB(20, 26, 40)
+        CloseBtn.BorderSizePixel = 0
+        CloseBtn.Font = Enum.Font.GothamBold
+        CloseBtn.TextSize = 13
+        CloseBtn.TextColor3 = Color3.fromRGB(148, 163, 184)
+        CloseBtn.Text = "✕"
+        CloseBtn.AutoButtonColor = false
+        CloseBtn.Parent = ControlsFrame
+        local CloseCorner = Instance.new("UICorner")
+        CloseCorner.CornerRadius = UDim.new(0, 6)
+        CloseCorner.Parent = CloseBtn
+
+        MinimizeBtn.MouseEnter:Connect(function()
+            SafeTween(MinimizeBtn, 0.15, { BackgroundColor3 = Color3.fromRGB(30, 42, 66), TextColor3 = Color3.fromRGB(0, 235, 255) })
+        end)
+        MinimizeBtn.MouseLeave:Connect(function()
+            SafeTween(MinimizeBtn, 0.15, { BackgroundColor3 = Color3.fromRGB(20, 26, 40), TextColor3 = Color3.fromRGB(148, 163, 184) })
+        end)
+        CloseBtn.MouseEnter:Connect(function()
+            SafeTween(CloseBtn, 0.15, { BackgroundColor3 = Color3.fromRGB(127, 29, 29), TextColor3 = Color3.fromRGB(239, 68, 68) })
+        end)
+        CloseBtn.MouseLeave:Connect(function()
+            SafeTween(CloseBtn, 0.15, { BackgroundColor3 = Color3.fromRGB(20, 26, 40), TextColor3 = Color3.fromRGB(148, 163, 184) })
+        end)
+
+        MakeDraggable(Header, MainWindow)
+
+        local Body = Instance.new("Frame")
+        Body.Name = "Body"
+        Body.Size = UDim2.new(1, 0, 1, -53)
+        Body.Position = UDim2.new(0, 0, 0, 53)
+        Body.BackgroundTransparency = 1
+        Body.ClipsDescendants = true
+        Body.Parent = MainWindow
+
+        local Sidebar = Instance.new("Frame")
+        Sidebar.Name = "Sidebar"
+        Sidebar.Size = UDim2.new(0, 165, 1, 0)
+        Sidebar.BackgroundColor3 = Color3.fromRGB(11, 14, 21)
+        Sidebar.BorderSizePixel = 0
+        Sidebar.Parent = Body
+        local SidebarDivider = Instance.new("Frame")
+        SidebarDivider.Name = "Divider"
+        SidebarDivider.Size = UDim2.new(0, 1, 1, 0)
+        SidebarDivider.Position = UDim2.new(1, -1, 0, 0)
+        SidebarDivider.BackgroundColor3 = Color3.fromRGB(24, 31, 47)
+        SidebarDivider.BorderSizePixel = 0
+        SidebarDivider.Parent = Sidebar
+
+        local NavHeader = Instance.new("TextLabel")
+        NavHeader.Name = "NavHeader"
+        NavHeader.Text = "MAIN NAVIGATION"
+        NavHeader.Font = Enum.Font.GothamBold
+        NavHeader.TextSize = 9
+        NavHeader.TextColor3 = Color3.fromRGB(100, 116, 139)
+        NavHeader.Position = UDim2.new(0, 14, 0, 10)
+        NavHeader.Size = UDim2.new(1, -28, 0, 14)
+        NavHeader.BackgroundTransparency = 1
+        NavHeader.TextXAlignment = Enum.TextXAlignment.Left
+        NavHeader.Parent = Sidebar
+
+        local TabScroll = Instance.new("ScrollingFrame")
+        TabScroll.Name = "TabScroll"
+        TabScroll.Size = UDim2.new(1, 0, 1, -74)
+        TabScroll.Position = UDim2.new(0, 0, 0, 28)
+        TabScroll.BackgroundTransparency = 1
+        TabScroll.BorderSizePixel = 0
+        TabScroll.ScrollBarThickness = 0
+        TabScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        TabScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        TabScroll.Parent = Sidebar
+        local TabListLayout = Instance.new("UIListLayout")
+        TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        TabListLayout.Padding = UDim.new(0, 4)
+        TabListLayout.Parent = TabScroll
+        local TabPadding = Instance.new("UIPadding")
+        TabPadding.PaddingLeft = UDim.new(0, 10)
+        TabPadding.PaddingRight = UDim.new(0, 10)
+        TabPadding.PaddingTop = UDim.new(0, 4)
+        TabPadding.Parent = TabScroll
+
+        local MetricsPill = Instance.new("Frame")
+        MetricsPill.Name = "MetricsPill"
+        MetricsPill.Size = UDim2.new(1, -20, 0, 30)
+        MetricsPill.Position = UDim2.new(0, 10, 1, -38)
+        MetricsPill.BackgroundColor3 = Color3.fromRGB(15, 20, 31)
+        MetricsPill.BorderSizePixel = 0
+        MetricsPill.Parent = Sidebar
+        local MetricsCorner = Instance.new("UICorner")
+        MetricsCorner.CornerRadius = UDim.new(0, 8)
+        MetricsCorner.Parent = MetricsPill
+        local MetricsStroke = Instance.new("UIStroke")
+        MetricsStroke.Color = Color3.fromRGB(28, 38, 58)
+        MetricsStroke.Thickness = 1
+        MetricsStroke.Parent = MetricsPill
+        local MetricsLabel = Instance.new("TextLabel")
+        MetricsLabel.Name = "MetricsLabel"
+        MetricsLabel.Size = UDim2.new(1, 0, 1, 0)
+        MetricsLabel.BackgroundTransparency = 1
+        MetricsLabel.Font = Enum.Font.GothamBold
+        MetricsLabel.TextSize = 10
+        MetricsLabel.TextColor3 = Color3.fromRGB(0, 235, 255)
+        MetricsLabel.Text = "⚡ 60 FPS · -- ms"
+        MetricsLabel.Parent = MetricsPill
+
+        local ContentContainer = Instance.new("Frame")
+        ContentContainer.Name = "ContentContainer"
+        ContentContainer.Size = UDim2.new(1, -165, 1, 0)
+        ContentContainer.Position = UDim2.new(0, 165, 0, 0)
+        ContentContainer.BackgroundColor3 = Color3.fromRGB(14, 18, 27)
+        ContentContainer.BorderSizePixel = 0
+        ContentContainer.Parent = Body
+
+        task.spawn(function()
+            local frameCount = 0
+            local lastTime = os.clock()
+            local currentFps = 60
+            RunService.RenderStepped:Connect(function()
+                frameCount = frameCount + 1
+                local now = os.clock()
+                if now - lastTime >= 0.5 then
+                    currentFps = math.floor(frameCount / (now - lastTime))
+                    frameCount = 0
+                    lastTime = now
+                    local ping = 0
+                    pcall(function()
+                        local stats = game:GetService("Stats")
+                        local item = stats and stats.Network and stats.Network.ServerStatsItem
+                        local dataPing = item and item["Data Ping"]
+                        if dataPing then ping = math.floor(dataPing:GetValue()) end
+                    end)
+                    if MetricsLabel and MetricsLabel.Parent then
+                        MetricsLabel.Text = string.format("⚡ %d FPS · %d ms", currentFps, ping)
+                    end
+                end
+            end)
+        end)
+
+        task.spawn(function()
+            while MainWindow.Parent do
+                pcall(function()
+                    if _G.AutoLeviathanFull then
+                        StatusDot.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+                        StatusLabel.TextColor3 = Color3.fromRGB(34, 197, 94)
+                        local m = (_G.Mode == "Capitán" and "CAPTAIN" or "FOLLOWER")
+                        StatusLabel.Text = "ACTIVE (" .. m .. ")"
+                    elseif _G.SoloSeaFarm then
+                        StatusDot.BackgroundColor3 = Color3.fromRGB(0, 235, 255)
+                        StatusLabel.TextColor3 = Color3.fromRGB(0, 235, 255)
+                        StatusLabel.Text = "SEAFARM ON"
+                    else
+                        StatusDot.BackgroundColor3 = Color3.fromRGB(100, 116, 139)
+                        StatusLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
+                        StatusLabel.Text = "STATUS: IDLE"
+                    end
+                end)
+                task.wait(1)
+            end
+        end)
+
+        local WindowObj = {
+            Root = MainWindow,
+            Size = MainWindow.Size,
+            Position = MainWindow.Position,
+            Minimized = false,
+            Maximized = false,
+            Tabs = {},
+            ActiveTab = nil,
+        }
+        WindowRef = WindowObj
+
+        MinimizeBtn.MouseButton1Click:Connect(function()
+            WindowObj.Minimized = true
+            MainWindow.Visible = false
+            if _G.RJR_RefreshBall then _G.RJR_RefreshBall() end
+        end)
+        CloseBtn.MouseButton1Click:Connect(function()
+            WindowObj.Minimized = true
+            MainWindow.Visible = false
+            if _G.RJR_RefreshBall then _G.RJR_RefreshBall() end
+        end)
+
+        function WindowObj:SelectTab(tabOrIndex)
+            local targetTab = (type(tabOrIndex) == "number") and self.Tabs[tabOrIndex] or tabOrIndex
+            if not targetTab then return end
+            self.ActiveTab = targetTab
+            for _, t in ipairs(self.Tabs) do
+                local isActive = (t == targetTab)
+                if t.Page then t.Page.Visible = isActive end
+                if t.Indicator then
+                    SafeTween(t.Indicator, 0.2, { Transparency = isActive and 0 or 1 })
+                    t.Indicator.Visible = isActive
+                end
+                if t.Button then
+                    SafeTween(t.Button, 0.2, {
+                        BackgroundColor3 = isActive and Color3.fromRGB(20, 28, 44) or Color3.fromRGB(11, 14, 21),
+                        BackgroundTransparency = isActive and 0 or 1,
+                    })
+                end
+                if t.Stroke then
+                    SafeTween(t.Stroke, 0.2, { Transparency = isActive and 0.4 or 1 })
+                end
+                if t.Label then
+                    SafeTween(t.Label, 0.2, {
+                        TextColor3 = isActive and Color3.fromRGB(0, 235, 255) or Color3.fromRGB(148, 163, 184),
+                    })
+                end
+                if t.IconImg then
+                    SafeTween(t.IconImg, 0.2, {
+                        ImageColor3 = isActive and Color3.fromRGB(0, 235, 255) or Color3.fromRGB(148, 163, 184),
+                    })
+                end
+            end
+        end
+
+        function WindowObj:AddTab(tabCfg)
+            local tabTitle = tabCfg.Title or "Tab"
+            local iconKey = tabCfg.Icon or "anchor"
+            local iconAsset = LucideIcons[iconKey] or LucideIcons["anchor"]
+
+            local page = Instance.new("ScrollingFrame")
+            page.Name = "Page_" .. tabTitle
+            page.Size = UDim2.new(1, 0, 1, 0)
+            page.BackgroundTransparency = 1
+            page.BorderSizePixel = 0
+            page.ScrollBarThickness = 4
+            page.ScrollBarImageColor3 = Color3.fromRGB(0, 235, 255)
+            page.ScrollBarImageTransparency = 0.5
+            page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+            page.CanvasSize = UDim2.new(0, 0, 0, 0)
+            page.Visible = false
+            page.Parent = ContentContainer
+
+            local pageLayout = Instance.new("UIListLayout")
+            pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            pageLayout.Padding = UDim.new(0, 10)
+            pageLayout.Parent = page
+            local pagePadding = Instance.new("UIPadding")
+            pagePadding.PaddingTop = UDim.new(0, 12)
+            pagePadding.PaddingBottom = UDim.new(0, 16)
+            pagePadding.PaddingLeft = UDim.new(0, 12)
+            pagePadding.PaddingRight = UDim.new(0, 12)
+            pagePadding.Parent = page
+
+            local tabBtn = Instance.new("TextButton")
+            tabBtn.Name = "Tab_" .. tabTitle
+            tabBtn.Size = UDim2.new(1, 0, 0, 36)
+            tabBtn.BackgroundColor3 = Color3.fromRGB(11, 14, 21)
+            tabBtn.BackgroundTransparency = 1
+            tabBtn.BorderSizePixel = 0
+            tabBtn.Text = ""
+            tabBtn.AutoButtonColor = false
+            tabBtn.Parent = TabScroll
+
+            local tabCorner = Instance.new("UICorner")
+            tabCorner.CornerRadius = UDim.new(0, 8)
+            tabCorner.Parent = tabBtn
+            local tabStroke = Instance.new("UIStroke")
+            tabStroke.Color = Color3.fromRGB(0, 235, 255)
+            tabStroke.Thickness = 1
+            tabStroke.Transparency = 1
+            tabStroke.Parent = tabBtn
+
+            local indicator = Instance.new("Frame")
+            indicator.Name = "Indicator"
+            indicator.Size = UDim2.new(0, 3, 0, 18)
+            indicator.Position = UDim2.new(0, 3, 0.5, -9)
+            indicator.BackgroundColor3 = Color3.fromRGB(0, 235, 255)
+            indicator.BorderSizePixel = 0
+            indicator.Visible = false
+            indicator.Parent = tabBtn
+            local indCorner = Instance.new("UICorner")
+            indCorner.CornerRadius = UDim.new(1, 0)
+            indCorner.Parent = indicator
+
+            local iconImg = Instance.new("ImageLabel")
+            iconImg.Name = "Icon"
+            iconImg.Size = UDim2.fromOffset(18, 18)
+            iconImg.Position = UDim2.new(0, 14, 0.5, -9)
+            iconImg.BackgroundTransparency = 1
+            iconImg.Image = iconAsset
+            iconImg.ImageColor3 = Color3.fromRGB(148, 163, 184)
+            iconImg.Parent = tabBtn
+
+            local tabLabel = Instance.new("TextLabel")
+            tabLabel.Name = "Title"
+            tabLabel.Size = UDim2.new(1, -40, 1, 0)
+            tabLabel.Position = UDim2.new(0, 38, 0, 0)
+            tabLabel.BackgroundTransparency = 1
+            tabLabel.Font = Enum.Font.GothamBold
+            tabLabel.TextSize = 12
+            tabLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
+            tabLabel.TextXAlignment = Enum.TextXAlignment.Left
+            tabLabel.Text = tabTitle
+            tabLabel.Parent = tabBtn
+
+            local TabObj = {
+                Title = tabTitle,
+                Icon = iconKey,
+                Frame = tabBtn,
+                Button = tabBtn,
+                Label = tabLabel,
+                IconImg = iconImg,
+                Indicator = indicator,
+                Stroke = tabStroke,
+                Page = page,
+                DefaultCard = nil,
+            }
+
+            tabBtn.MouseButton1Click:Connect(function()
+                WindowObj:SelectTab(TabObj)
+            end)
+            tabBtn.MouseEnter:Connect(function()
+                if WindowObj.ActiveTab ~= TabObj then
+                    SafeTween(tabBtn, 0.15, { BackgroundColor3 = Color3.fromRGB(16, 22, 34), BackgroundTransparency = 0 })
+                    SafeTween(tabLabel, 0.15, { TextColor3 = Color3.fromRGB(240, 244, 250) })
+                    SafeTween(iconImg, 0.15, { ImageColor3 = Color3.fromRGB(0, 235, 255) })
+                end
+            end)
+            tabBtn.MouseLeave:Connect(function()
+                if WindowObj.ActiveTab ~= TabObj then
+                    SafeTween(tabBtn, 0.15, { BackgroundTransparency = 1 })
+                    SafeTween(tabLabel, 0.15, { TextColor3 = Color3.fromRGB(148, 163, 184) })
+                    SafeTween(iconImg, 0.15, { ImageColor3 = Color3.fromRGB(148, 163, 184) })
+                end
+            end)
+
+            function TabObj:AddSection(titleT)
+                local card = Instance.new("Frame")
+                card.Name = "SectionCard_" .. titleT
+                card.Size = UDim2.new(1, 0, 0, 0)
+                card.AutomaticSize = Enum.AutomaticSize.Y
+                card.BackgroundColor3 = Color3.fromRGB(16, 21, 33)
+                card.BorderSizePixel = 0
+                card.Parent = self.Page
+                local cCorner = Instance.new("UICorner")
+                cCorner.CornerRadius = UDim.new(0, 10)
+                cCorner.Parent = card
+                local cStroke = Instance.new("UIStroke")
+                cStroke.Color = Color3.fromRGB(28, 38, 58)
+                cStroke.Thickness = 1
+                cStroke.Parent = card
+                local cPadding = Instance.new("UIPadding")
+                cPadding.PaddingTop = UDim.new(0, 10)
+                cPadding.PaddingBottom = UDim.new(0, 10)
+                cPadding.PaddingLeft = UDim.new(0, 12)
+                cPadding.PaddingRight = UDim.new(0, 12)
+                cPadding.Parent = card
+                local cLayout = Instance.new("UIListLayout")
+                cLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                cLayout.Padding = UDim.new(0, 8)
+                cLayout.Parent = card
+
+                local secTitleLabel = Instance.new("TextLabel")
+                secTitleLabel.Name = "SectionTitle"
+                secTitleLabel.Size = UDim2.new(1, -10, 0, 20)
+                secTitleLabel.Position = UDim2.new(0, 10, 0, 0)
+                secTitleLabel.BackgroundTransparency = 1
+                secTitleLabel.Font = Enum.Font.GothamBold
+                secTitleLabel.TextSize = 12
+                secTitleLabel.TextColor3 = Color3.fromRGB(241, 245, 249)
+                secTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+                secTitleLabel.Text = titleT
+                secTitleLabel.LayoutOrder = 1
+                secTitleLabel.Parent = card
+
+                local container = Instance.new("Frame")
+                container.Name = "ControlsContainer"
+                container.Size = UDim2.new(1, 0, 0, 0)
+                container.AutomaticSize = Enum.AutomaticSize.Y
+                container.BackgroundTransparency = 1
+                container.LayoutOrder = 2
+                container.Parent = card
+                local contLayout = Instance.new("UIListLayout")
+                contLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                contLayout.Padding = UDim.new(0, 6)
+                contLayout.Parent = container
+
+                local SectionObj = {
+                    Container = container,
+                    Card = card,
+                    TitleLabel = secTitleLabel,
+                }
+                function SectionObj:SetTitle(nt) secTitleLabel.Text = nt end
+                function SectionObj:AddToggle(id, c) return CreateToggle(self.Container, id, c) end
+                function SectionObj:AddDropdown(id, c) return CreateDropdown(self.Container, id, c) end
+                function SectionObj:AddInput(id, c) return CreateInput(self.Container, id, c) end
+                function SectionObj:AddButton(c) return CreateButton(self.Container, c) end
+                function SectionObj:AddParagraph(c) return CreateParagraph(self.Container, c) end
+
+                return SectionObj
+            end
+
+            function TabObj:_GetDefaultCard()
+                if self.DefaultCard and self.DefaultCard.Container then
+                    return self.DefaultCard
+                end
+                self.DefaultCard = self:AddSection(self.Title)
+                return self.DefaultCard
+            end
+
+            function TabObj:AddToggle(id, c) return CreateToggle(self:_GetDefaultCard().Container, id, c) end
+            function TabObj:AddDropdown(id, c) return CreateDropdown(self:_GetDefaultCard().Container, id, c) end
+            function TabObj:AddInput(id, c) return CreateInput(self:_GetDefaultCard().Container, id, c) end
+            function TabObj:AddButton(c) return CreateButton(self:_GetDefaultCard().Container, c) end
+            function TabObj:AddParagraph(c) return CreateParagraph(self.Page, c) end
+            function TabObj:SetTitle(nt) tabLabel.Text = nt end
+
+            self.Tabs[#self.Tabs + 1] = TabObj
+            if #self.Tabs == 1 then self:SelectTab(TabObj) end
+            return TabObj
+        end
+
+        return WindowObj
+    end
+
+    local SaveManager = {
+        Folder = "AutoLeviathanES/configs",
+        Library = FluentLib,
+        IgnoredIndexes = {},
+    }
+    function SaveManager:SetLibrary(l) self.Library = l end
+    function SaveManager:IgnoreThemeSettings() end
+    function SaveManager:SetIgnoreIndexes(t) self.IgnoredIndexes = t or {} end
+    function SaveManager:SetFolder(f) self.Folder = f end
+    function SaveManager:Save(name)
+        if not writefile then return false end
+        local data = {}
+        for id, opt in pairs(FluentLib.Options) do
+            if not self.IgnoredIndexes[id] and opt.Value ~= nil then
+                data[id] = opt.Value
+            end
+        end
+        pcall(function()
+            if makefolder and not isfolder(self.Folder) then makefolder(self.Folder) end
+            writefile(self.Folder .. "/" .. name .. ".json", HttpService:JSONEncode(data))
+        end)
+        return true
+    end
+    function SaveManager:Load(name)
+        if not readfile then return false end
+        local path = self.Folder .. "/" .. name .. ".json"
+        local ok, content = pcall(readfile, path)
+        if ok and content then
+            local okDec, data = pcall(HttpService.JSONDecode, HttpService, content)
+            if okDec and type(data) == "table" then
+                for id, val in pairs(data) do
+                    local opt = FluentLib.Options[id]
+                    if opt and opt.SetValue then pcall(opt.SetValue, opt, val) end
+                end
+                return true
+            end
+        end
+        return false
+    end
+    function SaveManager:LoadAutoloadConfig()
+        pcall(function() self:Load("autoload") end)
+    end
+    function SaveManager:BuildConfigSection(tab)
+        local sec = tab:AddSection("Configuration")
+        local cfgName = "default"
+        sec:AddInput("cfg.name", {
+            Title = "Config Name",
+            Default = "default",
+            Callback = function(v) cfgName = v end
+        })
+        sec:AddButton({
+            Title = "Save Config",
+            Callback = function()
+                SaveManager:Save(cfgName)
+                FluentLib:Notify({ Title = "Config", Content = "Saved: " .. cfgName, Duration = 2 })
+            end
+        })
+        sec:AddButton({
+            Title = "Load Config",
+            Callback = function()
+                local ok = SaveManager:Load(cfgName)
+                FluentLib:Notify({
+                    Title = "Config",
+                    Content = ok and ("Loaded: " .. cfgName) or ("Failed: " .. cfgName),
+                    Duration = 2
+                })
+            end
+        })
+    end
+
+    local InterfaceManager = {
+        Settings = { MenuKeybind = "G" },
+        Folder = "AutoLeviathanES",
+    }
+    function InterfaceManager:SetLibrary() end
+    function InterfaceManager:SetFolder(f) self.Folder = f end
+    function InterfaceManager:BuildInterfaceSection(tab)
+        local sec = tab:AddSection("Interface")
+        sec:AddButton({
+            Title = "Toggle UI (Key: " .. (self.Settings.MenuKeybind or "G") .. ")",
+            Callback = function()
+                if WindowRef and WindowRef.Root then
+                    local r = WindowRef.Root
+                    r.Visible = not r.Visible
+                    WindowRef.Minimized = not r.Visible
+                    if _G.RJR_RefreshBall then _G.RJR_RefreshBall() end
+                end
+            end
+        })
+    end
+
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+        local key = InterfaceManager.Settings.MenuKeybind or "G"
+        if input.KeyCode == Enum.KeyCode[key] then
+            if WindowRef and WindowRef.Root then
+                local r = WindowRef.Root
+                r.Visible = not r.Visible
+                WindowRef.Minimized = not r.Visible
+                if _G.RJR_RefreshBall then _G.RJR_RefreshBall() end
+            end
+        end
+    end)
+
+    return FluentLib, SaveManager, InterfaceManager
+end)()
+local LANGUAGE_LABELS = { "English" }
 local function NormalizeLanguage(value)
-    local norm = _G.RJR_NormalizeLanguage
-    if norm then return norm(value) end
-    return value
+    return "English"
 end
-_G.Language = NormalizeLanguage(_G.Language) or "English"
+_G.Language = "English"
 local Window = Fluent:CreateWindow({
-    Title = "RJR Hub | Auto Leviathan",
-    SubTitle = "by Kismile",
+    Title = "Raizo Hub | Auto Leviathan",
+    SubTitle = "by Raizo",
     TabWidth = 160,
     Size = UDim2.fromOffset(606, 503),
     Acrylic = false,
@@ -5663,7 +7279,6 @@ local Tabs = {
     Extra    = Window:AddTab({ Title = T("tab.craft"), Icon = "package" }),
     Webhook  = Window:AddTab({ Title = T("tab.webhook"), Icon = "link" }),
     Config   = Window:AddTab({ Title = T("tab.config"), Icon = "settings" }),
-    Announce = Window:AddTab({ Title = T("tab.announcement"), Icon = "megaphone" }),
 }
 local function SendNotify(title, content)
     pcall(function()
@@ -5684,7 +7299,6 @@ local TabKeys = {
     { tab = Tabs.Extra, key = "tab.craft" },
     { tab = Tabs.Webhook, key = "tab.webhook" },
     { tab = Tabs.Config, key = "tab.config" },
-    { tab = Tabs.Announce, key = "tab.announcement" },
 }
 local function SetSectionTitle(section, key)
     local root = section and section.Container and section.Container.Parent
@@ -6677,23 +8291,6 @@ do
     end)
 end
 do
-    local LanguageSection = Tabs.Config:AddSection(T("language"))
-    SectionKeys[#SectionKeys + 1] = { element = LanguageSection, key = "language" }
-    LanguageSection:AddDropdown("language", {
-        Title = T("language"),
-        Description = T("language.desc"),
-        Values = LANGUAGE_LABELS,
-        Default = _G.Language,
-        Multi = false,
-        Callback = function(Value)
-            local normalized = NormalizeLanguage(Value)
-            if not normalized or normalized == _G.Language then return end
-            _G.Language = normalized
-            SaveConfig()
-            ApplyLanguage()
-            SendNotify(T("notify.title"), T("notify.lang.changed") .. ": " .. normalized)
-        end,
-    })
     pcall(function()
         SaveManager:SetLibrary(Fluent)
         InterfaceManager:SetLibrary(Fluent)
@@ -6717,20 +8314,6 @@ do
             end
         end,
     })
-end
-do
-    Tabs.Announce:AddParagraph({
-        Title = T("ann.dc"),
-        Content = "https://discord.gg/rjrhub",
-    })
-    local CopyButton = Tabs.Announce:AddButton({
-        Title = T("ann.copy"),
-        Callback = function()
-            pcall(setclipboard, "https://discord.gg/rjrhub")
-            SendNotify(T("notify.title"), T("ann.copied"))
-        end,
-    })
-    ButtonKeys[#ButtonKeys + 1] = { element = CopyButton, key = "ann.copy" }
 end
 ApplyLanguage = function()
     for _, item in ipairs(TabKeys) do
@@ -6779,12 +8362,12 @@ do
             local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
             if playerGui then containers[#containers + 1] = playerGui end
             for _, container in ipairs(containers) do
-                local old = container:FindFirstChild("RJR_Hub_FloatingBall")
+                local old = container:FindFirstChild("Raizo_Hub_FloatingBall") or container:FindFirstChild("RJR_Hub_FloatingBall")
                 if old then pcall(function() old:Destroy() end) end
             end
         end
         local BallGui = Instance.new("ScreenGui")
-        BallGui.Name = "RJR_Hub_FloatingBall"
+        BallGui.Name = "Raizo_Hub_FloatingBall"
         BallGui.ResetOnSpawn = false
         BallGui.IgnoreGuiInset = true
         BallGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -6797,51 +8380,87 @@ do
         BallGui.Enabled = ballEnabled ~= false
         local Ball = Instance.new("TextButton")
         Ball.Name = "Orb"
-        Ball.Size = UDim2.fromOffset(52, 52)
+        Ball.Size = UDim2.fromOffset(54, 54)
         if _G.RJR_BallPos then
             Ball.Position = UDim2.fromOffset(_G.RJR_BallPos.X, _G.RJR_BallPos.Y)
         else
-            Ball.Position = UDim2.new(0, 16, 0.5, -26)
+            Ball.Position = UDim2.new(0, 16, 0.5, -27)
         end
-        Ball.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+        Ball.BackgroundColor3 = Color3.fromRGB(11, 14, 23)
         Ball.BackgroundTransparency = 0.05
         Ball.AutoButtonColor = false
-        Ball.Text = "RJR"
+        Ball.Text = "Raizo"
         Ball.Font = Enum.Font.GothamBold
-        Ball.TextSize = 15
-        Ball.TextColor3 = Color3.fromRGB(240, 240, 245)
+        Ball.TextSize = 13
+        Ball.TextColor3 = Color3.fromRGB(0, 235, 255)
         Ball.Parent = BallGui
+
         local Corner = Instance.new("UICorner")
         Corner.CornerRadius = UDim.new(1, 0)
         Corner.Parent = Ball
+
         local Stroke = Instance.new("UIStroke")
-        Stroke.Thickness = 1.5
-        Stroke.Color = Color3.fromRGB(96, 205, 255)
+        Stroke.Thickness = 1.6
+        Stroke.Color = Color3.fromRGB(0, 235, 255)
         Stroke.Transparency = 0.2
         Stroke.Parent = Ball
+
+        local StrokeGrad = Instance.new("UIGradient")
+        StrokeGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 235, 255)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(168, 85, 247)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(59, 130, 246)),
+        })
+        StrokeGrad.Rotation = 45
+        StrokeGrad.Parent = Stroke
+
+        local OrbDot = Instance.new("Frame")
+        OrbDot.Name = "StatusDot"
+        OrbDot.Size = UDim2.fromOffset(8, 8)
+        OrbDot.Position = UDim2.new(1, -12, 0, 4)
+        OrbDot.BackgroundColor3 = Color3.fromRGB(0, 235, 255)
+        OrbDot.BorderSizePixel = 0
+        OrbDot.Parent = Ball
+        local OrbDotCorner = Instance.new("UICorner")
+        OrbDotCorner.CornerRadius = UDim.new(1, 0)
+        OrbDotCorner.Parent = OrbDot
+
         local parentOk = pcall(function()
             BallGui.Parent = (gethui and gethui()) or game:GetService("CoreGui")
         end)
         if not parentOk or not BallGui.Parent then
             BallGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
         end
+
         local function IsMenuOpen()
             local root = Window and Window.Root
             return root ~= nil and root.Visible == true
         end
+
         local function SyncBall()
-            if IsMenuOpen() then
-                Stroke.Color = Color3.fromRGB(96, 205, 255)
+            local isOpen = IsMenuOpen()
+            if isOpen then
+                Stroke.Color = Color3.fromRGB(0, 235, 255)
                 Stroke.Transparency = 0.15
-                Ball.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-                Ball.TextColor3 = Color3.fromRGB(240, 240, 245)
+                Ball.BackgroundColor3 = Color3.fromRGB(18, 24, 38)
+                Ball.TextColor3 = Color3.fromRGB(0, 235, 255)
             else
-                Stroke.Color = Color3.fromRGB(84, 86, 96)
+                Stroke.Color = Color3.fromRGB(70, 80, 105)
                 Stroke.Transparency = 0.55
-                Ball.BackgroundColor3 = Color3.fromRGB(14, 14, 17)
-                Ball.TextColor3 = Color3.fromRGB(150, 152, 162)
+                Ball.BackgroundColor3 = Color3.fromRGB(11, 14, 23)
+                Ball.TextColor3 = Color3.fromRGB(148, 163, 184)
+            end
+            if _G.AutoLeviathanFull then
+                OrbDot.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+            elseif _G.SoloSeaFarm then
+                OrbDot.BackgroundColor3 = Color3.fromRGB(0, 235, 255)
+            else
+                OrbDot.BackgroundColor3 = Color3.fromRGB(100, 116, 139)
             end
         end
+        _G.RJR_RefreshBall = SyncBall
+        _G.Raizo_RefreshBall = SyncBall
+
         local function SetMenuOpen(open)
             local root = Window and Window.Root
             if not root then return end
@@ -6852,6 +8471,7 @@ do
         _G.RJR_SetFloatingBall = function(enabled)
             BallGui.Enabled = enabled == true
         end
+        _G.Raizo_SetFloatingBall = _G.RJR_SetFloatingBall
         local dragging, moved, dragLast, movedDist = false, false, nil, 0
         Ball.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
