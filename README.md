@@ -1520,6 +1520,20 @@ local function GetCaptainBoat()
     local _, hrp = GetCharacterParts()
     local myPos = hrp and hrp.Position
     if not myPos then return nil end
+
+    local capChar = captain.Character
+    local capHum = capChar and capChar:FindFirstChildOfClass("Humanoid")
+    local capHrp = capChar and capChar:FindFirstChild("HumanoidRootPart")
+
+    -- 1. Check if captain is already seated in or touching a boat
+    if capHum and capHum.SeatPart and capHum.SeatPart.Parent then
+        local b = BoatOf(capHum.SeatPart)
+        if b and not _G.RJR_AbandonedBoats[b] and not IsBoatDead(b) then
+            return b
+        end
+    end
+
+    -- 2. Check boat by Owner value
     for _, boat in ipairs(boats:GetChildren()) do
         local owner = boat:FindFirstChild("Owner")
         if owner and (owner.Value == captain or tostring(owner.Value) == captain.Name)
@@ -1533,6 +1547,23 @@ local function GetCaptainBoat()
             end
         end
     end
+
+    -- 3. Check boat where driver seat occupant is captain or captain is standing right on it
+    if capHrp then
+        for _, boat in ipairs(boats:GetChildren()) do
+            if not _G.RJR_AbandonedBoats[boat] and not IsBoatDead(boat) then
+                local vs = boat:FindFirstChild("VehicleSeat")
+                if vs and (vs.Occupant == capHum or (capHrp.Position - vs.Position).Magnitude <= 18) then
+                    return boat
+                end
+                local prim = boat.PrimaryPart or boat:FindFirstChildWhichIsA("BasePart")
+                if prim and (capHrp.Position - prim.Position).Magnitude <= 25 then
+                    return boat
+                end
+            end
+        end
+    end
+
     return nil
 end
 local function GetCaptainHRP()
@@ -1753,7 +1784,7 @@ local function BoardSeat(seat, timeout)
         if hrp and hum then
             local dist = (hrp.Position - seat.Position).Magnitude
             if dist <= BoatFindRange then
-                if dist <= 15 then
+                if dist <= 25 then
                     ClearHover()
                     pcall(function()
                         hrp.AssemblyLinearVelocity = Vector3.zero
@@ -1761,7 +1792,7 @@ local function BoardSeat(seat, timeout)
                         hrp.CFrame = seat.CFrame * CFrame.new(0, 0.5, 0)
                         seat:Sit(hum)
                     end)
-                    task.wait(0.05)
+                    task.wait(0.08)
                     if hum.SeatPart == seat or IsSittingOn(seat) then
                         ClearHover()
                         _G.RJR_BoardStall = nil
@@ -1771,7 +1802,7 @@ local function BoardSeat(seat, timeout)
 
                 local Stall = _G.RJR_BoardStall
                 local DSeat = (hrp.Position - seat.Position).Magnitude
-                if DSeat > 15 and not TpActive and not Tweening then
+                if DSeat > 25 and not TpActive and not Tweening then
                     if not Stall then
                         _G.RJR_BoardStall = { pos = hrp.Position, at = os.clock() }
                     elseif (hrp.Position - Stall.pos).Magnitude > 3 then
@@ -4420,15 +4451,16 @@ local function IsCaptainOnBoat(boat)
     local captain = Players:FindFirstChild(_G.FollowTarget)
     local char = captain and captain.Character
     local capHrp = char and char:FindFirstChild("HumanoidRootPart")
-    local prim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat")
-    if capHrp and prim and (capHrp.Position - prim.Position).Magnitude <= 25 then
-        if prim.AssemblyLinearVelocity.Magnitude > 6 then
+    local prim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat") or boat:FindFirstChildWhichIsA("BasePart")
+    if capHrp and prim then
+        local dist = (capHrp.Position - prim.Position).Magnitude
+        if dist <= 35 then
             CaptainLastOnBoatAt = os.clock()
             return true
         end
     end
 
-    if os.clock() - CaptainLastOnBoatAt < 1.0 then
+    if os.clock() - CaptainLastOnBoatAt < 2.0 then
         return true
     end
     return false
@@ -4647,7 +4679,7 @@ local function StartFollower()
                     SeaAPI.FightLeviathan(CaptainBackOnBoat, 10)
                     return
                 end
-                if boat and CaptainOn then
+                if boat and (CaptainOn or (GetCaptainHRP() and (GetCaptainHRP().Position - (boat.PrimaryPart or boat:FindFirstChild("VehicleSeat") or boat:FindFirstChildWhichIsA("BasePart")).Position).Magnitude <= 50)) then
                     if not IsOnCaptainBoat(boat) then
                         FollowerBoardSeat(boat)
                     else
@@ -4655,17 +4687,18 @@ local function StartFollower()
                     end
                 else
                     if boat and IsOnCaptainBoat(boat) then
-                        local boatMoving = false
-                        local prim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat")
-                        if prim and prim.AssemblyLinearVelocity.Magnitude > 8 then
-                            boatMoving = true
-                        end
-                        if not boatMoving and not CaptainOn then
+                        local capHrp = GetCaptainHRP()
+                        local prim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat") or boat:FindFirstChildWhichIsA("BasePart")
+                        local capDistToBoat = (capHrp and prim) and (capHrp.Position - prim.Position).Magnitude or 999
+                        -- Only unseat if captain is genuinely off and far from the boat (> 50 studs)
+                        if not CaptainOn and capDistToBoat > 50 then
                             if not Unseat() then
                                 SetStatus("El capitán bajó y yo no puedo: reintentando")
                             else
                                 SetStatus("El capitán bajó: bajo también")
                             end
+                        else
+                            SetStatus("En espera en el barco (esperando al capitán)")
                         end
                     elseif not boat then
                         SetStatus("Barco del capitán perdido: peleo mientras compra otro")
