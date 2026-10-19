@@ -217,6 +217,8 @@ T, ModeDisplay = (function()
         ["wh.title.lowplayers"] = { en = "Low Players", es = "Pocos jugadores", zh = "人数不足" },
         ["wh.title.manual"] = { en = "Manual Send", es = "Envio manual", zh = "手动发送" },
         ["wh.title.progress"] = { en = "Sail Progress", es = "Progreso de navegación", zh = "航海进度" },
+        ["walk.on.water"] = { en = "Walk on Water", es = "Caminar sobre el agua", zh = "水上行走" },
+        ["walk.on.water.desc"] = { en = "Walk freely on water without sinking, swimming or getting stuck (Always On)", es = "Camina siempre sobre el agua sin hundirte, nadar ni quedarte atascado", zh = "始终在水面上行走，不会下沉、游泳或被困" },
     }
     local function T(key)
         local entry = LangTable[key]
@@ -273,6 +275,7 @@ if _G.HuntFightEvents == nil then _G.HuntFightEvents = false end
 if _G.SoloSeaFarm == nil then _G.SoloSeaFarm = false end
 if _G.RespawnRebuy == nil then _G.RespawnRebuy = false end
 if _G.CruiseReturn == nil then _G.CruiseReturn = true end
+if _G.WalkOnWater == nil then _G.WalkOnWater = true end
 if _G.HuntSelectEvents == nil then _G.HuntSelectEvents = {} end
 if _G.WebhookURL == nil then _G.WebhookURL = "" end
 if _G.WebhookUsername == nil then _G.WebhookUsername = "Auto Leviathan" end
@@ -553,7 +556,7 @@ local ConfigKeys = {
     "DragonShotsPerBurst", "DragonFireInterval",
     "RemoveFog", "AntiDracoAura", "AutoFastMode", "FPSBoost",
     "AutoBuso", "AutoKen", "AutoV3", "AutoV4",
-    "BoatSpeed", "BoatHeight", "PlayerTweenSpeed", "CruiseReturn",
+    "BoatSpeed", "BoatHeight", "PlayerTweenSpeed", "CruiseReturn", "WalkOnWater",
     "AutoCraftScrolls", "CraftQuality", "AutoRandomFruit", "AutoStoreFruits",
     "HuntFightEvents", "SoloSeaFarm", "RespawnRebuy", "HuntSelectEvents",
     "WebhookURL", "WebhookUsername", "AutoWebhook", "WebhookInterval",
@@ -716,6 +719,137 @@ local function GetTweenPart()
     part.Parent = workspace
     return part
 end
+
+-- ====================================================================
+-- WALK ON WATER & ANTI-WATER STUCK (ALWAYS ON)
+-- ====================================================================
+local RJR_WaterWalkPlatform = nil
+local RJR_WATER_PLAT_NAME = "RJR_WaterWalkPlatform"
+
+local function GetWaterPlatform()
+    if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.Parent == workspace then
+        return RJR_WaterWalkPlatform
+    end
+    local existing = workspace:FindFirstChild(RJR_WATER_PLAT_NAME)
+    if existing and existing:IsA("BasePart") then
+        RJR_WaterWalkPlatform = existing
+        return existing
+    end
+    local part = Instance.new("Part")
+    part.Name = RJR_WATER_PLAT_NAME
+    part.Size = Vector3.new(40, 1, 40)
+    part.Anchored = true
+    part.CanCollide = false
+    part.CanTouch = false
+    part.CanQuery = false
+    part.CastShadow = false
+    part.Massless = true
+    part.Transparency = 1
+    part.Material = Enum.Material.SmoothPlastic
+    part.Friction = 0.8
+    part.Parent = workspace
+    RJR_WaterWalkPlatform = part
+    return part
+end
+
+local lastWaterRayCheck = 0
+local cachedWaterSurfaceY = 0
+
+local function GetWaterSurfaceY(hrpPos)
+    local now = os.clock()
+    if now - lastWaterRayCheck > 0.25 then
+        lastWaterRayCheck = now
+        local ok, res = pcall(function()
+            local rayOrigin = Vector3.new(hrpPos.X, 60, hrpPos.Z)
+            local rayDir = Vector3.new(0, -120, 0)
+            local params = RaycastParams.new()
+            params.IgnoreWater = false
+            params.FilterType = Enum.RaycastFilterType.Include
+            if workspace.Terrain then
+                params.FilterDescendantsInstances = { workspace.Terrain }
+            end
+            return workspace:Raycast(rayOrigin, rayDir, params)
+        end)
+        if ok and res and res.Material == Enum.Material.Water then
+            cachedWaterSurfaceY = res.Position.Y
+        else
+            cachedWaterSurfaceY = 0
+        end
+    end
+    return cachedWaterSurfaceY
+end
+
+local function StepWalkOnWater()
+    if not _G.WalkOnWater then
+        if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.CanCollide then
+            RJR_WaterWalkPlatform.CanCollide = false
+        end
+        return
+    end
+
+    local char, hrp, hum = GetCharacterParts()
+    if not char or not hrp or not hum or hum.Health <= 0 then
+        if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.CanCollide then
+            RJR_WaterWalkPlatform.CanCollide = false
+        end
+        return
+    end
+
+    -- If sitting on a boat or any seat, platform MUST not interfere
+    if hum.SeatPart ~= nil or hum.Sit then
+        if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.CanCollide then
+            RJR_WaterWalkPlatform.CanCollide = false
+        end
+        return
+    end
+
+    -- Disable Roblox swimming state on humanoid so character never gets locked in swim physics
+    pcall(function()
+        if hum:GetStateEnabled(Enum.HumanoidStateType.Swimming) then
+            hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+        end
+    end)
+
+    local pos = hrp.Position
+
+    -- High altitude / flying / tweening high in the sky: no platform needed
+    if pos.Y > 20 or TpActive or Tweening then
+        if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.CanCollide then
+            RJR_WaterWalkPlatform.CanCollide = false
+        end
+        return
+    end
+
+    local plat = GetWaterPlatform()
+    local waterY = GetWaterSurfaceY(pos)
+
+    -- If character is below water surface or entered swimming state:
+    local state = hum:GetState()
+    local isSubmerged = pos.Y < (waterY + 1.2)
+    local isSwimming = (state == Enum.HumanoidStateType.Swimming)
+
+    if isSubmerged or isSwimming then
+        -- Temporarily turn collision off so the platform doesn't block rising
+        plat.CanCollide = false
+        pcall(function()
+            local vel = hrp.AssemblyLinearVelocity
+            hrp.AssemblyLinearVelocity = Vector3.new(vel.X, math.max(0, vel.Y), vel.Z)
+            hrp.CFrame = CFrame.new(pos.X, waterY + 3.8, pos.Z) * (hrp.CFrame - hrp.CFrame.Position)
+            hum.Sit = false
+            hum.PlatformStand = false
+            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end)
+    else
+        -- Standing or running above water: position platform right beneath feet
+        -- Plat height is 1, center at waterY, so top surface is at waterY + 0.5
+        plat.CFrame = CFrame.new(pos.X, waterY, pos.Z)
+        plat.CanCollide = true
+    end
+end
+
+RunService.Stepped:Connect(function()
+    pcall(StepWalkOnWater)
+end)
 local function _tp(targetPos, abortCheck)
     local startChar = LocalPlayer.Character
     local myHRP = select(2, GetCharacterParts())
@@ -3089,7 +3223,7 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
     _G.RJR_Resetting = true
     local HasBoat = GetOwnBoat() ~= nil
     local _, hrpNow = GetCharacterParts()
-    local InWater = hrpNow ~= nil and hrpNow.Position.Y < 5
+    local InWater = hrpNow ~= nil and (hrpNow.Position.Y < (_G.WalkOnWater and 2 or 5))
     local _, _, humNow = GetCharacterParts()
     local StillSeated = humNow ~= nil and (humNow.Sit or humNow.SeatPart ~= nil)
     local ShouldWaitForEvents = HasBoat and not InWater and not StillSeated
@@ -3241,6 +3375,9 @@ local WaterRecovery = {
 local function IsInWater(hrp, hum)
     if not hrp or not hum then return false end
     if hum.SeatPart ~= nil or hum.Sit then return false end
+    if _G.WalkOnWater and hrp.Position.Y >= 2 and hum:GetState() ~= Enum.HumanoidStateType.Swimming then
+        return false
+    end
     if hrp.Position.Y < 12 then return true end
     local state = hum:GetState()
     if state == Enum.HumanoidStateType.Swimming then return true end
@@ -4422,7 +4559,7 @@ local function FollowerBoardSeat(boat)
         return false
     end
 
-    local inWater = hrp0.Position.Y < 15
+    local inWater = hrp0.Position.Y < (_G.WalkOnWater and 2 or 15)
     -- Hoist approach-claim vars to function scope so we can transfer the claim below.
     local approachSeat = nil
     local approachClaimed = false
@@ -5431,6 +5568,14 @@ LocalPlayer.CharacterAdded:Connect(function()
     end)
     task.wait(1)
     Update_Character()
+    if _G.WalkOnWater then
+        pcall(function()
+            local _, _, hum = GetCharacterParts()
+            if hum then
+                hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+            end
+        end)
+    end
     task.wait(2)
     Haki_Auto()
 end)
@@ -5440,6 +5585,9 @@ LocalPlayer.CharacterRemoving:Connect(function()
     HRP = nil
     NoclipOn = false
     LastNoclipApply = 0
+    if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.Parent then
+        RJR_WaterWalkPlatform.CanCollide = false
+    end
 end)
 local CraftStatus = "Desactivado"
 local CraftQualityList = {
@@ -5903,6 +6051,22 @@ TravelSection:AddToggle("cruise.return", {
     Callback = function(State)
         _G.CruiseReturn = State
         SaveConfig()
+    end,
+})
+TravelSection:AddToggle("walk.on.water", {
+    Title = T("walk.on.water"),
+    Description = T("walk.on.water.desc"),
+    Default = _G.WalkOnWater ~= false,
+    Callback = function(State)
+        _G.WalkOnWater = State
+        SaveConfig()
+        if not State and RJR_WaterWalkPlatform then
+            RJR_WaterWalkPlatform.CanCollide = false
+            local _, _, hum = GetCharacterParts()
+            if hum then
+                pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true) end)
+            end
+        end
     end,
 })
 local MainSection = Tabs.Status:AddSection(T("sec.main"))
@@ -6920,6 +7084,17 @@ task.defer(function()
     if _G.AntiDracoAura then pcall(PerformanceAPI.ApplyAntiDracoAura) end
     if _G.AutoFastMode then pcall(PerformanceAPI.ApplyAutoFastMode) end
     if _G.FPSBoost then pcall(PerformanceAPI.ApplyFPSBoost) end
+    if _G.WalkOnWater then
+        pcall(function()
+            if workspace.Terrain then
+                workspace.Terrain.WaterWaveSize = 0
+            end
+            local _, _, hum = GetCharacterParts()
+            if hum then
+                hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+            end
+        end)
+    end
 end)
 
 SendNotify(T("notify.title"), T("notify.ready"))
