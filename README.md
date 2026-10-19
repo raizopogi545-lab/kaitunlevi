@@ -1520,20 +1520,6 @@ local function GetCaptainBoat()
     local _, hrp = GetCharacterParts()
     local myPos = hrp and hrp.Position
     if not myPos then return nil end
-
-    local capChar = captain.Character
-    local capHum = capChar and capChar:FindFirstChildOfClass("Humanoid")
-    local capHrp = capChar and capChar:FindFirstChild("HumanoidRootPart")
-
-    -- 1. Check if captain is already seated in or touching a boat
-    if capHum and capHum.SeatPart and capHum.SeatPart.Parent then
-        local b = BoatOf(capHum.SeatPart)
-        if b and not _G.RJR_AbandonedBoats[b] and not IsBoatDead(b) then
-            return b
-        end
-    end
-
-    -- 2. Check boat by Owner value
     for _, boat in ipairs(boats:GetChildren()) do
         local owner = boat:FindFirstChild("Owner")
         if owner and (owner.Value == captain or tostring(owner.Value) == captain.Name)
@@ -1547,23 +1533,6 @@ local function GetCaptainBoat()
             end
         end
     end
-
-    -- 3. Check boat where driver seat occupant is captain or captain is standing right on it
-    if capHrp then
-        for _, boat in ipairs(boats:GetChildren()) do
-            if not _G.RJR_AbandonedBoats[boat] and not IsBoatDead(boat) then
-                local vs = boat:FindFirstChild("VehicleSeat")
-                if vs and (vs.Occupant == capHum or (capHrp.Position - vs.Position).Magnitude <= 18) then
-                    return boat
-                end
-                local prim = boat.PrimaryPart or boat:FindFirstChildWhichIsA("BasePart")
-                if prim and (capHrp.Position - prim.Position).Magnitude <= 25 then
-                    return boat
-                end
-            end
-        end
-    end
-
     return nil
 end
 local function GetCaptainHRP()
@@ -1640,16 +1609,7 @@ local function GetCannons(boat)
     local cannons = {}
     if boat then
         for _, child in ipairs(boat:GetChildren()) do
-            if child.Name == "Cannon" then
-                table.insert(cannons, child)
-            end
-        end
-        if #cannons == 0 then
-            for _, desc in ipairs(boat:GetDescendants()) do
-                if desc.Name == "Cannon" and (desc:IsA("Model") or desc:IsA("BasePart")) then
-                    table.insert(cannons, desc)
-                end
-            end
+            if child.Name == "Cannon" then table.insert(cannons, child) end
         end
     end
     return cannons
@@ -1770,39 +1730,20 @@ local function BoardSeat(seat, timeout)
         if not seat or not seat.Parent then return false end
         if AbandonIfTooFar(seat) then return false end
         local _, hrp, hum = GetCharacterParts()
-        if hum and (hum.SeatPart == seat or IsSittingOn(seat)) then
+        if hum and hum.SeatPart == seat then
             ClearHover()
             _G.RJR_BoardStall = nil
             return true
         end
-        if hum and hum.SeatPart ~= nil and hum.SeatPart ~= seat then
+        if hum and (hum.Sit or hum.SeatPart ~= nil) then
             Unseat()
-            task.wait(0.1)
-        elseif hum and hum.Sit and hum.SeatPart == nil then
-            hum.Sit = false
+            task.wait(0.3)
         end
-        if hrp and hum then
-            local dist = (hrp.Position - seat.Position).Magnitude
-            if dist <= BoatFindRange then
-                if dist <= 25 then
-                    ClearHover()
-                    pcall(function()
-                        hrp.AssemblyLinearVelocity = Vector3.zero
-                        hrp.AssemblyAngularVelocity = Vector3.zero
-                        hrp.CFrame = seat.CFrame * CFrame.new(0, 0.5, 0)
-                        seat:Sit(hum)
-                    end)
-                    task.wait(0.08)
-                    if hum.SeatPart == seat or IsSittingOn(seat) then
-                        ClearHover()
-                        _G.RJR_BoardStall = nil
-                        return true
-                    end
-                end
-
+        if hrp then
+            if (hrp.Position - seat.Position).Magnitude <= BoatFindRange then
                 local Stall = _G.RJR_BoardStall
                 local DSeat = (hrp.Position - seat.Position).Magnitude
-                if DSeat > 25 and not TpActive and not Tweening then
+                if DSeat > 15 and not TpActive and not Tweening then
                     if not Stall then
                         _G.RJR_BoardStall = { pos = hrp.Position, at = os.clock() }
                     elseif (hrp.Position - Stall.pos).Magnitude > 3 then
@@ -1820,23 +1761,12 @@ local function BoardSeat(seat, timeout)
                     local _, _, humNow = GetCharacterParts()
                     return humNow ~= nil and humNow.SeatPart ~= nil
                 end)
-
-                ClearHover()
-                pcall(function()
-                    local _, hNow, mNow = GetCharacterParts()
-                    if hNow and mNow then
-                        hNow.AssemblyLinearVelocity = Vector3.zero
-                        hNow.AssemblyAngularVelocity = Vector3.zero
-                        hNow.CFrame = seat.CFrame * CFrame.new(0, 0.5, 0)
-                        seat:Sit(mNow)
-                    end
-                end)
             else
                 AbandonIfTooFar(seat)
                 return false
             end
         end
-        task.wait(0.05)
+        task.wait(0.2)
     end
     return IsSittingOn(seat)
 end
@@ -3048,12 +2978,7 @@ SeaAPI.NormalizeSelection = Sea_NormalizeSelection
 SeaAPI.GetLeviathanTarget = getLeviathanTarget
 SeaAPI.GetAllLeviathanTargets = getAllLeviathanTargets
 SeaAPI.GetClosestSeaTarget = getClosestSeaTarget
-SeaAPI.PerformWaterRecovery = function(reason)
-    if _G.PerformWaterRecovery then
-        return _G.PerformWaterRecovery(reason)
-    end
-    return false
-end
+SeaAPI.PerformWaterRecovery = PerformWaterRecovery
 do
     local RawSelection = _G.HuntSelectEvents
     local CleanSelection = Sea_NormalizeSelection(RawSelection)
@@ -3248,30 +3173,17 @@ local function IsInWater(hrp, hum)
     return false
 end
 
-local function IsActivelyInCombat()
-    if AttackModel and AttackModel.Parent then
-        local r = Sea_EventRoot and Sea_EventRoot(AttackModel)
-        if r or (Sea_MobStillAlive and Sea_MobStillAlive(AttackModel)) then
-            return true
-        end
-    end
-    if FightTarget and (os.clock() - (FightTarget.At or 0)) < 2.0 then
-        return true
-    end
-    return false
-end
-
 local function PerformWaterRecovery(reason)
     if WaterRecovery.IsRecovering or not _G.AutoLeviathanFull then return false end
     local now = os.clock()
-    if (now - WaterRecovery.LastRecoveryAt) < 1.5 then return false end
+    if (now - WaterRecovery.LastRecoveryAt) < 2.0 then return false end
     WaterRecovery.LastRecoveryAt = now
     WaterRecovery.IsRecovering = true
 
     local recovered = false
     local ok = pcall(function()
         local _, hrp, hum = GetCharacterParts()
-        if not hrp or not hum or hum.Health <= 0 then return end
+        if not hrp or not hum then return end
 
         SetStatus("¡Alerta de rescate (" .. tostring(reason or "agua") .. "): liberando personaje!")
         print("[Recovery] Rescate activado (" .. tostring(_G.Mode or "Unknown") .. "): " .. tostring(reason))
@@ -3304,15 +3216,17 @@ local function PerformWaterRecovery(reason)
         if _G.Mode == "Seguidor" then
             local captainBoat = GetCaptainBoat()
             local capHrp = GetCaptainHRP()
-            local captainOn = captainBoat and IsCaptainOnBoat(captainBoat)
-            if captainBoat and captainBoat.Parent and captainOn then
+            if captainBoat and captainBoat.Parent then
+                local firstSeat = captainBoat:FindFirstChild("VehicleSeat") or captainBoat.PrimaryPart
+                local targetPos = (firstSeat and firstSeat.Position or captainBoat.PrimaryPart.Position) + Vector3.new(0, 32, 0)
                 SetStatus("Seguidor rescatado: volando hacia el barco del capitán")
+                _tp(CFrame.new(targetPos) * KeepFacing())
+                task.wait(0.2)
                 FollowerBoardSeat(captainBoat)
             elseif capHrp then
                 SetStatus("Seguidor rescatado: volando sobre el capitán")
                 _tp(LiveCaptainTopCF(35), function()
-                    local b = GetCaptainBoat()
-                    return (not _G.AutoLeviathanFull) or (b and IsCaptainOnBoat(b))
+                    return not _G.AutoLeviathanFull
                 end)
             else
                 SetStatus("Seguidor rescatado: manteniendo altitud segura")
@@ -3324,25 +3238,10 @@ local function PerformWaterRecovery(reason)
                 local driverSeat = ownBoat:FindFirstChild("VehicleSeat")
                 if driverSeat then
                     SetStatus("Capitán rescatado: volando hacia el timón")
-                    _tp(LiveSeatCF(driverSeat), function()
-                        if (not _G.AutoLeviathanFull) or (not driverSeat or not driverSeat.Parent) then return true end
-                        local _, _, humNow = GetCharacterParts()
-                        return humNow ~= nil and humNow.SeatPart ~= nil
-                    end)
-                    ClearHover()
-                    pcall(function()
-                        local _, hNow, mNow = GetCharacterParts()
-                        if hNow and mNow then
-                            hNow.AssemblyLinearVelocity = Vector3.zero
-                            hNow.AssemblyAngularVelocity = Vector3.zero
-                            hNow.CFrame = driverSeat.CFrame * CFrame.new(0, 0.5, 0)
-                            driverSeat:Sit(mNow)
-                        end
-                    end)
-                    task.wait(0.1)
-                    if not (hum and hum.SeatPart == driverSeat) then
-                        BoardSeatRetry(driverSeat, 4, 2)
-                    end
+                    local seatAbove = CFrame.new(driverSeat.Position + Vector3.new(0, 28, 0)) * KeepFacing()
+                    _tp(seatAbove)
+                    task.wait(0.2)
+                    BoardSeatRetry(driverSeat, 6, 2)
                 end
             else
                 SetStatus("Capitán sin barco: flotando en zona segura")
@@ -3352,11 +3251,9 @@ local function PerformWaterRecovery(reason)
             _tp(LiveSelfCF(50))
         end
 
-        task.wait(0.2)
+        task.wait(0.3)
         local _, hrpNow, humNow = GetCharacterParts()
-        local isSeatedNow = humNow and (humNow.SeatPart ~= nil or humNow.Sit)
-        local isSafeAir = hrpNow and hrpNow.Position.Y >= 20 and not IsInWater(hrpNow, humNow)
-        if isSeatedNow or isSafeAir then
+        if (hrpNow and hrpNow.Position.Y >= 18) or (humNow and (humNow.SeatPart ~= nil or humNow.Sit)) then
             recovered = true
             WaterRecovery.ConsecutiveFails = 0
             WaterRecovery.LastSuccessAt = os.clock()
@@ -3367,16 +3264,16 @@ local function PerformWaterRecovery(reason)
             WaterRecovery.ConsecutiveFails = WaterRecovery.ConsecutiveFails + 1
             print("[Recovery] Rescate no definitivo. Fallos consecutivos: " .. WaterRecovery.ConsecutiveFails)
 
-            if WaterRecovery.ConsecutiveFails <= 3 then
+            if WaterRecovery.ConsecutiveFails <= 4 then
                 pcall(function()
                     local _, hF = GetCharacterParts()
                     if hF then
-                        hF.AssemblyLinearVelocity = Vector3.new(0, 60, 0)
-                        hF.CFrame = CFrame.new(hF.Position.X, math.max(hF.Position.Y + 35, 55), hF.Position.Z) * KeepFacing()
+                        hF.AssemblyLinearVelocity = Vector3.new(0, 50, 0)
+                        hF.CFrame = CFrame.new(hF.Position.X, 55, hF.Position.Z)
                         HoldCFrame = hF.CFrame
                     end
                 end)
-            elseif WaterRecovery.ConsecutiveFails >= 4 and _G.RJR_ResetCharacterAtTiki and not (_G.RJR_LeviathanPresent and _G.RJR_LeviathanPresent()) then
+            elseif WaterRecovery.ConsecutiveFails >= 5 and _G.RJR_ResetCharacterAtTiki then
                 WaterRecovery.ConsecutiveFails = 0
                 SetStatus("Fallo persistente: reiniciando personaje en Tiki")
                 pcall(_G.RJR_ResetCharacterAtTiki, "Atascado en agua")
@@ -3393,7 +3290,6 @@ local function RecoverPositionLock(reason)
 end
 _G.RJR_RecoverLock = PerformWaterRecovery
 _G.PerformWaterRecovery = PerformWaterRecovery
-if SeaAPI then SeaAPI.PerformWaterRecovery = PerformWaterRecovery end
 
 task.spawn(function()
     while true do
@@ -3402,33 +3298,29 @@ task.spawn(function()
         if _G.AutoLeviathanFull and hrp and hum and hum.Health > 0 then
             local inWater = IsInWater(hrp, hum)
             local isSeated = hum.SeatPart ~= nil or hum.Sit
-            local inCombat = IsActivelyInCombat()
 
-            if inWater and not isSeated and not inCombat then
+            if inWater and not isSeated then
+                if not WaterRecovery.WaterEnteredAt then
+                    WaterRecovery.WaterEnteredAt = os.clock()
+                end
+
+                local waterDuration = os.clock() - WaterRecovery.WaterEnteredAt
                 local curPos = hrp.Position
                 local moved = WaterRecovery.LastStuckCheckPos
                     and (curPos - WaterRecovery.LastStuckCheckPos).Magnitude or 10
-                local velMag = hrp.AssemblyLinearVelocity.Magnitude
-                local isMovingFast = velMag > 15
-                local isActivelyTweening = (TpActive or Tweening) and moved > 3
 
-                if isMovingFast or isActivelyTweening or moved > 8 then
-                    WaterRecovery.WaterEnteredAt = os.clock()
-                else
-                    if not WaterRecovery.WaterEnteredAt then
-                        WaterRecovery.WaterEnteredAt = os.clock()
-                    end
-                    local waterDuration = os.clock() - WaterRecovery.WaterEnteredAt
-                    if waterDuration >= 1.5 and not WaterRecovery.IsRecovering then
-                        PerformWaterRecovery("agua detectada (" .. string.format("%.1f", waterDuration) .. "s)")
-                    end
+                local isMovingFast = hrp.AssemblyLinearVelocity.Magnitude > 20
+                local isActivelyTweening = (TpActive or Tweening) and moved > 4
+
+                if waterDuration >= 2.0 and not isActivelyTweening and not WaterRecovery.IsRecovering then
+                    PerformWaterRecovery("agua detectada (" .. string.format("%.1f", waterDuration) .. "s)")
                 end
                 WaterRecovery.LastStuckCheckPos = curPos
             else
                 WaterRecovery.WaterEnteredAt = nil
-                if not inWater and not isSeated and not TpActive and not Tweening and not inCombat and not LiveHoldFn then
+                if not inWater and not isSeated and not TpActive and not Tweening then
                     local curPos = hrp.Position
-                    if WaterRecovery.LastStuckCheckPos and (curPos - WaterRecovery.LastStuckCheckPos).Magnitude < 1.5 then
+                    if WaterRecovery.LastStuckCheckPos and (curPos - WaterRecovery.LastStuckCheckPos).Magnitude < 2 then
                         WaterRecovery.StaticTicks = WaterRecovery.StaticTicks + 1
                         if WaterRecovery.StaticTicks >= 10 and not WaterRecovery.IsRecovering then
                             WaterRecovery.StaticTicks = 0
@@ -4413,150 +4305,97 @@ local function IsOnCaptainBoat(boat)
     return hum.SeatPart:IsDescendantOf(boat)
 end
 local CaptainLastOnBoatAt = 0
-local function IsCaptainSeated(boat)
+local function IsCaptainOnBoat(boat)
     local captain = Players:FindFirstChild(_G.FollowTarget)
     local char = captain and captain.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    local DriverSeat = boat and boat:FindFirstChild("VehicleSeat")
-    if not hum or not DriverSeat or not boat.Parent then return false end
-
-    if hum.SeatPart == DriverSeat or DriverSeat.Occupant == hum then
-        return true
-    end
-
-    local dWeld = DriverSeat:FindFirstChild("SeatWeld")
-    if dWeld and dWeld.Part1 and dWeld.Part1:IsA("BasePart") and char and dWeld.Part1:IsDescendantOf(char) then
-        return true
-    end
-
-    if hum.SeatPart and hum.SeatPart:IsDescendantOf(boat) then
-        return true
-    end
-
     local capHrp = char and char:FindFirstChild("HumanoidRootPart")
-    if capHrp and (capHrp.Position - DriverSeat.Position).Magnitude <= 4 and (hum.Sit or hum:GetState() == Enum.HumanoidStateType.Seated) then
-        return true
-    end
+    local DriverSeat = boat and boat:FindFirstChild("VehicleSeat")
+    if not hum or not boat or not boat.Parent then return false end
 
-    return false
-end
-
-local function IsCaptainOnBoat(boat)
-    if not boat or not boat.Parent then return false end
-    if IsCaptainSeated(boat) then
+    if DriverSeat and hum.SeatPart == DriverSeat then
         CaptainLastOnBoatAt = os.clock()
         return true
     end
 
-    local captain = Players:FindFirstChild(_G.FollowTarget)
-    local char = captain and captain.Character
-    local capHrp = char and char:FindFirstChild("HumanoidRootPart")
-    local prim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat") or boat:FindFirstChildWhichIsA("BasePart")
-    if capHrp and prim then
-        local dist = (capHrp.Position - prim.Position).Magnitude
-        if dist <= 35 then
+    local refPart = DriverSeat or boat.PrimaryPart or boat:FindFirstChildWhichIsA("BasePart", true)
+    if capHrp and refPart then
+        if (capHrp.Position - refPart.Position).Magnitude <= 30 then
             CaptainLastOnBoatAt = os.clock()
             return true
         end
     end
 
-    if os.clock() - CaptainLastOnBoatAt < 2.0 then
+    if os.clock() - CaptainLastOnBoatAt < 3.0 then
         return true
     end
     return false
 end
-
 local function FollowerBoardSeat(boat)
     if not boat or not boat.Parent then return false end
-    local _, hrp0, hum0 = GetCharacterParts()
-    if not hrp0 or not hum0 then return false end
-
-    if hum0.SeatPart and hum0.SeatPart:IsDescendantOf(boat) then
-        FollowSeatsFull = false
-        return true
-    end
-
-    -- Collect all available candidate passenger seats on the captain's boat
-    local candidateSeats = {}
-    local seenSeats = {}
-
-    -- 1. Check cannons
     local cannons = GetCannons(boat)
-    for _, cannon in ipairs(cannons) do
-        local s = cannon:FindFirstChild("Seat") or cannon:FindFirstChildWhichIsA("Seat")
-        if s and not seenSeats[s] then
-            seenSeats[s] = true
-            table.insert(candidateSeats, s)
-        end
-    end
+    local _, hrp0 = GetCharacterParts()
+    local firstSeat = boat:FindFirstChild("VehicleSeat") or (cannons and cannons[1]) or boat.PrimaryPart
+    if not firstSeat or not hrp0 then return false end
 
-    -- 2. Fallback: check any Seat descendant of the boat (exclude VehicleSeat and HarpoonSeat)
-    for _, desc in ipairs(boat:GetDescendants()) do
-        if desc:IsA("Seat") and not desc:IsA("VehicleSeat") and not seenSeats[desc] then
-            local pName = desc.Parent and desc.Parent.Name or ""
-            if desc.Name ~= "HarpoonSeat" and not pName:match("Harpoon") then
-                seenSeats[desc] = true
-                table.insert(candidateSeats, desc)
-            end
-        end
-    end
-
-    local referencePart = boat:FindFirstChild("VehicleSeat") or candidateSeats[1] or boat.PrimaryPart or boat:FindFirstChildWhichIsA("BasePart")
-    if not referencePart then return false end
-
-    local distToBoat = (hrp0.Position - referencePart.Position).Magnitude
+    local distToBoat = (hrp0.Position - firstSeat.Position).Magnitude
     if distToBoat > BoatFindRange then
         SetStatus("Siguiendo: el barco del capitán está a más de " .. BoatFindRange .. " — no lo persigo")
         return false
     end
 
-    -- If no seats exist at all on this boat
-    if #candidateSeats == 0 then
-        SetStatus("Siguiendo: no hay asientos de pasajeros en el barco")
-        FollowSeatsFull = true
-        return false
-    end
-
-    -- If follower is in water or too far from boat deck, snap directly onto boat deck once
+    -- [FIX] Skip the slow live-tween fly phase.
+    -- If too far or in water, do a single instant teleport to just above
+    -- the first available cannon seat so BoardSeat can fire immediately.
+    -- This eliminates floating above the VehicleSeat and the 15-second loop.
     local inWater = hrp0.Position.Y < 15
-    if inWater or distToBoat > 20 then
-        SetStatus("Siguiendo: abordando el barco")
+    if inWater or distToBoat > 25 then
+        SetStatus("Siguiendo: acercándome al asiento directamente")
         ClearHover()
+        -- Pick the first free cannon seat as the teleport destination.
+        local snapTarget = nil
+        for _, cannon in ipairs(cannons) do
+            local s = cannon:FindFirstChild("Seat")
+            if s and not IsSeatOccupied(s) then
+                snapTarget = s
+                break
+            end
+        end
+        -- Fall back to the boat reference part if all cannons are occupied or no seat found.
+        if not snapTarget then
+            snapTarget = firstSeat
+        end
+        -- Instant one-shot teleport to just above the target seat, no tween loop.
+        local snapPos = snapTarget.Position + Vector3.new(0, 5, 0)
         pcall(function()
-            hrp0.AssemblyLinearVelocity = Vector3.zero
-            hrp0.AssemblyAngularVelocity = Vector3.zero
-            local targetDeckCF = (referencePart.CFrame * CFrame.new(0, 5, 0)) * KeepFacing()
-            hrp0.CFrame = targetDeckCF
+            local _, curH = GetCharacterParts()
+            if curH then
+                curH.CFrame = CFrame.new(snapPos) * KeepFacing()
+                curH.AssemblyLinearVelocity = Vector3.zero
+            end
         end)
-        task.wait(0.1)
+        task.wait(0.05)
     end
 
     local tried = {}
     local BoardStart = os.clock()
-    while _G.AutoLeviathanFull and os.clock() - BoardStart < 6 do
-        local _, curHRP, curHum = GetCharacterParts()
-        if curHum and curHum.SeatPart and curHum.SeatPart:IsDescendantOf(boat) then
-            FollowSeatsFull = false
-            return true
-        end
-
+    while _G.AutoLeviathanFull and os.clock() - BoardStart < 15 do
         local seat = nil
-        for _, s in ipairs(candidateSeats) do
-            if s and s.Parent and not IsSeatOccupied(s) and not SeatTakenByOther(s, curHum) and not tried[s] then
+        for _, cannon in ipairs(cannons) do
+            local s = cannon:FindFirstChild("Seat")
+            if s and not IsSeatOccupied(s) and not tried[s] then
                 seat = s
                 break
             end
         end
-
         if not seat then
             local occupiedCount = 0
-            for _, s in ipairs(candidateSeats) do
-                if s and s.Parent and (IsSeatOccupied(s) or SeatTakenByOther(s, curHum)) then
-                    occupiedCount = occupiedCount + 1
-                end
+            for _, cannon in ipairs(cannons) do
+                local s = cannon:FindFirstChild("Seat")
+                if s and IsSeatOccupied(s) then occupiedCount = occupiedCount + 1 end
             end
-            if occupiedCount >= #candidateSeats and #candidateSeats > 0 then
-                SetStatus("Siguiendo: asientos llenos (" .. occupiedCount .. "/" .. #candidateSeats .. ") — siguiendo por aire")
+            if occupiedCount >= #cannons and #cannons > 0 then
+                SetStatus("Siguiendo: cañones llenos (4/4) — siguiendo por aire")
                 FollowSeatsFull = true
                 return false
             else
@@ -4564,14 +4403,25 @@ local function FollowerBoardSeat(boat)
                 task.wait(0.1)
             end
         else
-            SetStatus("Siguiendo: subiendo a " .. seat.Name .. " (" .. (seat.Parent and seat.Parent.Name or "barco") .. ")")
+            -- [FIX] Before calling BoardSeat, snap directly to the chosen seat
+            -- so that BoardSeat's internal _tp only needs a micro-adjustment.
+            local snapPos2 = seat.Position + Vector3.new(0, 5, 0)
+            pcall(function()
+                local _, curH2 = GetCharacterParts()
+                if curH2 then
+                    curH2.CFrame = CFrame.new(snapPos2) * KeepFacing()
+                    curH2.AssemblyLinearVelocity = Vector3.zero
+                end
+            end)
+            task.wait(0.05)
+            SetStatus("Siguiendo: subiendo al cañón " .. seat.Parent.Name)
             if BoardSeat(seat, 1.5) then
                 FollowSeatsFull = false
                 return true
             end
             tried[seat] = true
         end
-        task.wait(0.05)
+        task.wait(0.1)
     end
     return false
 end
@@ -4643,8 +4493,7 @@ local function StartFollower()
                         if GetCaptainHRP() then
                             SetStatus("Corazón enganchado: sigo al capitán")
                             _tp(LiveCaptainTopCF(35), function()
-                                local b = GetCaptainBoat()
-                                return (not _G.AutoLeviathanFull) or (b and IsCaptainOnBoat(b))
+                                return not _G.AutoLeviathanFull
                             end)
                         end
                     end
@@ -4674,7 +4523,7 @@ local function StartFollower()
                     SeaAPI.FightLeviathan(CaptainBackOnBoat, 10)
                     return
                 end
-                if boat and (CaptainOn or (GetCaptainHRP() and (GetCaptainHRP().Position - (boat.PrimaryPart or boat:FindFirstChild("VehicleSeat") or boat:FindFirstChildWhichIsA("BasePart")).Position).Magnitude <= 50)) then
+                if boat and CaptainOn then
                     if not IsOnCaptainBoat(boat) then
                         FollowerBoardSeat(boat)
                     else
@@ -4682,18 +4531,17 @@ local function StartFollower()
                     end
                 else
                     if boat and IsOnCaptainBoat(boat) then
-                        local capHrp = GetCaptainHRP()
-                        local prim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat") or boat:FindFirstChildWhichIsA("BasePart")
-                        local capDistToBoat = (capHrp and prim) and (capHrp.Position - prim.Position).Magnitude or 999
-                        -- Only unseat if captain is genuinely off and far from the boat (> 50 studs)
-                        if not CaptainOn and capDistToBoat > 50 then
+                        local boatMoving = false
+                        local prim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat")
+                        if prim and prim.AssemblyLinearVelocity.Magnitude > 8 then
+                            boatMoving = true
+                        end
+                        if not boatMoving and not CaptainOn then
                             if not Unseat() then
                                 SetStatus("El capitán bajó y yo no puedo: reintentando")
                             else
                                 SetStatus("El capitán bajó: bajo también")
                             end
-                        else
-                            SetStatus("En espera en el barco (esperando al capitán)")
                         end
                     elseif not boat then
                         SetStatus("Barco del capitán perdido: peleo mientras compra otro")
@@ -4738,8 +4586,7 @@ local function StartFollower()
                         if capHrp then
                             SetStatus("Siguiendo al capitán (esperando el corazón)")
                             _tp(LiveCaptainTopCF(35), function()
-                                local b = GetCaptainBoat()
-                                return (not _G.AutoLeviathanFull) or (b and IsCaptainOnBoat(b))
+                                return not _G.AutoLeviathanFull
                             end)
                         end
                     else
@@ -4754,8 +4601,7 @@ local function StartFollower()
                             if not IsOnBoat() then
                                 if GetCaptainHRP() then
                                     _tp(LiveCaptainTopCF(35), function()
-                                        local b = GetCaptainBoat()
-                                        return (not _G.AutoLeviathanFull) or (b and IsCaptainOnBoat(b))
+                                        return not _G.AutoLeviathanFull
                                     end)
                                 else
                                     _tp(LiveSelfCF(50), function()
@@ -4771,8 +4617,7 @@ local function StartFollower()
             if FollowSeatsFull and not IsOnBoat() then
                 if GetCaptainHRP() then
                     _tp(LiveCaptainTopCF(35), function()
-                        local b = GetCaptainBoat()
-                        return (not _G.AutoLeviathanFull) or (not FollowSeatsFull) or (b and not IsCaptainOnBoat(b))
+                        return not _G.AutoLeviathanFull
                     end)
                 else
                     _tp(LiveSelfCF(50), function()
