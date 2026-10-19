@@ -1766,7 +1766,7 @@ local function BoardSeat(seat, timeout)
                 return false
             end
         end
-        task.wait(0.2)
+        task.wait(0.1) -- was 0.2 — faster detection of successful seat
     end
     return IsSittingOn(seat)
 end
@@ -2567,6 +2567,35 @@ local function getAllLeviathanTargets()
     return targets
 end
 
+-- ============================================================
+-- DragonMultiFire — burst-fire Dragonstorm at multiple targets
+-- ------------------------------------------------------------
+-- Fires `_G.DragonShotsPerBurst` shots at up to `maxTargets`
+-- entries from the provided target list, all in the SAME frame.
+-- Respects DragonLastFire / DragonFireInterval rate limiting.
+-- Returns the number of targets actually fired at (0 if on CD).
+-- ============================================================
+local function DragonMultiFire(targets, maxTargets)
+    if not targets or #targets == 0 then return 0 end
+    local now = os.clock()
+    local interval = _G.DragonFireInterval or 0.30
+    if now - DragonLastFire < interval then return 0 end
+    DragonLastFire = now
+    maxTargets = maxTargets or #targets
+    local fired = 0
+    for i = 1, math.min(#targets, maxTargets) do
+        local tgt = targets[i]
+        if tgt.part and tgt.part.Parent then
+            -- Prefer the named hit-part child if present (Leviathan Segment aim point)
+            local aimPart = tgt.model and tgt.model:FindFirstChild("Leviathan Segment")
+            local aimPos = (aimPart and aimPart.Position) or tgt.part.Position
+            fireShot(aimPos, tgt.part)
+            fired = fired + 1
+        end
+    end
+    return fired
+end
+
 local DragonAttackRunning = false
 local function StartDragonAttack()
     if DragonAttackRunning then return end
@@ -2701,7 +2730,16 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
         end
         if not IsOnBoat() then
             if _G.DragonGunFarm then
-                Equip_Auto("Dragonstorm")
+                if HasDragonstormEquipped() then
+                    -- [MULTI-HIT] Burst-fire at ALL sea targets in range in the same frame.
+                    -- DragonMultiFire handles DragonLastFire rate-limiting internally.
+                    local seaTargets = getAllSeaTargets()
+                    if #seaTargets > 0 then
+                        DragonMultiFire(seaTargets) -- no cap: all in range
+                    end
+                else
+                    Equip_Auto("Dragonstorm")
+                end
             elseif Stand and HRP then
                 local Distance = (Stand.Position - HRP.Position).Magnitude
                 local RootNow = Sea_EventRoot(Mob)
@@ -2953,27 +2991,22 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                 end
                 if _G.DragonGunLeviathan and CheckItem("Dragonstorm") then
                     if HasDragonstormEquipped() then
-                        local now = os.clock()
-                        local interval = _G.DragonFireInterval or 0.30
-                        if now - DragonLastFire >= interval then
-                            DragonLastFire = now
-                            -- [MULTI-HIT] Hit EVERY Leviathan segment inside AttackRange
-                            -- in the SAME frame. Each segment receives
-                            -- `DragonShotsPerBurst` shots via fireShot().
-                            local lvTargets = getAllLeviathanTargets()
-                            local fired = 0
-                            for _, tgt in ipairs(lvTargets) do
-                                if tgt.part and tgt.part.Parent then
-                                    local aimPart = tgt.model and tgt.model:FindFirstChild("Leviathan Segment")
-                                    local aimPos = aimPart and aimPart.Position or tgt.part.Position
-                                    fireShot(aimPos, tgt.part)
-                                    fired = fired + 1
-                                end
-                            end
-                            if fired == 0 then
-                                -- Fallback: keep old single-target behaviour if nothing was found
+                        -- [MULTI-HIT] Hit up to 3 Leviathan segments simultaneously.
+                        -- DragonMultiFire handles DragonLastFire rate-limiting internally,
+                        -- so no manual now/interval check is needed here.
+                        local lvTargets = getAllLeviathanTargets()
+                        local MaxSegments = _G.DragonMaxSegments or 3
+                        local fired = DragonMultiFire(lvTargets, MaxSegments)
+                        if fired == 0 then
+                            -- Fallback: single-target if getAllLeviathanTargets returned nothing
+                            -- OR if DragonMultiFire is still on cooldown (returns 0).
+                            -- Only attempt the fallback shot when NOT on cooldown.
+                            local now = os.clock()
+                            local interval = _G.DragonFireInterval or 0.30
+                            if now - DragonLastFire >= interval then
                                 local lvPart, lvModel = getLeviathanTarget()
                                 if lvPart then
+                                    DragonLastFire = now
                                     local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
                                     local aimPos = aimPart and aimPart.Position or lvPart.Position
                                     fireShot(aimPos, lvPart)
@@ -4372,6 +4405,10 @@ local function IsCaptainOnBoat(boat)
     end
     return false
 end
+-- [FIX] Shared seat reservation: key=Seat, value=true while a follower is
+-- actively tweening to or sitting in that seat. Prevents two followers from
+-- picking the same cannon seat at the same time (race condition / aagawan).
+local ClaimedSeats = {}
 local function FollowerBoardSeat(boat)
     if not boat or not boat.Parent then return false end
     local cannons = GetCannons(boat)
@@ -4387,24 +4424,22 @@ local function FollowerBoardSeat(boat)
 
     local inWater = hrp0.Position.Y < 15
     if inWater or distToBoat > 25 then
-        SetStatus("Siguiendo: acercándome al barco por aire")
         ClearHover()
-        -- Pick the first free cannon seat as the tween destination so we fly
-        -- directly to where we need to be, not 30 studs above VehicleSeat.
+        -- Pick the first free, unclaimed cannon seat as approach destination.
         local approachSeat = nil
+        local approachClaimed = false
         for _, cannon in ipairs(cannons) do
             local s = cannon:FindFirstChild("Seat")
-            if s and not IsSeatOccupied(s) then
+            if s and not IsSeatOccupied(s) and not ClaimedSeats[s] then
                 approachSeat = s
+                ClaimedSeats[s] = true   -- claim immediately so no other follower grabs it
+                approachClaimed = true
                 break
             end
         end
         approachSeat = approachSeat or firstSeat
-        -- Smooth tween using PlayerTweenSpeed directly toward the seat.
-        -- Aborts early if the seat disappears or the boat is gone.
         _tp(function()
             if not approachSeat or not approachSeat.Parent then return nil end
-            -- Hover slightly above seat so BoardSeat can pull us in cleanly.
             return CFrame.new(approachSeat.Position + Vector3.new(0, 5, 0)) * KeepFacing()
         end, function()
             if not _G.AutoLeviathanFull or not boat or not boat.Parent then return true end
@@ -4412,39 +4447,56 @@ local function FollowerBoardSeat(boat)
             if not curH then return true end
             return (curH.Position - approachSeat.Position).Magnitude <= 20
         end)
+        -- Release claim if stolen or destroyed during tween.
+        if approachClaimed and (not approachSeat.Parent or IsSeatOccupied(approachSeat)) then
+            ClaimedSeats[approachSeat] = nil
+            approachClaimed = false
+        end
         task.wait(0.05)
     end
 
     local tried = {}
+    local myClaim = nil
+    local function ReleaseClaim()
+        if myClaim then ClaimedSeats[myClaim] = nil; myClaim = nil end
+    end
+
     local BoardStart = os.clock()
     while _G.AutoLeviathanFull and os.clock() - BoardStart < 15 do
+        -- [FIX] Pick first free, unclaimed, un-tried cannon seat.
         local seat = nil
         for _, cannon in ipairs(cannons) do
             local s = cannon:FindFirstChild("Seat")
-            if s and not IsSeatOccupied(s) and not tried[s] then
+            if s and not IsSeatOccupied(s) and not ClaimedSeats[s] and not tried[s] then
                 seat = s
                 break
             end
         end
         if not seat then
-            local occupiedCount = 0
+            ReleaseClaim()
+            -- Count seats that are occupied OR claimed by another follower.
+            local busyCount = 0
             for _, cannon in ipairs(cannons) do
                 local s = cannon:FindFirstChild("Seat")
-                if s and IsSeatOccupied(s) then occupiedCount = occupiedCount + 1 end
+                if s and (IsSeatOccupied(s) or ClaimedSeats[s]) then
+                    busyCount = busyCount + 1
+                end
             end
-            if occupiedCount >= #cannons and #cannons > 0 then
-                SetStatus("Siguiendo: cañones llenos (4/4) — siguiendo por aire")
+            if busyCount >= #cannons and #cannons > 0 then
                 FollowSeatsFull = true
                 return false
             else
                 tried = {}
-                task.wait(0.1)
+                task.wait(0.05) -- faster retry (was 0.1 s)
             end
         else
-            -- Smooth tween to the chosen cannon seat before calling BoardSeat,
-            -- so BoardSeat's internal _tp only needs a micro-adjustment.
+            -- [FIX] Atomically claim BEFORE tweening so no other follower can steal it.
+            ReleaseClaim()
+            ClaimedSeats[seat] = true
+            myClaim = seat
+
             local _, curH2 = GetCharacterParts()
-            if curH2 and (curH2.Position - seat.Position).Magnitude > 15 then
+            if curH2 and (curH2.Position - seat.Position).Magnitude > 10 then
                 _tp(function()
                     if not seat or not seat.Parent then return nil end
                     return CFrame.new(seat.Position + Vector3.new(0, 5, 0)) * KeepFacing()
@@ -4452,19 +4504,28 @@ local function FollowerBoardSeat(boat)
                     if not _G.AutoLeviathanFull or not seat or not seat.Parent then return true end
                     local _, h = GetCharacterParts()
                     if not h then return true end
-                    return (h.Position - seat.Position).Magnitude <= 15
+                    return (h.Position - seat.Position).Magnitude <= 10
                 end)
                 task.wait(0.05)
             end
-            SetStatus("Siguiendo: subiendo al cañón " .. seat.Parent.Name)
-            if BoardSeat(seat, 1.5) then
-                FollowSeatsFull = false
-                return true
+
+            -- Bail if seat was taken or destroyed while we tweened.
+            if not seat or not seat.Parent or IsSeatOccupied(seat) then
+                ReleaseClaim()
+                tried[seat] = true
+            else
+                local ok = BoardSeat(seat, 1.5)
+                ReleaseClaim() -- always release regardless of outcome
+                if ok then
+                    FollowSeatsFull = false
+                    return true
+                end
+                tried[seat] = true
             end
-            tried[seat] = true
         end
-        task.wait(0.1)
+        task.wait(0.05) -- was 0.1 s — tighter poll prevents aagawan
     end
+    ReleaseClaim()
     return false
 end
 local function FollowerHeartWait()
@@ -4687,7 +4748,7 @@ local function StartFollower()
                     end)
                 end
             end
-            task.wait(0.2)
+            task.wait(0.05) -- was 0.2 — re-evaluate captain state 4x faster
         end
         FollowerRunning = false
     end)
