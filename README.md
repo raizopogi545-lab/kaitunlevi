@@ -299,6 +299,79 @@ local AttackModel = nil
 local AttackStandFn = nil
 local StatusText = T("notstarted")
 local StatusPrefix = ""
+
+-- =============================================================
+-- [STATE MACHINE] Central character/encounter state.
+-- Only one owner at a time. See PART 2 for consumers.
+-- =============================================================
+_G.RJR_State = _G.RJR_State or "Idle"
+local STATE_IDLE          = "Idle"
+local STATE_BOARDING      = "Boarding"
+local STATE_SEEKING_SEAT  = "SeekingSeat"
+local STATE_SEATED        = "Seated"
+local STATE_FOLLOWING     = "FollowingCaptain"
+local STATE_COMBAT        = "SeaEventActive"
+local STATE_LEVIATHAN     = "LeviathanActive"
+local STATE_RECOVERING    = "Recovering"
+local STATE_RETURNING     = "ReturningToBoat"
+local STATE_COMPLETED     = "EncounterCompleted"
+local function SetState(s)
+    _G.RJR_State = s
+end
+local function GetState()
+    return _G.RJR_State or STATE_IDLE
+end
+-- Encounter tracking, used by FightSeaEvent / FightLeviathan
+-- and by the recovery gate so recovery does not break active fights.
+local Encounter = {
+    Active          = false,
+    Kind            = nil,       -- "sea" | "leviathan"
+    Target          = nil,
+    LastSeenAt      = 0,
+    MissingSince    = nil,
+    Grace           = 2.0,       -- default grace for sea events
+}
+local function Encounter_Enter(kind, target, grace)
+    Encounter.Active       = true
+    Encounter.Kind         = kind
+    Encounter.Target       = target
+    Encounter.LastSeenAt   = os.clock()
+    Encounter.MissingSince = nil
+    Encounter.Grace        = grace or 2.0
+    SetState(kind == "leviathan" and STATE_LEVIATHAN or STATE_COMBAT)
+end
+local function Encounter_NoteSeen()
+    Encounter.LastSeenAt   = os.clock()
+    Encounter.MissingSince = nil
+end
+-- Returns true only when the encounter has been missing longer than Grace.
+local function Encounter_Missing()
+    if not Encounter.Active then return true end
+    local now = os.clock()
+    if now - Encounter.LastSeenAt < Encounter.Grace then
+        Encounter.MissingSince = nil
+        return false
+    end
+    Encounter.MissingSince = Encounter.MissingSince or now
+    return (now - Encounter.MissingSince) >= Encounter.Grace
+end
+local function Encounter_Leave()
+    Encounter.Active       = false
+    Encounter.Kind         = nil
+    Encounter.Target       = nil
+    Encounter.MissingSince = nil
+    if GetState() == STATE_COMBAT or GetState() == STATE_LEVIATHAN then
+        SetState(STATE_IDLE)
+    end
+end
+_G.RJR_EncounterActive = function()
+    return Encounter.Active
+end
+_G.RJR_EncounterKind = function()
+    return Encounter.Kind
+end
+-- =============================================================
+
 local TranslateStatus, SetStatus
 TranslateStatus, SetStatus = (function(LanguageCode)
     local StatusStatic = {
@@ -975,76 +1048,115 @@ local function StopTweenAll()
     end)
 end
 do
-local SeatPhantomState = {
-    since = setmetatable({}, { __mode = "k" }),
-    grace = 2,
-}
-local function SeatTakenByOther(seat, hum)
-    local Occupant = seat.Occupant
-    if Occupant ~= nil and Occupant ~= hum then return true end
-    local Weld = seat:FindFirstChild("SeatWeld")
-    if Weld then
-        local p1 = Weld.Part1
-        if p1 and p1:IsA("BasePart") then
-            local owner = p1:FindFirstAncestorWhichIsA("Model")
-            local otherHum = owner and owner:FindFirstChildOfClass("Humanoid")
-            if otherHum and otherHum ~= hum then return true end
+    -- [SEAT RESERVATION] Prevent multiple followers from competing for the same seat.
+    -- A reservation is stored per-character and expires after RESERVE_TTL seconds,
+    -- or when the seat becomes occupied by another player.
+    local SeatPhantomState = {
+        since = setmetatable({}, { __mode = "k" }),
+        grace = 2,
+    }
+    local SeatReservations = setmetatable({}, { __mode = "k" }) -- seat -> { owner=player, at=number }
+    local RESERVE_TTL = 6.0
+
+    local function ReserveSeat(seat, owner)
+        if not seat or not seat.Parent then return false end
+        if owner == nil then owner = LocalPlayer end
+        local r = SeatReservations[seat]
+        local now = os.clock()
+        if r and r.owner ~= owner and (now - r.at) < RESERVE_TTL then
+            return false -- someone else reserved it
         end
-    end
-    return false
-end
-_G.RJR_SeatTakenByOther = SeatTakenByOther
-local SEAT_DRIFT = 60
-local BODY_STILL = 30
-_G.RJR_SeatConfirmed = function(seat)
-    local _, hrp, hum = GetCharacterParts()
-    if not hum or not seat or not seat.Parent then return false end
-    if hum.SeatPart ~= seat then return false end
-    if SeatTakenByOther(seat, hum) then return false end
-    if not hrp then return true end
-    local st = SeatPhantomState.since[seat]
-    if not st then
-        SeatPhantomState.since[seat] = { seatPos = seat.Position, bodyPos = hrp.Position, at = os.clock() }
+        SeatReservations[seat] = { owner = owner, at = now }
         return true
     end
-    local seatMoved = (seat.Position - st.seatPos).Magnitude
-    local bodyMoved = (hrp.Position - st.bodyPos).Magnitude
-    if seatMoved > SEAT_DRIFT and bodyMoved < BODY_STILL then
-        if os.clock() - st.at >= SeatPhantomState.grace then return false end
-    elseif os.clock() - st.at >= SeatPhantomState.grace then
-        st.seatPos, st.bodyPos, st.at = seat.Position, hrp.Position, os.clock()
+    _G.RJR_ReserveSeat = ReserveSeat
+
+    local function ReleaseSeat(seat)
+        if seat then SeatReservations[seat] = nil end
     end
-    return true
-end
-_G.RJR_BreakPhantomSeat = function(seat)
-    local char, hrp, hum = GetCharacterParts()
-    if not hum then return false end
-    local Target = seat or hum.SeatPart
-    pcall(function()
-        hum.Sit = false
-        hum.PlatformStand = false
-    end)
-    if Target and Target.Parent then
-        local Weld = Target:FindFirstChild("SeatWeld")
-        local p1 = Weld and Weld.Part1
-        if Weld and ((not p1) or (p1:IsA("BasePart") and char and p1:IsDescendantOf(char))) then
-            pcall(function() Weld:Destroy() end)
+    _G.RJR_ReleaseSeat = ReleaseSeat
+
+    local function IsReservedByOther(seat)
+        if not seat then return false end
+        local r = SeatReservations[seat]
+        if not r then return false end
+        if r.owner == LocalPlayer then return false end
+        if (os.clock() - r.at) >= RESERVE_TTL then
+            SeatReservations[seat] = nil
+            return false
         end
+        return true
     end
-    if hrp then
+
+    local function SeatTakenByOther(seat, hum)
+        if not seat or not seat.Parent then return true end
+        local Occupant = seat.Occupant
+        if Occupant ~= nil and Occupant ~= hum then return true end
+        local Weld = seat:FindFirstChild("SeatWeld")
+        if Weld then
+            local p1 = Weld.Part1
+            if p1 and p1:IsA("BasePart") then
+                local owner = p1:FindFirstAncestorWhichIsA("Model")
+                local otherHum = owner and owner:FindFirstChildOfClass("Humanoid")
+                if otherHum and otherHum ~= hum then return true end
+            end
+        end
+        return false
+    end
+    _G.RJR_SeatTakenByOther = SeatTakenByOther
+
+    local SEAT_DRIFT = 60
+    local BODY_STILL = 30
+    _G.RJR_SeatConfirmed = function(seat)
+        local _, hrp, hum = GetCharacterParts()
+        if not hum or not seat or not seat.Parent then return false end
+        if hum.SeatPart ~= seat then return false end
+        if SeatTakenByOther(seat, hum) then return false end
+        if not hrp then return true end
+        local st = SeatPhantomState.since[seat]
+        if not st then
+            SeatPhantomState.since[seat] = { seatPos = seat.Position, bodyPos = hrp.Position, at = os.clock() }
+            return true
+        end
+        local seatMoved = (seat.Position - st.seatPos).Magnitude
+        local bodyMoved = (hrp.Position - st.bodyPos).Magnitude
+        if seatMoved > SEAT_DRIFT and bodyMoved < BODY_STILL then
+            if os.clock() - st.at >= SeatPhantomState.grace then return false end
+        elseif os.clock() - st.at >= SeatPhantomState.grace then
+            st.seatPos, st.bodyPos, st.at = seat.Position, hrp.Position, os.clock()
+        end
+        return true
+    end
+    _G.RJR_BreakPhantomSeat = function(seat)
+        local char, hrp, hum = GetCharacterParts()
+        if not hum then return false end
+        local Target = seat or hum.SeatPart
         pcall(function()
-            hrp.CFrame = hrp.CFrame + Vector3.new(0, 5, 0)
-            hrp.AssemblyLinearVelocity = Vector3.zero
-            hrp.AssemblyAngularVelocity = Vector3.zero
+            hum.Sit = false
+            hum.PlatformStand = false
         end)
+        if Target and Target.Parent then
+            local Weld = Target:FindFirstChild("SeatWeld")
+            local p1 = Weld and Weld.Part1
+            if Weld and ((not p1) or (p1:IsA("BasePart") and char and p1:IsDescendantOf(char))) then
+                pcall(function() Weld:Destroy() end)
+            end
+        end
+        if hrp then
+            pcall(function()
+                hrp.CFrame = hrp.CFrame + Vector3.new(0, 5, 0)
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+            end)
+        end
+        ClearHover()
+        if Target then SeatPhantomState.since[Target] = nil end
+        task.wait(0.15)
+        local _, _, hum2 = GetCharacterParts()
+        return hum2 == nil or not hum2.Sit
     end
-    ClearHover()
-    if Target then SeatPhantomState.since[Target] = nil end
-    task.wait(0.15)
-    local _, _, hum2 = GetCharacterParts()
-    return hum2 == nil or not hum2.Sit
 end
-end
+
 local function CheckItem(Item, Mode)
     if not Character or not HRP or not HD then return nil end
     if Mode == "Find" then
@@ -1614,6 +1726,7 @@ local function GetCannons(boat)
     end
     return cannons
 end
+-- [FIX] IsSeatOccupied no longer destroys welds. Read-only.
 local function IsSeatOccupied(seat)
     if not seat or not seat.Parent then return false end
     local Weld = seat:FindFirstChild("SeatWeld")
@@ -1624,7 +1737,6 @@ local function IsSeatOccupied(seat)
             local hum = ownerChar and ownerChar:FindFirstChildOfClass("Humanoid")
             if hum and hum.Health > 0 then return true end
         end
-        pcall(function() Weld:Destroy() end)
     end
     for _, p in ipairs(Players:GetPlayers()) do
         local char = p.Character
@@ -1720,55 +1832,63 @@ local function Unseat()
     end
     return false
 end
+-- [FIX] BoardSeat: bounded 3s timeout, seat reservation, no redundant unseat.
 local function BoardSeat(seat, timeout)
-    timeout = timeout or 15
+    timeout = timeout or 3
     if not seat or not seat.Parent then return false end
+    if _G.RJR_ReserveSeat and not _G.RJR_ReserveSeat(seat, LocalPlayer) then return false end
     if AbandonIfTooFar(seat) then return false end
     local start = os.clock()
     local Deadline = start + timeout
+    local DidUnseat = false
+    SetState(STATE_BOARDING)
+    local ok = false
     while _G.AutoLeviathanFull and os.clock() < Deadline do
-        if not seat or not seat.Parent then return false end
-        if AbandonIfTooFar(seat) then return false end
+        if not seat or not seat.Parent then break end
+        if AbandonIfTooFar(seat) then break end
         local _, hrp, hum = GetCharacterParts()
         if hum and hum.SeatPart == seat then
             ClearHover()
             _G.RJR_BoardStall = nil
-            return true
+            ok = true
+            break
         end
-        if hum and (hum.Sit or hum.SeatPart ~= nil) then
+        if hum and (hum.Sit or hum.SeatPart ~= nil) and not DidUnseat then
+            DidUnseat = true
             Unseat()
-            task.wait(0.3)
+            task.wait(0.15)
         end
         if hrp then
-            if (hrp.Position - seat.Position).Magnitude <= BoatFindRange then
+            local DSeat = (hrp.Position - seat.Position).Magnitude
+            if DSeat > 15 and not TpActive and not Tweening then
                 local Stall = _G.RJR_BoardStall
-                local DSeat = (hrp.Position - seat.Position).Magnitude
-                if DSeat > 15 and not TpActive and not Tweening then
-                    if not Stall then
-                        _G.RJR_BoardStall = { pos = hrp.Position, at = os.clock() }
-                    elseif (hrp.Position - Stall.pos).Magnitude > 3 then
-                        Stall.pos, Stall.at = hrp.Position, os.clock()
-                    elseif os.clock() - Stall.at > 4 then
-                        _G.RJR_BoardStall = nil
-                        if _G.RJR_RecoverLock then _G.RJR_RecoverLock("no avanzo al subir al asiento") end
-                        return false
-                    end
-                else
+                if not Stall then
+                    _G.RJR_BoardStall = { pos = hrp.Position, at = os.clock() }
+                elseif (hrp.Position - Stall.pos).Magnitude > 3 then
+                    Stall.pos, Stall.at = hrp.Position, os.clock()
+                elseif os.clock() - Stall.at > 2 then
                     _G.RJR_BoardStall = nil
+                    if _G.RJR_RecoverLock then _G.RJR_RecoverLock("no avanzo al subir al asiento") end
+                    break
                 end
-                _tp(LiveSeatCF(seat), function()
-                    if (not _G.AutoLeviathanFull) or (not seat or not seat.Parent) then return true end
-                    local _, _, humNow = GetCharacterParts()
-                    return humNow ~= nil and humNow.SeatPart ~= nil
-                end)
             else
-                AbandonIfTooFar(seat)
-                return false
+                _G.RJR_BoardStall = nil
             end
+            _tp(LiveSeatCF(seat), function()
+                if (not _G.AutoLeviathanFull) or (not seat or not seat.Parent) then return true end
+                local _, _, humNow = GetCharacterParts()
+                return humNow ~= nil and humNow.SeatPart ~= nil
+            end)
         end
-        task.wait(0.2)
+        task.wait(0.1)
     end
-    return IsSittingOn(seat)
+    if not ok then
+        ok = IsSittingOn(seat)
+    end
+    if not ok and _G.RJR_ReleaseSeat then
+        _G.RJR_ReleaseSeat(seat)
+    end
+    return ok
 end
 local function ForceUnseat(Seconds)
     local Deadline = os.clock() + (Seconds or 10)
@@ -1787,7 +1907,7 @@ local function BoardSeatRetry(seat, timeout, attempts)
         if not seat or not seat.Parent then return false end
         if BoardSeat(seat, timeout) then return true end
         Unseat()
-        task.wait(0.5)
+        task.wait(0.3)
     end
     return false
 end
@@ -2074,6 +2194,9 @@ local function Sea_Mob(MaxDistance, Exclude)
     end
     return Best, BestRoot, BestSkill
 end
+-- [FIX] Conservative "still alive" check: treats missing Health/Humanoid as UNKNOWN, not dead.
+-- The FightSeaEvent loop calls Encounter_Missing() which requires multiple consecutive
+-- misses before ending the encounter, so a single nil read won't abort.
 Sea_MobStillAlive = function(Mob)
     if not Mob or not Mob.Parent then return false end
     local Health = Mob:FindFirstChild("Health")
@@ -2186,9 +2309,6 @@ local function initDragon()
     return false
 end
 
--- Lazily (re)fetch the two remotes fireShot needs.
--- This also makes the Leviathan branch work when DragonGunFarm is off,
--- because previously they were only initialised inside the farm loop.
 local function ensureDragonRemotes()
     if not ShootGunEvent then
         local modules = RS:FindFirstChild("Modules")
@@ -2202,7 +2322,6 @@ local function ensureDragonRemotes()
     return ShootGunEvent ~= nil and Validator2 ~= nil
 end
 
--- Health check for the cached shootFunc / PRNG upvalues.
 local function DragonStillHealthy()
     if not shootFunc or not Validator2 or not ShootGunEvent then return false end
     local ok, healthy = pcall(function()
@@ -2214,18 +2333,6 @@ local function DragonStillHealthy()
     return true
 end
 
--- ============================================================
--- fireShot — ENHANCED SIMULTANEOUS MULTI-HIT
--- ------------------------------------------------------------
--- Fires `_G.DragonShotsPerBurst` shots at the SAME target in the
--- SAME frame (no task.wait between them). The PRNG / validator
--- state is advanced locally in a single synchronous pass and
--- committed once, so all N tokens are precomputed before any
--- remote is fired. Roblox batches the FireServer calls into the
--- same network tick, so the server receives N legitimate shots
--- (each with a distinct seq token) back-to-back and applies
--- damage N times nearly simultaneously.
--- ============================================================
 local function fireShot(pos, hit)
     if not pos then return false end
     if not initDragon() then return false end
@@ -2236,7 +2343,6 @@ local function fireShot(pos, hit)
         return false
     end
 
-    -- Resolve primary hit part
     local primary
     if typeof(hit) == "Instance" and hit:IsA("BasePart") then
         primary = hit
@@ -2260,7 +2366,6 @@ local function fireShot(pos, hit)
     if shots < 1 then shots = 1 end
     if shots > 10 then shots = 10 end
 
-    -- Read the PRNG / validator state ONCE.
     local u20 = debug.getupvalue(shootFunc, idx.u20)
     local u21 = debug.getupvalue(shootFunc, idx.u21)
     local u22 = debug.getupvalue(shootFunc, idx.u22)
@@ -2276,9 +2381,6 @@ local function fireShot(pos, hit)
         return false
     end
 
-    -- Precompute N validator tokens by advancing the PRNG locally.
-    -- Each token carries a distinct seq number, so the server sees
-    -- N legitimate shots instead of one replayed one.
     local tokens = table.create(shots)
     for i = 1, shots do
         local u79 = u25 * u21
@@ -2293,15 +2395,10 @@ local function fireShot(pos, hit)
         }
     end
 
-    -- Commit the final PRNG state atomically.
     debug.setupvalue(shootFunc, idx.u24, u24)
     debug.setupvalue(shootFunc, idx.u25, u25)
     debug.setupvalue(shootFunc, idx.u26, u26)
 
-    -- Fire every shot in the SAME frame (no task.wait between them).
-    -- Roblox queues the FireServer calls and sends them in one network
-    -- tick, so the server receives N shots back-to-back and applies
-    -- damage N times nearly simultaneously.
     local anyOk = false
     for i = 1, shots do
         if not primary.Parent then break end
@@ -2429,12 +2526,6 @@ local function getClosestSeaTarget()
     return best, bestModel
 end
 
--- ============================================================
--- getAllSeaTargets — ENHANCED MULTI-TARGET SCANNER
--- ------------------------------------------------------------
--- Returns a list of all valid sea event targets within range.
--- This allows the Dragonstorm to hit multiple enemies at once.
--- ============================================================
 local function getAllSeaTargets()
     local targets = {}
     local char = LocalPlayer.Character
@@ -2529,13 +2620,6 @@ local function getLeviathanTarget()
     return best, bestModel
 end
 
--- ============================================================
--- getAllLeviathanTargets — MULTI-SEGMENT LEVIATHAN SCANNER
--- ------------------------------------------------------------
--- Returns EVERY Leviathan segment (and/or "Leviathan" model)
--- within AttackRange so the Dragonstorm can hit them all in
--- the same frame. Sorted closest-first.
--- ============================================================
 local function getAllLeviathanTargets()
     local targets = {}
     local char = LocalPlayer.Character
@@ -2595,12 +2679,12 @@ local function StartDragonAttack()
                     if not IsOnBoat() then Equip_Auto("Dragonstorm") end
                     return
                 end
-                
+
                 local now = os.clock()
                 local interval = _G.DragonFireInterval or 0.30
                 if now - DragonLastFire < interval then return end
                 DragonLastFire = now
-                
+
                 local targets = getAllSeaTargets()
                 if #targets == 0 then
                     if os.clock() - lastDiag > 2 then
@@ -2609,13 +2693,9 @@ local function StartDragonAttack()
                     end
                     return
                 end
-                
-                -- Sort targets by distance (closest first)
+
                 table.sort(targets, function(a, b) return a.dist < b.dist end)
 
-                -- [MULTI-HIT] Fire at ALL targets inside the range in the SAME frame.
-                -- No task.wait between targets so every target receives
-                -- `DragonShotsPerBurst` shots back-to-back in one network tick.
                 local MaxTargets = 10
                 local fired = 0
                 for i = 1, math.min(#targets, MaxTargets) do
@@ -2634,7 +2714,7 @@ local function StartDragonAttack()
                 lastDiag = os.clock()
                 warn("[Dragonstorm] error en bucle: " .. tostring(err))
             end
-            task.wait(0.05) -- Check frequently, rate limit handles actual firing
+            task.wait(0.05)
         end
         DragonAttackRunning = false
     end)
@@ -2643,6 +2723,8 @@ end
 -- End Dragonstorm
 -- ============================================================
 
+-- [REBUILT] FightSeaEvent: uses Encounter state, does NOT break on a single
+-- missing detection. Only exits when Encounter_Missing() confirms.
 local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
     local start = os.clock()
     local function CurrentStand()
@@ -2650,15 +2732,29 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
         if not r then return nil end
         return Sea_Stand(Mob, r)
     end
+    Encounter_Enter("sea", Mob, 2.0)
     while _G.AutoLeviathanFull and os.clock() - start < 600 do
         if ShouldBreak and ShouldBreak() then
             SetStatus("El capitán volvió al barco: dejo de pelear y vuelvo")
             break
         end
         if not Character or not HRP or not HD or HD.Health <= 0 then break end
-        if not Mob or not Mob.Parent or not Sea_MobStillAlive(Mob) then
-            if Mob then SetStatus("Evento marino derrotado: " .. Mob.Name) end
-            break
+        -- [FIX] Missing detection: only ends the encounter after consecutive misses.
+        if not Mob or not Mob.Parent then
+            Encounter.MissingSince = Encounter.MissingSince or os.clock()
+            if os.clock() - Encounter.MissingSince >= 3.0 then
+                break
+            end
+            task.wait(0.2)
+        elseif Sea_MobStillAlive(Mob) then
+            Encounter_NoteSeen()
+        else
+            -- Still there in workspace but Health/Humanoid read false — require grace.
+            if not Encounter.MissingSince then Encounter.MissingSince = os.clock() end
+            if os.clock() - Encounter.MissingSince >= 3.0 then
+                SetStatus("Evento marino derrotado: " .. Mob.Name)
+                break
+            end
         end
         SetStatus("Farmeo marino: " .. Mob.Name .. " (llevo " .. math.floor(os.clock() - start) .. " s)")
         AttackModel = Mob
@@ -2674,12 +2770,8 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
             if hrpNow and (Stand.Position - hrpNow.Position).Magnitude > 10 then
                 _tp(CurrentStand, function()
                     return (not _G.AutoLeviathanFull) or (not Mob or not Mob.Parent)
-                        or (not Sea_MobStillAlive(Mob)) or (ShouldBreak and ShouldBreak())
+                        or (ShouldBreak and ShouldBreak())
                 end)
-            end
-            if not Sea_MobStillAlive(Mob) then
-                SetStatus("Evento marino derrotado: " .. Mob.Name)
-                break
             end
             FightTarget = { CF = Stand, At = os.clock() }
         end
@@ -2703,6 +2795,7 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
     AttackModel = nil
     AttackStandFn = nil
     FightTarget = nil
+    Encounter_Leave()
     task.wait(0.3)
 end
 local function Leviathan_IsDead(model)
@@ -2791,6 +2884,7 @@ task.spawn(function()
         end
     end
 end)
+-- [REBUILT] FightLeviathan: Encounter state, 15s grace (was fixed MissingGrace).
 local function FightLeviathan(ShouldBreak, WaitSec)
     local model, part = Leviathan_Find()
     if not model then return false end
@@ -2808,11 +2902,10 @@ local function FightLeviathan(ShouldBreak, WaitSec)
         end
         LeviathanWaitDone = not Aborted
     end
+    Encounter_Enter("leviathan", model, 15.0)
     local Killed = false
     local start = os.clock()
     local LastFind = 0
-    local MissingSince = nil
-    local MissingGrace = 15
     while _G.AutoLeviathanFull and os.clock() - start < 900 do
         if ShouldBreak and ShouldBreak() then break end
         if not Character or not HRP or not HD or HD.Health <= 0 then break end
@@ -2834,14 +2927,8 @@ local function FightLeviathan(ShouldBreak, WaitSec)
             LastFind = os.clock()
             model, part = Leviathan_Find()
             if model then
-                MissingSince = nil
+                Encounter_NoteSeen()
                 if Leviathan_IsDead(model) then
-                    Killed = true
-                    break
-                end
-            else
-                MissingSince = MissingSince or os.clock()
-                if os.clock() - MissingSince >= MissingGrace then
                     Killed = true
                     break
                 end
@@ -2852,6 +2939,10 @@ local function FightLeviathan(ShouldBreak, WaitSec)
             AttackModel = nil
             AttackStandFn = nil
             FightTarget = nil
+            if Encounter_Missing() then
+                Killed = true
+                break
+            end
             task.wait(0.2)
         else
             local MyHP = HD and HD.Health
@@ -2917,9 +3008,6 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                         local interval = _G.DragonFireInterval or 0.30
                         if now - DragonLastFire >= interval then
                             DragonLastFire = now
-                            -- [MULTI-HIT] Hit EVERY Leviathan segment inside AttackRange
-                            -- in the SAME frame. Each segment receives
-                            -- `DragonShotsPerBurst` shots via fireShot().
                             local lvTargets = getAllLeviathanTargets()
                             local fired = 0
                             for _, tgt in ipairs(lvTargets) do
@@ -2931,7 +3019,6 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                                 end
                             end
                             if fired == 0 then
-                                -- Fallback: keep old single-target behaviour if nothing was found
                                 local lvPart, lvModel = getLeviathanTarget()
                                 if lvPart then
                                     local aimPart = lvModel and lvModel:FindFirstChild("Leviathan Segment")
@@ -2959,6 +3046,7 @@ local function FightLeviathan(ShouldBreak, WaitSec)
     AttackModel = nil
     AttackStandFn = nil
     FightTarget = nil
+    Encounter_Leave()
     return Killed
 end
 SeaAPI.Sea_Mob = Sea_Mob
@@ -2997,6 +3085,7 @@ do
     end
 end
 end
+
 _G.RJR_BoatDeadArmed = true
 _G.RJR_BoatDeadMonitorRunning = false
 _G.RJR_Resetting = false
@@ -3006,9 +3095,12 @@ _G.RJR_LeviathanPresent = function()
     if MapL:FindFirstChild("LeviathanGate") or MapL:FindFirstChild("FrozenHeart") then return true end
     return SeaAPI.Leviathan_SegmentsExist()
 end
+
+-- [FIX] RJR_ResetCharacterAtTiki: gated on Encounter_Active() so we never
+-- reset the character mid-fight. Previous gate only checked Leviathan presence.
 _G.RJR_ResetCharacterAtTiki = function(reason)
     if _G.RJR_Resetting then return end
-    if _G.RJR_LeviathanPresent() then
+    if _G.RJR_LeviathanPresent() or Encounter_Active() then
         SetStatus("Leviathan, puerta o corazón presentes: no reinicio")
         return
     end
@@ -3037,7 +3129,7 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
     else
         SetStatus(reason .. ": sin barco, reinicio directo")
     end
-    if _G.RJR_LeviathanPresent() then
+    if _G.RJR_LeviathanPresent() or Encounter_Active() then
         SetStatus("Leviathan, puerta o corazón presentes: no reinicio")
         _G.RJR_Resetting = false
         return
@@ -3065,6 +3157,7 @@ _G.RJR_ResetCharacterAtTiki = function(reason)
     end
     _G.RJR_Resetting = false
 end
+
 _G.RJR_StartBoatDeadMonitor = function()
     if _G.RJR_BoatDeadMonitorRunning then return end
     _G.RJR_BoatDeadMonitorRunning = true
@@ -3125,7 +3218,7 @@ _G.RJR_StartBoatDeadMonitor = function()
                         end
                     end
                 end
-                if Trigger and _G.RJR_LeviathanPresent and _G.RJR_LeviathanPresent() then Trigger = nil end
+                if Trigger and (_G.RJR_LeviathanPresent and _G.RJR_LeviathanPresent() or Encounter_Active()) then Trigger = nil end
                 if Trigger then
                     if _G.RJR_BoatDeadArmed and os.clock() - StartAt > 8 then
                         if _G.RJR_Resetting then
@@ -3153,38 +3246,71 @@ _G.RJR_StartBoatDeadMonitor = function()
         _G.RJR_BoatDeadMonitorRunning = false
     end)
 end
+
 do
+-- [REBUILT RECOVERY] Atomic lock, encounter-gated, verifies success.
 local WaterRecovery = {
     IsRecovering = false,
     LastRecoveryAt = 0,
     ConsecutiveFails = 0,
     LastSuccessAt = 0,
     WaterEnteredAt = nil,
+    LowYSince = nil,
     LastStuckCheckPos = nil,
     StaticTicks = 0,
 }
 
+-- [FIX] IsInWater: stricter. Requires either Humanoid state == Swimming,
+-- OR HRP.Y < 6 with FloorMaterial == Air (genuinely floating). This prevents
+-- firing during combat when the HRP naturally dips during teleports.
 local function IsInWater(hrp, hum)
     if not hrp or not hum then return false end
     if hum.SeatPart ~= nil or hum.Sit then return false end
-    if hrp.Position.Y < 12 then return true end
     local state = hum:GetState()
     if state == Enum.HumanoidStateType.Swimming then return true end
+    if hrp.Position.Y < 6 and hum.FloorMaterial == Enum.Material.Air then
+        return true
+    end
     return false
 end
 
 local function PerformWaterRecovery(reason)
-    if WaterRecovery.IsRecovering or not _G.AutoLeviathanFull then return false end
+    if not _G.AutoLeviathanFull then return false end
+    -- [FIX] Atomic lock — check and set in the same tick.
+    if WaterRecovery.IsRecovering then return false end
     local now = os.clock()
-    if (now - WaterRecovery.LastRecoveryAt) < 2.0 then return false end
-    WaterRecovery.LastRecoveryAt = now
+    if (now - WaterRecovery.LastRecoveryAt) < 2.5 then return false end
     WaterRecovery.IsRecovering = true
+    WaterRecovery.LastRecoveryAt = now
+
+    -- [FIX] If an encounter is active, only recover when the HRP is truly
+    -- underwater (Y < 4) for at least 4 s. This prevents mid-fight interruption.
+    if Encounter_Active() then
+        local _, hrpE, humE = GetCharacterParts()
+        if hrpE and humE and not IsInWater(hrpE, humE) then
+            WaterRecovery.IsRecovering = false
+            return false
+        end
+        local LowSince = WaterRecovery.LowYSince
+        if not LowSince then
+            WaterRecovery.LowYSince = now
+            WaterRecovery.IsRecovering = false
+            return false
+        end
+        if now - LowSince < 4.0 then
+            WaterRecovery.IsRecovering = false
+            return false
+        end
+    else
+        WaterRecovery.LowYSince = nil
+    end
 
     local recovered = false
     local ok = pcall(function()
         local _, hrp, hum = GetCharacterParts()
         if not hrp or not hum then return end
 
+        SetState(STATE_RECOVERING)
         SetStatus("¡Alerta de rescate (" .. tostring(reason or "agua") .. "): liberando personaje!")
         print("[Recovery] Rescate activado (" .. tostring(_G.Mode or "Unknown") .. "): " .. tostring(reason))
 
@@ -3222,7 +3348,7 @@ local function PerformWaterRecovery(reason)
                 SetStatus("Seguidor rescatado: volando hacia el barco del capitán")
                 _tp(CFrame.new(targetPos) * KeepFacing())
                 task.wait(0.2)
-                FollowerBoardSeat(captainBoat)
+                -- Do NOT call FollowerBoardSeat here — let the follower loop own boarding.
             elseif capHrp then
                 SetStatus("Seguidor rescatado: volando sobre el capitán")
                 _tp(LiveCaptainTopCF(35), function()
@@ -3258,6 +3384,7 @@ local function PerformWaterRecovery(reason)
             WaterRecovery.ConsecutiveFails = 0
             WaterRecovery.LastSuccessAt = os.clock()
             WaterRecovery.WaterEnteredAt = nil
+            WaterRecovery.LowYSince = nil
             SetStatus("Rescate completado: movimiento restaurado")
             print("[Recovery] Rescate exitoso para " .. tostring(_G.Mode))
         else
@@ -3273,14 +3400,27 @@ local function PerformWaterRecovery(reason)
                         HoldCFrame = hF.CFrame
                     end
                 end)
-            elseif WaterRecovery.ConsecutiveFails >= 5 and _G.RJR_ResetCharacterAtTiki then
+            elseif WaterRecovery.ConsecutiveFails >= 5 and _G.RJR_ResetCharacterAtTiki
+                and not Encounter_Active() and not _G.RJR_LeviathanPresent() then
                 WaterRecovery.ConsecutiveFails = 0
                 SetStatus("Fallo persistente: reiniciando personaje en Tiki")
                 pcall(_G.RJR_ResetCharacterAtTiki, "Atascado en agua")
+            else
+                -- Encounter/Leviathan active: refuse to reset, hover instead.
+                pcall(function()
+                    local _, hF = GetCharacterParts()
+                    if hF then
+                        hF.CFrame = CFrame.new(hF.Position.X, 55, hF.Position.Z)
+                        HoldCFrame = hF.CFrame
+                    end
+                end)
             end
         end
     end)
 
+    if GetState() == STATE_RECOVERING then
+        SetState(Encounter.Active and (Encounter.Kind == "leviathan" and STATE_LEVIATHAN or STATE_COMBAT) or STATE_IDLE)
+    end
     WaterRecovery.IsRecovering = false
     return recovered
 end
@@ -3291,6 +3431,9 @@ end
 _G.RJR_RecoverLock = PerformWaterRecovery
 _G.PerformWaterRecovery = PerformWaterRecovery
 
+-- [FIX] Water monitor: respects Encounter_Active(). If a fight is running,
+-- we still allow the recovery through the LowYSince gate inside
+-- PerformWaterRecovery, but the monitor itself will not spam-trigger.
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -3309,10 +3452,11 @@ task.spawn(function()
                 local moved = WaterRecovery.LastStuckCheckPos
                     and (curPos - WaterRecovery.LastStuckCheckPos).Magnitude or 10
 
-                local isMovingFast = hrp.AssemblyLinearVelocity.Magnitude > 20
                 local isActivelyTweening = (TpActive or Tweening) and moved > 4
 
-                if waterDuration >= 2.0 and not isActivelyTweening and not WaterRecovery.IsRecovering then
+                -- When encounter active, longer threshold (4 s) so combat dips don't fire.
+                local threshold = Encounter_Active() and 4.0 or 2.0
+                if waterDuration >= threshold and not isActivelyTweening and not WaterRecovery.IsRecovering then
                     PerformWaterRecovery("agua detectada (" .. string.format("%.1f", waterDuration) .. "s)")
                 end
                 WaterRecovery.LastStuckCheckPos = curPos
@@ -3337,12 +3481,14 @@ task.spawn(function()
             end
         else
             WaterRecovery.WaterEnteredAt = nil
+            WaterRecovery.LowYSince = nil
             WaterRecovery.LastStuckCheckPos = nil
             WaterRecovery.StaticTicks = 0
         end
     end
 end)
 end
+
 local function ComputeHarpoonPitch(FromPos, ToPos)
     local dx = ToPos.X - FromPos.X
     local dy = ToPos.Y - FromPos.Y
@@ -3872,10 +4018,17 @@ local function WaitForTeammates(boat, DriverSeat, ShouldStop, FightEvents, NoReb
             if not Unseat() then
                 SetStatus("No pude bajarme: sigo intentando pelear")
             end
+            -- [FIX] Stuck table bounded — cleared every 30s so a transient
+            -- false-negative doesn't permanently blacklist a mob.
             local Stuck = {}
+            local StuckSince = os.clock()
             while _G.AutoLeviathanFull do
                 if ShouldStop and ShouldStop() then break end
                 if CountTeammatesOnBoat(boat) >= 4 then break end
+                if os.clock() - StuckSince > 30 then
+                    Stuck = {}
+                    StuckSince = os.clock()
+                end
                 local M, R, S = SeaAPI.Sea_Mob(5000, Stuck)
                 if not M or not R then break end
                 SeaAPI.FightSeaEvent(M, R, S)
@@ -3933,9 +4086,15 @@ local function CaptainFarmPhase()
     local LastTeamCheck = 0
     local LastMobCheck = 0
     local LastSlowCheck = 0
+    -- [FIX] Bounded Fought table.
     local Fought = {}
+    local FoughtSince = os.clock()
     local Mob, Root, Skill = nil, nil, false
     while _G.AutoLeviathanFull and not FarmDone do
+        if os.clock() - FoughtSince > 45 then
+            Fought = {}
+            FoughtSince = os.clock()
+        end
         if os.clock() - LastSlowCheck >= 0.4 then
             LastSlowCheck = os.clock()
             local MapX = workspace:FindFirstChild("Map")
@@ -3978,7 +4137,13 @@ local function CaptainFarmPhase()
             if not Unseat() then
                 SetStatus("No pude bajarme: sigo intentando pelear")
             end
+            local LocalStuck = {}
+            local LocalStuckSince = os.clock()
             while _G.AutoLeviathanFull and not FarmDone do
+                if os.clock() - LocalStuckSince > 30 then
+                    LocalStuck = {}
+                    LocalStuckSince = os.clock()
+                end
                 local M, R, S = SeaAPI.Sea_Mob(5000, Fought)
                 if not M or not R then break end
                 SeaAPI.FightSeaEvent(M, R, S)
@@ -4178,7 +4343,12 @@ local function CaptainHuntPhase()
                     SetStatus("No pude bajarme: sigo intentando pelear")
                 end
                 local Stuck = {}
+                local StuckSince = os.clock()
                 while _G.AutoLeviathanFull do
+                    if os.clock() - StuckSince > 30 then
+                        Stuck = {}
+                        StuckSince = os.clock()
+                    end
                     local MapX = workspace:FindFirstChild("Map")
                     if SeaAPI.Leviathan_SegmentsExist() or (MapX and MapX:FindFirstChild("LeviathanGate")) then break end
                     local M, R, S = SeaAPI.Sea_Mob(5000, Stuck)
@@ -4331,12 +4501,21 @@ local function IsCaptainOnBoat(boat)
     end
     return false
 end
+-- [REBUILT] FollowerBoardSeat:
+--   * Driver seat first (if free), then cannons.
+--   * 2 s per-seat budget (was effectively 15 s per attempt, 15 s total).
+--   * Reservation system prevents two followers fighting for the same seat.
+--   * FollowSeatsFull is only set after TWO full rotations, and it is
+--     re-validated every second by the caller (so a freed seat is boarded fast).
 local function FollowerBoardSeat(boat)
     if not boat or not boat.Parent then return false end
     local cannons = GetCannons(boat)
     local _, hrp0 = GetCharacterParts()
-    local firstSeat = boat:FindFirstChild("VehicleSeat") or (cannons and cannons[1]) or boat.PrimaryPart
-    if not firstSeat or not hrp0 then return false end
+    if not hrp0 then return false end
+
+    local DriverSeat = boat:FindFirstChild("VehicleSeat")
+    local firstSeat = DriverSeat or (cannons[1] and cannons[1]:FindFirstChild("Seat")) or boat.PrimaryPart
+    if not firstSeat then return false end
 
     local distToBoat = (hrp0.Position - firstSeat.Position).Magnitude
     if distToBoat > BoatFindRange then
@@ -4344,6 +4523,7 @@ local function FollowerBoardSeat(boat)
         return false
     end
 
+    -- Fly to the boat first if far / in water.
     local inWater = hrp0.Position.Y < 15
     if inWater or distToBoat > 25 then
         SetStatus("Siguiendo: acercándome al barco por aire")
@@ -4352,11 +4532,12 @@ local function FollowerBoardSeat(boat)
         while _G.AutoLeviathanFull and os.clock() - FlyStart < 15 do
             local _, curH = GetCharacterParts()
             if not curH or not boat or not boat.Parent then break end
-            local curFirst = boat:FindFirstChild("VehicleSeat") or (cannons and cannons[1]) or boat.PrimaryPart
+            local curFirst = boat:FindFirstChild("VehicleSeat")
+                or (cannons[1] and cannons[1]:FindFirstChild("Seat"))
+                or boat.PrimaryPart
             if not curFirst then break end
             local curDist = (curH.Position - curFirst.Position).Magnitude
             if curDist <= 25 and curH.Position.Y >= 18 then break end
-
             _tp(function()
                 local b = GetCaptainBoat()
                 local p = b and (b:FindFirstChild("VehicleSeat") or b.PrimaryPart)
@@ -4373,40 +4554,60 @@ local function FollowerBoardSeat(boat)
         end
     end
 
-    local tried = {}
-    local BoardStart = os.clock()
-    while _G.AutoLeviathanFull and os.clock() - BoardStart < 15 do
-        local seat = nil
+    -- Two full seat rotations; driver first, then cannons.
+    local rotations = 0
+    local MAX_ROTATIONS = 2
+    local perSeatTimeout = 2
+    while _G.AutoLeviathanFull and rotations < MAX_ROTATIONS do
+        rotations = rotations + 1
+        local tried = {}
+        -- Candidate list: driver first, then cannons.
+        local candidates = {}
+        if DriverSeat then candidates[#candidates + 1] = DriverSeat end
         for _, cannon in ipairs(cannons) do
             local s = cannon:FindFirstChild("Seat")
-            if s and not IsSeatOccupied(s) and not tried[s] then
-                seat = s
-                break
+            if s then candidates[#candidates + 1] = s end
+        end
+        if #candidates == 0 then break end
+        for _, seat in ipairs(candidates) do
+            if not _G.AutoLeviathanFull then break end
+            if seat.Parent and not IsSeatOccupied(seat) and not tried[seat] then
+                if _G.RJR_ReserveSeat(seat, LocalPlayer) then
+                    SetStatus("Siguiendo: subiendo al asiento " .. tostring(seat.Name))
+                    if BoardSeat(seat, perSeatTimeout) then
+                        FollowSeatsFull = false
+                        return true
+                    end
+                    -- BoardSeat releases the reservation on failure.
+                end
+                tried[seat] = true
             end
         end
-        if not seat then
-            local occupiedCount = 0
-            for _, cannon in ipairs(cannons) do
-                local s = cannon:FindFirstChild("Seat")
-                if s and IsSeatOccupied(s) then occupiedCount = occupiedCount + 1 end
-            end
-            if occupiedCount >= #cannons and #cannons > 0 then
-                SetStatus("Siguiendo: cañones llenos (4/4) — siguiendo por aire")
-                FollowSeatsFull = true
-                return false
-            else
-                tried = {}
-                task.wait(0.2)
-            end
-        else
-            SetStatus("Siguiendo: subiendo al cañón " .. seat.Parent.Name)
-            if BoardSeat(seat, 1.5) then
-                FollowSeatsFull = false
-                return true
-            end
-            tried[seat] = true
+        -- Small pause between rotations so a teammate dropping in isn't raced.
+        if rotations < MAX_ROTATIONS then
+            task.wait(0.4)
         end
-        task.wait(0.1)
+    end
+
+    -- Only declare "full" if EVERY candidate is occupied by someone else.
+    local occupiedCount = 0
+    local totalSeats = 0
+    if DriverSeat and DriverSeat.Parent then
+        totalSeats = totalSeats + 1
+        if IsSeatOccupied(DriverSeat) then occupiedCount = occupiedCount + 1 end
+    end
+    for _, cannon in ipairs(cannons) do
+        local s = cannon:FindFirstChild("Seat")
+        if s then
+            totalSeats = totalSeats + 1
+            if IsSeatOccupied(s) then occupiedCount = occupiedCount + 1 end
+        end
+    end
+    if totalSeats > 0 and occupiedCount >= totalSeats then
+        SetStatus("Siguiendo: todos los asientos ocupados — siguiendo por aire")
+        FollowSeatsFull = true
+    else
+        FollowSeatsFull = false
     end
     return false
 end
@@ -4446,8 +4647,14 @@ end
 local function StartFollower()
     if FollowerRunning then return end
     FollowerRunning = true
+    -- [FIX] CaptainBackOnBoat now ONLY true if the follower is currently
+    -- aboard the boat AND the captain is confirmed on it. Previously it
+    -- fired whenever the captain was merely within 30 studs of the boat,
+    -- which aborted sea-event fights as soon as the captain stood on deck.
     local function CaptainBackOnBoat()
         local boat = GetCaptainBoat()
+        if not boat then return false end
+        if not IsOnCaptainBoat(boat) then return false end
         return IsCaptainOnBoat(boat)
     end
     task.spawn(function()
@@ -4487,8 +4694,7 @@ local function StartFollower()
                 local LV = SeaAPI.Leviathan_Find()
                 if LV then
                     if GateTweening then
-                        GateTweening = false
-                        pcall(function()
+                        GateTweening = false                        pcall(function()
                             if CurrentTween then
                                 CurrentTween:Cancel()
                                 CurrentTween = nil
@@ -4599,15 +4805,27 @@ local function StartFollower()
                 end
             end)
             if not ok then task.wait(0.5) end
+            -- [FIX] If FollowSeatsFull was set transiently, re-check the boat
+            -- for a freed seat each tick. This allows fast boarding as soon
+            -- as a seat frees, without waiting on a fixed delay.
             if FollowSeatsFull and not IsOnBoat() then
-                if GetCaptainHRP() then
-                    _tp(LiveCaptainTopCF(35), function()
-                        return not _G.AutoLeviathanFull
-                    end)
-                else
-                    _tp(LiveSelfCF(50), function()
-                        return not _G.AutoLeviathanFull
-                    end)
+                local bNow = GetCaptainBoat()
+                if bNow then
+                    -- Attempt a quick re-board; if a seat is free this succeeds immediately.
+                    if FollowerBoardSeat(bNow) then
+                        FollowSeatsFull = false
+                    end
+                end
+                if FollowSeatsFull and not IsOnBoat() then
+                    if GetCaptainHRP() then
+                        _tp(LiveCaptainTopCF(35), function()
+                            return not _G.AutoLeviathanFull
+                        end)
+                    else
+                        _tp(LiveSelfCF(50), function()
+                            return not _G.AutoLeviathanFull
+                        end)
+                    end
                 end
             end
             task.wait(0.2)
@@ -5136,8 +5354,13 @@ RunService:BindToRenderStep("RJR_AimCamera", Enum.RenderPriority.Camera.Value + 
             hrpAim.Position + dir * 30 + Vector3.new(0, 3, 0))
     end)
 end)
+-- [FIX] Guard the metatable hook so the script doesn't hard-fail on executors
+-- that don't expose getrawmetatable. The SilentAim feature is simply skipped
+-- on those executors.
 pcall(function()
+    if type(getrawmetatable) ~= "function" then return end
     local mt = getrawmetatable(game)
+    if not mt or not mt.__namecall then return end
     local oldNamecall = mt.__namecall
     setreadonly(mt, false)
     mt.__namecall = newcclosure(function(self, ...)
@@ -5200,6 +5423,8 @@ LocalPlayer.CharacterAdded:Connect(function()
         TpActive = false
         ClearHover()
         FollowSeatsFull = false
+        Encounter_Leave()
+        SetState(STATE_IDLE)
     end)
     task.wait(1)
     Update_Character()
@@ -5212,6 +5437,8 @@ LocalPlayer.CharacterRemoving:Connect(function()
     HRP = nil
     NoclipOn = false
     LastNoclipApply = 0
+    Encounter_Leave()
+    SetState(STATE_IDLE)
 end)
 local CraftStatus = "Desactivado"
 local CraftQualityList = {
@@ -5300,8 +5527,6 @@ task.spawn(function()
     end
 end)
 local FruitsBlackList = {}
--- [FIXED] Auto Store Fruit Spam Issue
--- Added a global StorageFull cooldown and only attempts one fruit per second to prevent spam.
 task.spawn(function()
     local RETRY_INTERVAL = 60
     local StorageFull = false
@@ -5341,7 +5566,7 @@ task.spawn(function()
                                         StorageFullAt = now
                                         print("[AutoStoreFruits] Storage limit reached; pausing attempts for " .. RETRY_INTERVAL .. "s")
                                     end
-                                    break -- Break inner loop, only try one fruit per second
+                                    break
                                 end
                             end
                         end
