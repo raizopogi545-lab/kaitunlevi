@@ -4423,11 +4423,12 @@ local function FollowerBoardSeat(boat)
     end
 
     local inWater = hrp0.Position.Y < 15
+    -- Hoist approach-claim vars to function scope so we can transfer the claim below.
+    local approachSeat = nil
+    local approachClaimed = false
     if inWater or distToBoat > 25 then
         ClearHover()
         -- Pick the first free, unclaimed cannon seat as approach destination.
-        local approachSeat = nil
-        local approachClaimed = false
         for _, cannon in ipairs(cannons) do
             local s = cannon:FindFirstChild("Seat")
             if s and not IsSeatOccupied(s) and not ClaimedSeats[s] then
@@ -4447,7 +4448,7 @@ local function FollowerBoardSeat(boat)
             if not curH then return true end
             return (curH.Position - approachSeat.Position).Magnitude <= 20
         end)
-        -- Release claim if stolen or destroyed during tween.
+        -- Release claim if seat was stolen or destroyed during approach tween.
         if approachClaimed and (not approachSeat.Parent or IsSeatOccupied(approachSeat)) then
             ClaimedSeats[approachSeat] = nil
             approachClaimed = false
@@ -4456,7 +4457,14 @@ local function FollowerBoardSeat(boat)
     end
 
     local tried = {}
-    local myClaim = nil
+    -- [FIX] Transfer surviving approach claim into myClaim so ReleaseClaim()
+    -- cleans it up on every exit path (success, timeout, bail).
+    local myClaim = (approachClaimed and approachSeat and approachSeat.Parent and not IsSeatOccupied(approachSeat))
+        and approachSeat or nil
+    if approachClaimed and not myClaim and approachSeat then
+        -- Approach claim is stale (seat occupied/destroyed) — release it now.
+        ClaimedSeats[approachSeat] = nil
+    end
     local function ReleaseClaim()
         if myClaim then ClaimedSeats[myClaim] = nil; myClaim = nil end
     end
@@ -4814,7 +4822,6 @@ local function StartFollower()
                             end
                         end
                     end
-                end
                 end
             end)
             if not ok then task.wait(0.5) end
