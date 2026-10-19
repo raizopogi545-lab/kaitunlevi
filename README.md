@@ -4517,23 +4517,18 @@ local function FollowerBoardSeat(boat)
         return false
     end
 
-    -- Quick positioning if stuck in water or far from boat
+    -- If follower is in water or too far from boat deck, snap directly onto boat deck once
     local inWater = hrp0.Position.Y < 15
-    if inWater or distToBoat > 25 then
-        SetStatus("Siguiendo: acercándome al barco por aire")
+    if inWater or distToBoat > 20 then
+        SetStatus("Siguiendo: abordando el barco")
         ClearHover()
-        _tp(function()
-            local b = GetCaptainBoat()
-            local p = b and (b:FindFirstChild("VehicleSeat") or b.PrimaryPart or candidateSeats[1])
-            if not p then return nil end
-            return CFrame.new(p.Position + Vector3.new(0, 8, 0)) * KeepFacing()
-        end, function()
-            local _, h = GetCharacterParts()
-            local b = GetCaptainBoat()
-            local p = b and (b:FindFirstChild("VehicleSeat") or b.PrimaryPart or candidateSeats[1])
-            if not h or not p then return true end
-            return (h.Position - p.Position).Magnitude <= 15 and h.Position.Y >= 14
+        pcall(function()
+            hrp0.AssemblyLinearVelocity = Vector3.zero
+            hrp0.AssemblyAngularVelocity = Vector3.zero
+            local targetDeckCF = (referencePart.CFrame * CFrame.new(0, 5, 0)) * KeepFacing()
+            hrp0.CFrame = targetDeckCF
         end)
+        task.wait(0.1)
     end
 
     local tried = {}
