@@ -2650,38 +2650,54 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
         if not r then return nil end
         return Sea_Stand(Mob, r)
     end
+    -- Do one initial approach tween so the player is near the mob stand position.
+    -- After this, AttackModel/AttackStandFn on the Heartbeat hover maintains position.
+    -- We only re-tween if the player drifts far (>80 studs) from the stand.
+    local function DoApproach()
+        local Stand = CurrentStand()
+        if not Stand then return end
+        local _, hrpNow = GetCharacterParts()
+        if not hrpNow then return end
+        if (Stand.Position - hrpNow.Position).Magnitude <= 60 then return end
+        _tp(CurrentStand, function()
+            if not _G.AutoLeviathanFull or not Mob or not Mob.Parent then return true end
+            if not Sea_MobStillAlive(Mob) then return true end
+            if ShouldBreak and ShouldBreak() then return true end
+            local _, h = GetCharacterParts()
+            if not h then return true end
+            return (CurrentStand() ~= nil and (h.Position - CurrentStand().Position).Magnitude <= 60)
+        end)
+    end
+    DoApproach()
     while _G.AutoLeviathanFull and os.clock() - start < 600 do
         if ShouldBreak and ShouldBreak() then
             SetStatus("El capitán volvió al barco: dejo de pelear y vuelvo")
             break
         end
-        if not Character or not HRP or not HD or HD.Health <= 0 then break end
+        -- Use GetCharacterParts() for fresh character state every iteration.
+        local _, hrpLoop, humLoop = GetCharacterParts()
+        if not humLoop or humLoop.Health <= 0 then break end
         if not Mob or not Mob.Parent or not Sea_MobStillAlive(Mob) then
             if Mob then SetStatus("Evento marino derrotado: " .. Mob.Name) end
             break
         end
         SetStatus("Farmeo marino: " .. Mob.Name .. " (llevo " .. math.floor(os.clock() - start) .. " s)")
-        AttackModel = Mob
-        AttackStandFn = CurrentStand
-        local _, _, humSE = GetCharacterParts()
-        if humSE and (humSE.Sit or humSE.SeatPart ~= nil) then
+        -- Exit seat immediately if somehow seated mid-fight.
+        if humLoop and (humLoop.Sit or humLoop.SeatPart ~= nil) then
             SetStatus("Farmeo marino: comprobando salir del asiento")
-            ForceUnseat(5)
+            Unseat()
+            task.wait(0.2)
         end
         local Stand = CurrentStand()
         if Stand then
-            local _, hrpNow = GetCharacterParts()
-            if hrpNow and (Stand.Position - hrpNow.Position).Magnitude > 10 then
-                _tp(CurrentStand, function()
-                    return (not _G.AutoLeviathanFull) or (not Mob or not Mob.Parent)
-                        or (not Sea_MobStillAlive(Mob)) or (ShouldBreak and ShouldBreak())
-                end)
-            end
-            if not Sea_MobStillAlive(Mob) then
-                SetStatus("Evento marino derrotado: " .. Mob.Name)
-                break
-            end
+            -- Set hover target so Heartbeat keeps us at the stand position.
+            AttackModel = Mob
+            AttackStandFn = CurrentStand
             FightTarget = { CF = Stand, At = os.clock() }
+            -- Only re-tween if we drifted far (e.g. knocked back), so attacks aren't interrupted.
+            if hrpLoop and (Stand.Position - hrpLoop.Position).Magnitude > 80 then
+                DoApproach()
+            end
         end
         if not IsOnBoat() then
             if _G.DragonGunFarm then
@@ -2808,6 +2824,29 @@ local function FightLeviathan(ShouldBreak, WaitSec)
         end
         LeviathanWaitDone = not Aborted
     end
+    -- Initial approach: tween once to Leviathan stand position.
+    -- After this, the Heartbeat hover (AttackModel/AttackStandFn) tracks the Leviathan.
+    local function LeviathanCurrentStand()
+        if not model or not model.Parent or Leviathan_IsDead(model) then return nil end
+        local _, p = Leviathan_Find()
+        return Leviathan_Stand(model, p or part)
+    end
+    local function DoLevApproach()
+        local Stand = LeviathanCurrentStand()
+        if not Stand then return end
+        local _, hrpNow = GetCharacterParts()
+        if not hrpNow or (Stand.Position - hrpNow.Position).Magnitude <= 80 then return end
+        _tp(LeviathanCurrentStand, function()
+            if not _G.AutoLeviathanFull or not model or not model.Parent then return true end
+            if Leviathan_IsDead(model) then return true end
+            if ShouldBreak and ShouldBreak() then return true end
+            local _, h = GetCharacterParts()
+            if not h then return true end
+            local S = LeviathanCurrentStand()
+            return S ~= nil and (h.Position - S.Position).Magnitude <= 80
+        end)
+    end
+    DoLevApproach()
     local Killed = false
     local start = os.clock()
     local LastFind = 0
@@ -2815,17 +2854,22 @@ local function FightLeviathan(ShouldBreak, WaitSec)
     local MissingGrace = 15
     while _G.AutoLeviathanFull and os.clock() - start < 900 do
         if ShouldBreak and ShouldBreak() then break end
-        if not Character or not HRP or not HD or HD.Health <= 0 then break end
+        -- Fresh character check every iteration.
+        local _, hrpLev, humLev = GetCharacterParts()
+        if not humLev or humLev.Health <= 0 then break end
         local HeartMap = workspace:FindFirstChild("Map")
         if HeartMap and HeartMap:FindFirstChild("FrozenHeart") then
             Killed = true
             SetStatus("Corazón detectado: continúo con el enganche")
             break
         end
-        local _, _, humNow = GetCharacterParts()
-        if humNow and (humNow.Sit or humNow.SeatPart ~= nil) then
+        -- Exit seat quickly if accidentally seated mid-fight.
+        if humLev and (humLev.Sit or humLev.SeatPart ~= nil) then
             SetStatus("Pelea a pie: comprobando salir del asiento")
-            if not ForceUnseat(20) then
+            Unseat()
+            task.wait(0.2)
+            local _, _, humAfter = GetCharacterParts()
+            if humAfter and (humAfter.Sit or humAfter.SeatPart ~= nil) then
                 SetStatus("No consigo bajarme: salgo de este combate")
                 break
             end
@@ -2854,24 +2898,26 @@ local function FightLeviathan(ShouldBreak, WaitSec)
             FightTarget = nil
             task.wait(0.2)
         else
-            local MyHP = HD and HD.Health
+            -- Low HP flee loop — uses fresh character parts throughout.
+            local _, _, humHP = GetCharacterParts()
+            local MyHP = humHP and humHP.Health
             if MyHP and MyHP < 3000 then
                 SetStatus("Vida baja: subo a evadir (" .. string.format("%.0f", MyHP) .. ")")
-                local _, hrp = GetCharacterParts()
-                local FleeY = hrp and (hrp.Position.Y + 1050) or nil
+                local _, hrpFlee = GetCharacterParts()
+                local FleeY = hrpFlee and (hrpFlee.Position.Y + 1050) or nil
                 local EscStart = os.clock()
                 while _G.AutoLeviathanFull and os.clock() - EscStart < 600 do
                     if ShouldBreak and ShouldBreak() then break end
-                    if not Character or not HRP or not HD or HD.Health <= 0 then break end
+                    local _, _, humFlee = GetCharacterParts()
+                    if not humFlee or humFlee.Health <= 0 then break end
                     model, part = Leviathan_Find()
                     if not model then break end
-                    local H = HD and HD.Health
+                    local H = humFlee and humFlee.Health
                     if H and H >= 5000 then
                         SetStatus("Vida recuperada: sigo atacando")
                         break
                     end
-                    local _, hrp2 = GetCharacterParts()
-                    local _, _, hum2 = GetCharacterParts()
+                    local _, hrp2, hum2 = GetCharacterParts()
                     if hum2 and (hum2.Sit or hum2.SeatPart ~= nil) then
                         pcall(function()
                             hum2.Sit = false
@@ -2889,25 +2935,19 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                 local _, _, humPre = GetCharacterParts()
                 if humPre and (humPre.Sit or humPre.SeatPart ~= nil) then
                     SetStatus("Sigo sentado antes de atacar: me bajo a la fuerza")
-                    ForceUnseat(5)
+                    Unseat()
+                    task.wait(0.3)
                 end
                 local HPNow = Leviathan_GetHP(model)
                 SetStatus("Atacando al Leviathan: " .. model.Name .. (HPNow and (" - vida " .. string.format("%.0f", HPNow)) or ""))
-                local function CurrentStand()
-                    if not model.Parent or Leviathan_IsDead(model) then return nil end
-                    local _, p = Leviathan_Find()
-                    return Leviathan_Stand(model, p or part)
-                end
+                -- Register hover target so Heartbeat loop tracks the Leviathan.
                 AttackModel = model
-                AttackStandFn = CurrentStand
-                local Stand = CurrentStand()
+                AttackStandFn = LeviathanCurrentStand
+                local Stand = LeviathanCurrentStand()
                 if Stand then
-                    local _, hrpNow = GetCharacterParts()
-                    if not hrpNow or (Stand.Position - hrpNow.Position).Magnitude > 10 then
-                        _tp(CurrentStand, function()
-                            return (not _G.AutoLeviathanFull) or (not model or not model.Parent)
-                                or (ShouldBreak and ShouldBreak())
-                        end)
+                    -- Only re-tween if knocked far away; hover handles normal tracking.
+                    if hrpLev and (Stand.Position - hrpLev.Position).Magnitude > 120 then
+                        DoLevApproach()
                     end
                     FightTarget = { CF = Stand, At = os.clock() }
                 end
@@ -2944,7 +2984,8 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                         if not IsOnBoat() then Equip_Auto("Dragonstorm") end
                     end
                 else
-                    local Distance = Stand and (Stand.Position - HRP.Position).Magnitude or 0
+                    local _, hrpAtk = GetCharacterParts()
+                    local Distance = Stand and hrpAtk and (Stand.Position - hrpAtk.Position).Magnitude or 0
                     if Distance <= 80 then
                         pcall(CoolDown_Auto)
                     else
@@ -4344,35 +4385,32 @@ local function FollowerBoardSeat(boat)
         return false
     end
 
-    -- [FIX] Skip the slow live-tween fly phase.
-    -- If too far or in water, do a single instant teleport to just above
-    -- the first available cannon seat so BoardSeat can fire immediately.
-    -- This eliminates floating above the VehicleSeat and the 15-second loop.
     local inWater = hrp0.Position.Y < 15
     if inWater or distToBoat > 25 then
-        SetStatus("Siguiendo: acercándome al asiento directamente")
+        SetStatus("Siguiendo: acercándome al barco por aire")
         ClearHover()
-        -- Pick the first free cannon seat as the teleport destination.
-        local snapTarget = nil
+        -- Pick the first free cannon seat as the tween destination so we fly
+        -- directly to where we need to be, not 30 studs above VehicleSeat.
+        local approachSeat = nil
         for _, cannon in ipairs(cannons) do
             local s = cannon:FindFirstChild("Seat")
             if s and not IsSeatOccupied(s) then
-                snapTarget = s
+                approachSeat = s
                 break
             end
         end
-        -- Fall back to the boat reference part if all cannons are occupied or no seat found.
-        if not snapTarget then
-            snapTarget = firstSeat
-        end
-        -- Instant one-shot teleport to just above the target seat, no tween loop.
-        local snapPos = snapTarget.Position + Vector3.new(0, 5, 0)
-        pcall(function()
+        approachSeat = approachSeat or firstSeat
+        -- Smooth tween using PlayerTweenSpeed directly toward the seat.
+        -- Aborts early if the seat disappears or the boat is gone.
+        _tp(function()
+            if not approachSeat or not approachSeat.Parent then return nil end
+            -- Hover slightly above seat so BoardSeat can pull us in cleanly.
+            return CFrame.new(approachSeat.Position + Vector3.new(0, 5, 0)) * KeepFacing()
+        end, function()
+            if not _G.AutoLeviathanFull or not boat or not boat.Parent then return true end
             local _, curH = GetCharacterParts()
-            if curH then
-                curH.CFrame = CFrame.new(snapPos) * KeepFacing()
-                curH.AssemblyLinearVelocity = Vector3.zero
-            end
+            if not curH then return true end
+            return (curH.Position - approachSeat.Position).Magnitude <= 20
         end)
         task.wait(0.05)
     end
@@ -4403,17 +4441,21 @@ local function FollowerBoardSeat(boat)
                 task.wait(0.1)
             end
         else
-            -- [FIX] Before calling BoardSeat, snap directly to the chosen seat
-            -- so that BoardSeat's internal _tp only needs a micro-adjustment.
-            local snapPos2 = seat.Position + Vector3.new(0, 5, 0)
-            pcall(function()
-                local _, curH2 = GetCharacterParts()
-                if curH2 then
-                    curH2.CFrame = CFrame.new(snapPos2) * KeepFacing()
-                    curH2.AssemblyLinearVelocity = Vector3.zero
-                end
-            end)
-            task.wait(0.05)
+            -- Smooth tween to the chosen cannon seat before calling BoardSeat,
+            -- so BoardSeat's internal _tp only needs a micro-adjustment.
+            local _, curH2 = GetCharacterParts()
+            if curH2 and (curH2.Position - seat.Position).Magnitude > 15 then
+                _tp(function()
+                    if not seat or not seat.Parent then return nil end
+                    return CFrame.new(seat.Position + Vector3.new(0, 5, 0)) * KeepFacing()
+                end, function()
+                    if not _G.AutoLeviathanFull or not seat or not seat.Parent then return true end
+                    local _, h = GetCharacterParts()
+                    if not h then return true end
+                    return (h.Position - seat.Position).Magnitude <= 15
+                end)
+                task.wait(0.05)
+            end
             SetStatus("Siguiendo: subiendo al cañón " .. seat.Parent.Name)
             if BoardSeat(seat, 1.5) then
                 FollowSeatsFull = false
