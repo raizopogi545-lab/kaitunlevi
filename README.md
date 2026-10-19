@@ -4458,12 +4458,27 @@ local function FollowerHeartWait()
         task.wait(1)
     end
 end
+-- [FIX] Strict check: only returns true when the captain is physically seated
+-- at the VehicleSeat (helm). Used as the ShouldBreak combat callback so
+-- fights are NEVER interrupted by the captain simply being near the boat,
+-- walking past it, or lingering in the 3-second grace window.
+local function IsCaptainDriving()
+    local captain = Players:FindFirstChild(_G.FollowTarget)
+    local char = captain and captain.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local boat = GetCaptainBoat()
+    local driverSeat = boat and boat:FindFirstChild("VehicleSeat")
+    if not hum or not driverSeat then return false end
+    return hum.SeatPart == driverSeat
+end
 local function StartFollower()
     if FollowerRunning then return end
     FollowerRunning = true
+    -- [FIX] Use the strict IsCaptainDriving check so sea-beast and Leviathan
+    -- fights are not aborted mid-combat due to the captain being nearby or
+    -- within the 3-second IsCaptainOnBoat grace window.
     local function CaptainBackOnBoat()
-        local boat = GetCaptainBoat()
-        return IsCaptainOnBoat(boat)
+        return IsCaptainDriving()
     end
     task.spawn(function()
         local GateTweening = false
@@ -4585,8 +4600,10 @@ local function StartFollower()
                         local capHrp = GetCaptainHRP()
                         if capHrp then
                             SetStatus("Siguiendo al capitán (esperando el corazón)")
+                            -- [FIX] Abort as soon as the captain sits at the helm
+                            -- so the loop re-evaluates and seats the follower immediately.
                             _tp(LiveCaptainTopCF(35), function()
-                                return not _G.AutoLeviathanFull
+                                return (not _G.AutoLeviathanFull) or IsCaptainDriving()
                             end)
                         end
                     else
@@ -4600,8 +4617,9 @@ local function StartFollower()
                             SetStatus("El capitán está a pie, sin objetivo: en espera")
                             if not IsOnBoat() then
                                 if GetCaptainHRP() then
+                                    -- [FIX] Abort tween as soon as captain is at the helm.
                                     _tp(LiveCaptainTopCF(35), function()
-                                        return not _G.AutoLeviathanFull
+                                        return (not _G.AutoLeviathanFull) or IsCaptainDriving()
                                     end)
                                 else
                                     _tp(LiveSelfCF(50), function()
@@ -4616,8 +4634,10 @@ local function StartFollower()
             if not ok then task.wait(0.5) end
             if FollowSeatsFull and not IsOnBoat() then
                 if GetCaptainHRP() then
+                    -- [FIX] Exit float-hover immediately if the captain boards the helm,
+                    -- allowing the main loop to retry FollowerBoardSeat right away.
                     _tp(LiveCaptainTopCF(35), function()
-                        return not _G.AutoLeviathanFull
+                        return (not _G.AutoLeviathanFull) or IsCaptainDriving()
                     end)
                 else
                     _tp(LiveSelfCF(50), function()
