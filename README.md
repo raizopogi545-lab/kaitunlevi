@@ -4574,6 +4574,51 @@ local function IsCaptainDriving()
     if not hum or not driverSeat then return false end
     return hum.SeatPart == driverSeat
 end
+-- [FIX] Returns the sea mob the captain is currently fighting (or nil).
+-- Detection criteria: captain off-boat AND a live sea mob exists within 500 studs
+-- of the captain. Used to let the follower shadow the captain at sea level
+-- instead of floating 35Y above or trying to re-board.
+local function IsCaptainFightingSeaEvent()
+    if IsCaptainDriving() then return nil end -- captain is driving, not fighting
+    local capHrp = GetCaptainHRP()
+    if not capHrp then return nil end
+    local capPos = capHrp.Position
+    local capHum = (function()
+        local captain = Players:FindFirstChild(_G.FollowTarget)
+        local char = captain and captain.Character
+        return char and char:FindFirstChildOfClass("Humanoid")
+    end)()
+    -- Captain must be unoccupied (not seated on a vehicle)
+    if capHum and capHum.SeatPart then return nil end
+    -- Scan SeaBeasts and sea Enemies for a live target near the captain.
+    local SEA_FOLDERS = {
+        { workspace:FindFirstChild("SeaBeasts"), {"SeaBeast1","Leviathan Segment","Leviathan"} },
+        { workspace:FindFirstChild("Enemies"),   {"FishBoat","PirateBrigade","PirateGrandBrigade","PirateBasic","Terrorshark","Shark","Piranha","Fish Crew Member"} },
+    }
+    local bestMob, bestDist = nil, 500
+    for _, pair in ipairs(SEA_FOLDERS) do
+        local folder, names = pair[1], pair[2]
+        if folder then
+            for _, mob in ipairs(folder:GetChildren()) do
+                local nameOk = false
+                for _, n in ipairs(names) do if mob.Name == n then nameOk = true; break end end
+                if nameOk and SeaAPI.Sea_MobStillAlive(mob) then
+                    local root = mob:FindFirstChild("HumanoidRootPart")
+                        or mob:FindFirstChild("RootPart")
+                        or mob.PrimaryPart
+                        or mob:FindFirstChildWhichIsA("BasePart", true)
+                    if root then
+                        local d = (root.Position - capPos).Magnitude
+                        if d < bestDist then
+                            bestMob, bestDist = mob, d
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return bestMob
+end
 local function StartFollower()
     if FollowerRunning then return end
     FollowerRunning = true
@@ -4648,90 +4693,128 @@ local function StartFollower()
                         SetStatus("En espera en el barco (capitán " .. (_G.FollowTarget or "?") .. " al timón)")
                     end
                 else
-                    if boat and IsOnCaptainBoat(boat) then
-                        local boatMoving = false
-                        local prim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat")
-                        if prim and prim.AssemblyLinearVelocity.Magnitude > 8 then
-                            boatMoving = true
-                        end
-                        if not boatMoving and not CaptainOn then
-                            if not Unseat() then
-                                SetStatus("El capitán bajó y yo no puedo: reintentando")
-                            else
-                                SetStatus("El capitán bajó: bajo también")
+                    -- [FIX] Captain is off-boat. Detect if they are fighting a sea event.
+                    -- Priority order:
+                    --   1. If captain is fighting a sea mob → shadow them near sea level, stay close.
+                    --   2. Otherwise fall through to existing Leviathan/Heart/gate/idle logic.
+                    local FightingMob = IsCaptainFightingSeaEvent()
+                    if FightingMob then
+                        -- Captain is actively fighting. Unseat follower from cannon if needed.
+                        if boat and IsOnCaptainBoat(boat) then
+                            local boatPrim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat")
+                            local boatMoving = boatPrim and boatPrim.AssemblyLinearVelocity.Magnitude > 8
+                            if not boatMoving then
+                                Unseat()
                             end
                         end
-                    elseif not boat then
-                        SetStatus("Barco del capitán perdido: peleo mientras compra otro")
-                    end
-                    local MapG = workspace:FindFirstChild("Map")
-                    local Gate = MapG and MapG:FindFirstChild("LeviathanGate")
-                    local Watcher = Gate and Gate:FindFirstChild("FrozenWatcherPart")
-                    if Watcher and SeaAPI.Leviathan_SegmentsExist() then
-                        if GateTweening then
-                            GateTweening = false
-                            pcall(function()
-                                if CurrentTween then
-                                    CurrentTween:Cancel()
-                                    CurrentTween = nil
-                                end
-                            end)
-                            Tweening = false
-                            SetStatus("Leviathan apareció: fuerzo salir del viaje a la puerta")
-                        end
-                    elseif Watcher and os.clock() - LastLeviathanSeen >= 120 then
-                        GateTweening = true
-                        local WatcherPos = TargetPos(Watcher)
-                        if WatcherPos then
-                            SetStatus("La puerta del Leviathan apareció: me teletransporto")
-                            _tp(LiveGateCF(5), function()
-                                return (not _G.AutoLeviathanFull) or SeaAPI.Leviathan_SegmentsExist()
-                            end)
-                            GateTweening = false
-                            RestorePlayerState()
-                            SetStatus("En la puerta del Leviathan: esperando a que aparezca")
-                        end
-                    elseif Heart then
-                        local HeartPos2 = GetHeartPos(Heart)
-                        if HeartPos2 then
-                            SetStatus("Me teletransporto al corazón")
-                            _tp(LiveHeartCF(35), function()
-                                return not _G.AutoLeviathanFull
-                            end)
-                        end
-                    elseif os.clock() - LastLeviathanSeen < 120 then
-                        local capHrp = GetCaptainHRP()
-                        if capHrp then
-                            SetStatus("Siguiendo al capitán (esperando el corazón)")
-                            -- [FIX] Abort as soon as the captain sits at the helm
-                            -- so the loop re-evaluates and seats the follower immediately.
-                            _tp(LiveCaptainTopCF(35), function()
-                                return (not _G.AutoLeviathanFull) or IsCaptainDriving()
-                            end)
-                        end
+                        -- Follow captain at a low hover (8 studs above) so followers don't float high.
+                        -- Abort tween as soon as captain returns to helm or fight ends.
+                        SetStatus("Capit" .. "\195\161" .. "n luchando con " .. FightingMob.Name .. ": sigo de cerca")
+                        _tp(function()
+                            local capH = GetCaptainHRP()
+                            if not capH then return nil end
+                            -- Stay 8 studs above captain, 12 studs behind to avoid blocking
+                            local offset = capH.CFrame:VectorToWorldSpace(Vector3.new(0, 8, 12))
+                            return CFrame.new(capH.Position + offset) * KeepFacing()
+                        end, function()
+                            if not _G.AutoLeviathanFull then return true end
+                            -- Stop tween when captain boards helm again
+                            if IsCaptainDriving() then return true end
+                            -- Stop tween when the fight ends (mob dead or moved away)
+                            if not IsCaptainFightingSeaEvent() then return true end
+                            -- Stay close: abort if within 20 studs of captain
+                            local _, myH = GetCharacterParts()
+                            local capH2 = GetCaptainHRP()
+                            if myH and capH2 and (myH.Position - capH2.Position).Magnitude <= 20 then
+                                return true
+                            end
+                            return false
+                        end)
                     else
-                        local Mob, Root, Skill = nil, nil, false
-                        if _G.HuntFightEvents then
-                            Mob, Root, Skill = SeaAPI.Sea_Mob(5000)
-                        end
-                        if Mob and Root then
-                            SeaAPI.FightSeaEvent(Mob, Root, Skill, CaptainBackOnBoat)
-                        else
-                            SetStatus("El capitán está a pie, sin objetivo: en espera")
-                            if not IsOnBoat() then
-                                if GetCaptainHRP() then
-                                    -- [FIX] Abort tween as soon as captain is at the helm.
-                                    _tp(LiveCaptainTopCF(35), function()
-                                        return (not _G.AutoLeviathanFull) or IsCaptainDriving()
-                                    end)
+                        -- No active sea fight. Use original unseat + gate/heart/idle logic.
+                        if boat and IsOnCaptainBoat(boat) then
+                            local boatMoving = false
+                            local prim = boat.PrimaryPart or boat:FindFirstChild("VehicleSeat")
+                            if prim and prim.AssemblyLinearVelocity.Magnitude > 8 then
+                                boatMoving = true
+                            end
+                            if not boatMoving and not CaptainOn then
+                                if not Unseat() then
+                                    SetStatus("El capit" .. "\195\161" .. "n baj" .. "\195\179" .. " y yo no puedo: reintentando")
                                 else
-                                    _tp(LiveSelfCF(50), function()
-                                        return not _G.AutoLeviathanFull
-                                    end)
+                                    SetStatus("El capit" .. "\195\161" .. "n baj" .. "\195\179" .. ": bajo tambi" .. "\195\169" .. "n")
+                                end
+                            end
+                        elseif not boat then
+                            SetStatus("Barco del capit" .. "\195\161" .. "n perdido: peleo mientras compra otro")
+                        end
+                        local MapG = workspace:FindFirstChild("Map")
+                        local Gate = MapG and MapG:FindFirstChild("LeviathanGate")
+                        local Watcher = Gate and Gate:FindFirstChild("FrozenWatcherPart")
+                        if Watcher and SeaAPI.Leviathan_SegmentsExist() then
+                            if GateTweening then
+                                GateTweening = false
+                                pcall(function()
+                                    if CurrentTween then
+                                        CurrentTween:Cancel()
+                                        CurrentTween = nil
+                                    end
+                                end)
+                                Tweening = false
+                                SetStatus("Leviathan apareci" .. "\195\179" .. ": fuerzo salir del viaje a la puerta")
+                            end
+                        elseif Watcher and os.clock() - LastLeviathanSeen >= 120 then
+                            GateTweening = true
+                            local WatcherPos = TargetPos(Watcher)
+                            if WatcherPos then
+                                SetStatus("La puerta del Leviathan apareci" .. "\195\179" .. ": me teletransporto")
+                                _tp(LiveGateCF(5), function()
+                                    return (not _G.AutoLeviathanFull) or SeaAPI.Leviathan_SegmentsExist()
+                                end)
+                                GateTweening = false
+                                RestorePlayerState()
+                                SetStatus("En la puerta del Leviathan: esperando a que aparezca")
+                            end
+                        elseif Heart then
+                            local HeartPos2 = GetHeartPos(Heart)
+                            if HeartPos2 then
+                                SetStatus("Me teletransporto al coraz" .. "\195\179" .. "n")
+                                _tp(LiveHeartCF(35), function()
+                                    return not _G.AutoLeviathanFull
+                                end)
+                            end
+                        elseif os.clock() - LastLeviathanSeen < 120 then
+                            local capHrp = GetCaptainHRP()
+                            if capHrp then
+                                SetStatus("Siguiendo al capit" .. "\195\161" .. "n (esperando el coraz" .. "\195\179" .. "n)")
+                                _tp(LiveCaptainTopCF(35), function()
+                                    return (not _G.AutoLeviathanFull) or IsCaptainDriving()
+                                end)
+                            end
+                        else
+                            local Mob, Root, Skill = nil, nil, false
+                            if _G.HuntFightEvents then
+                                Mob, Root, Skill = SeaAPI.Sea_Mob(5000)
+                            end
+                            if Mob and Root then
+                                SeaAPI.FightSeaEvent(Mob, Root, Skill, CaptainBackOnBoat)
+                            else
+                                SetStatus("El capit" .. "\195\161" .. "n est" .. "\195\161" .. " a pie, sin objetivo: en espera")
+                                if not IsOnBoat() then
+                                    if GetCaptainHRP() then
+                                        _tp(LiveCaptainTopCF(35), function()
+                                            return (not _G.AutoLeviathanFull) or IsCaptainDriving()
+                                        end)
+                                    else
+                                        _tp(LiveSelfCF(50), function()
+                                            return not _G.AutoLeviathanFull
+                                        end)
+                                    end
                                 end
                             end
                         end
                     end
+                end
                 end
             end)
             if not ok then task.wait(0.5) end
