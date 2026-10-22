@@ -721,89 +721,127 @@ local function GetTweenPart()
 end
 
 -- ====================================================================
--- WALK ON WATER & ANTI-WATER STUCK (ALWAYS ON)
+-- WALK ON WATER & ANTI-WATER STUCK v2 (ENHANCED ANTI-GLITCH)
 -- ====================================================================
 local RJR_WaterWalkPlatform = nil
 local RJR_WATER_PLAT_NAME = "RJR_WaterWalkPlatform"
 
-local function GetWaterPlatform()
+-- Stuck detection state
+local WOW_StuckTimer        = 0      -- seconds continuously submerged / stuck
+local WOW_LastRescueAt      = 0      -- os.clock() of last forced rescue
+local WOW_RescueCooldown    = 1.2    -- min seconds between hard rescues
+local WOW_PlatEnableAt      = 0      -- platform stays off until this time (post-rescue settle)
+local WOW_PlatCooldown      = 0.4    -- seconds to keep platform off after a rescue
+local WOW_WaterSurfaceY     = 0      -- cached terrain water Y
+local WOW_LastRayAt         = 0      -- throttle raycast calls
+local WOW_RayInterval       = 0.20   -- seconds between raycasts
+local WOW_LastXZPos         = nil    -- Vector2(X,Z) for no-movement detection
+local WOW_NoMoveTicks       = 0      -- consecutive frames with <0.15 XZ movement while submerged
+
+local function WOW_GetOrCreatePlatform()
     if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.Parent == workspace then
         return RJR_WaterWalkPlatform
     end
     local existing = workspace:FindFirstChild(RJR_WATER_PLAT_NAME)
-    if existing and existing:IsA("BasePart") then
-        RJR_WaterWalkPlatform = existing
-        return existing
-    end
+    if existing then existing:Destroy() end
     local part = Instance.new("Part")
-    part.Name = RJR_WATER_PLAT_NAME
-    part.Size = Vector3.new(40, 1, 40)
-    part.Anchored = true
-    part.CanCollide = false
-    part.CanTouch = false
-    part.CanQuery = false
-    part.CastShadow = false
-    part.Massless = true
-    part.Transparency = 1
-    part.Material = Enum.Material.SmoothPlastic
-    part.Friction = 0.8
-    part.Parent = workspace
+    part.Name            = RJR_WATER_PLAT_NAME
+    part.Size            = Vector3.new(60, 1, 60)
+    part.Anchored        = true
+    part.CanCollide      = false
+    part.CanTouch        = false
+    part.CanQuery        = false
+    part.CastShadow      = false
+    part.Massless        = true
+    part.Transparency    = 1
+    part.Material        = Enum.Material.SmoothPlastic
+    part.CFrame          = CFrame.new(0, -2000, 0)
+    part.Parent          = workspace
     RJR_WaterWalkPlatform = part
     return part
 end
 
-local lastWaterRayCheck = 0
-local cachedWaterSurfaceY = 0
-
-local function GetWaterSurfaceY(hrpPos)
+local function WOW_GetSurfaceY(pos)
     local now = os.clock()
-    if now - lastWaterRayCheck > 0.25 then
-        lastWaterRayCheck = now
+    if now - WOW_LastRayAt > WOW_RayInterval then
+        WOW_LastRayAt = now
         local ok, res = pcall(function()
-            local rayOrigin = Vector3.new(hrpPos.X, 60, hrpPos.Z)
-            local rayDir = Vector3.new(0, -120, 0)
+            local origin = Vector3.new(pos.X, 80, pos.Z)
+            local dir    = Vector3.new(0, -160, 0)
             local params = RaycastParams.new()
             params.IgnoreWater = false
-            params.FilterType = Enum.RaycastFilterType.Include
+            params.FilterType  = Enum.RaycastFilterType.Include
             if workspace.Terrain then
                 params.FilterDescendantsInstances = { workspace.Terrain }
             end
-            return workspace:Raycast(rayOrigin, rayDir, params)
+            return workspace:Raycast(origin, dir, params)
         end)
         if ok and res and res.Material == Enum.Material.Water then
-            cachedWaterSurfaceY = res.Position.Y
-        else
-            cachedWaterSurfaceY = 0
+            WOW_WaterSurfaceY = res.Position.Y
+        elseif ok and res then
+            WOW_WaterSurfaceY = -9999  -- over land, not water
         end
+        -- if pcall failed keep old cached value
     end
-    return cachedWaterSurfaceY
+    return WOW_WaterSurfaceY
+end
+
+-- Hard rescue: clear physics and teleport above water surface
+local function WOW_ForceRescue(hrp, hum, surfaceY)
+    local now = os.clock()
+    if now - WOW_LastRescueAt < WOW_RescueCooldown then return end
+    WOW_LastRescueAt  = now
+    WOW_PlatEnableAt  = now + WOW_PlatCooldown
+    WOW_StuckTimer    = 0
+    WOW_NoMoveTicks   = 0
+    WOW_LastXZPos     = nil
+    pcall(function()
+        hrp.AssemblyLinearVelocity  = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+        local safeY = surfaceY + 3.8
+        hrp.CFrame = CFrame.new(hrp.Position.X, safeY, hrp.Position.Z)
+                     * (hrp.CFrame - hrp.CFrame.Position)
+        hum.PlatformStand = false
+        hum.Sit           = false
+        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end)
 end
 
 local function StepWalkOnWater()
+    -- Feature guard
     if not _G.WalkOnWater then
-        if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.CanCollide then
+        if RJR_WaterWalkPlatform then
             RJR_WaterWalkPlatform.CanCollide = false
+            RJR_WaterWalkPlatform.CFrame = CFrame.new(0, -2000, 0)
         end
         return
     end
 
+    -- Character validity
     local char, hrp, hum = GetCharacterParts()
     if not char or not hrp or not hum or hum.Health <= 0 then
-        if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.CanCollide then
+        if RJR_WaterWalkPlatform then
             RJR_WaterWalkPlatform.CanCollide = false
         end
+        WOW_StuckTimer  = 0
+        WOW_NoMoveTicks = 0
+        WOW_LastXZPos   = nil
         return
     end
 
-    -- If sitting on a boat or any seat, platform MUST not interfere
+    -- Seated on boat: platform must NOT interfere with boarding
     if hum.SeatPart ~= nil or hum.Sit then
-        if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.CanCollide then
+        if RJR_WaterWalkPlatform then
             RJR_WaterWalkPlatform.CanCollide = false
+            RJR_WaterWalkPlatform.CFrame = CFrame.new(0, -2000, 0)
         end
+        WOW_StuckTimer  = 0
+        WOW_NoMoveTicks = 0
+        WOW_LastXZPos   = nil
         return
     end
 
-    -- Disable Roblox swimming state on humanoid so character never gets locked in swim physics
+    -- Keep swimming state disabled every frame so Roblox never re-enables it
     pcall(function()
         if hum:GetStateEnabled(Enum.HumanoidStateType.Swimming) then
             hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
@@ -811,44 +849,125 @@ local function StepWalkOnWater()
     end)
 
     local pos = hrp.Position
+    local now = os.clock()
 
-    -- High altitude / flying / tweening high in the sky: no platform needed
-    if pos.Y > 20 or TpActive or Tweening then
-        if RJR_WaterWalkPlatform and RJR_WaterWalkPlatform.CanCollide then
+    -- High in air / actively tweening: park platform, reset stuck counters
+    if pos.Y > 22 or TpActive or Tweening then
+        if RJR_WaterWalkPlatform then
             RJR_WaterWalkPlatform.CanCollide = false
+            RJR_WaterWalkPlatform.CFrame = CFrame.new(0, -2000, 0)
         end
+        WOW_StuckTimer  = 0
+        WOW_NoMoveTicks = 0
+        WOW_LastXZPos   = nil
         return
     end
 
-    local plat = GetWaterPlatform()
-    local waterY = GetWaterSurfaceY(pos)
+    local surfaceY  = WOW_GetSurfaceY(pos)
 
-    -- If character is below water surface or entered swimming state:
-    local state = hum:GetState()
-    local isSubmerged = pos.Y < (waterY + 1.2)
-    local isSwimming = (state == Enum.HumanoidStateType.Swimming)
+    -- Over land (no water below): park and skip
+    if surfaceY < -100 then
+        if RJR_WaterWalkPlatform then
+            RJR_WaterWalkPlatform.CanCollide = false
+            RJR_WaterWalkPlatform.CFrame = CFrame.new(0, -2000, 0)
+        end
+        WOW_StuckTimer  = 0
+        WOW_NoMoveTicks = 0
+        WOW_LastXZPos   = nil
+        return
+    end
 
-    if isSubmerged or isSwimming then
-        -- Temporarily turn collision off so the platform doesn't block rising
+    local plat      = WOW_GetOrCreatePlatform()
+    local state     = hum:GetState()
+    local isSwim    = (state == Enum.HumanoidStateType.Swimming)
+    local isSubmerged = pos.Y < (surfaceY + 2.2)
+    local isUnderWater = isSubmerged or isSwim
+
+    if isUnderWater then
+        -- Disable platform while rescuing so it doesn't block upward movement
         plat.CanCollide = false
-        pcall(function()
-            local vel = hrp.AssemblyLinearVelocity
-            hrp.AssemblyLinearVelocity = Vector3.new(vel.X, math.max(0, vel.Y), vel.Z)
-            hrp.CFrame = CFrame.new(pos.X, waterY + 3.8, pos.Z) * (hrp.CFrame - hrp.CFrame.Position)
-            hum.Sit = false
-            hum.PlatformStand = false
-            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-        end)
+        plat.CFrame     = CFrame.new(pos.X, surfaceY - 0.5, pos.Z)
+
+        -- Increment stuck timer (~1/60 per Stepped call)
+        WOW_StuckTimer = WOW_StuckTimer + (1 / 60)
+
+        -- No-movement detection (fully frozen stuck case)
+        local xz = Vector2.new(pos.X, pos.Z)
+        if WOW_LastXZPos then
+            if (xz - WOW_LastXZPos).Magnitude < 0.15 then
+                WOW_NoMoveTicks = WOW_NoMoveTicks + 1
+            else
+                WOW_NoMoveTicks = 0
+            end
+        end
+        WOW_LastXZPos = xz
+
+        local fullyFrozen = WOW_NoMoveTicks >= 20  -- ~0.33 s at 60 fps
+        local stuckLong   = WOW_StuckTimer >= 0.6
+
+        if fullyFrozen or stuckLong then
+            -- Hard rescue: teleport up
+            WOW_ForceRescue(hrp, hum, surfaceY)
+        else
+            -- Gentle assist: push upward each frame while sinking
+            pcall(function()
+                local vel = hrp.AssemblyLinearVelocity
+                if vel.Y < 20 then
+                    hrp.AssemblyLinearVelocity = Vector3.new(vel.X, math.max(vel.Y, 20), vel.Z)
+                end
+                hum.PlatformStand = false
+                hum.Sit           = false
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end)
+        end
+
     else
-        -- Standing or running above water: position platform right beneath feet
-        -- Plat height is 1, center at waterY, so top surface is at waterY + 0.5
-        plat.CFrame = CFrame.new(pos.X, waterY, pos.Z)
+        -- Above water: reset stuck state
+        WOW_StuckTimer  = 0
+        WOW_NoMoveTicks = 0
+        WOW_LastXZPos   = nil
+
+        -- Honour settle cooldown after a rescue
+        if now < WOW_PlatEnableAt then
+            plat.CanCollide = false
+            plat.CFrame     = CFrame.new(pos.X, surfaceY - 0.5, pos.Z)
+            return
+        end
+
+        -- Enable walking platform: top face sits at surfaceY
+        plat.CFrame     = CFrame.new(pos.X, surfaceY - 0.5, pos.Z)
         plat.CanCollide = true
     end
 end
 
 RunService.Stepped:Connect(function()
     pcall(StepWalkOnWater)
+end)
+
+-- Secondary heartbeat rescue: independent of Stepped, catches edge cases
+-- where the character gets stuck and the Stepped loop itself stalls
+task.spawn(function()
+    while true do
+        task.wait(0.25)
+        if not _G.WalkOnWater then continue end
+        pcall(function()
+            local char, hrp, hum = GetCharacterParts()
+            if not char or not hrp or not hum or hum.Health <= 0 then return end
+            if hum.SeatPart ~= nil or hum.Sit then return end
+            if TpActive or Tweening then return end
+            local pos = hrp.Position
+            if pos.Y > 22 then return end
+            local surfaceY = WOW_WaterSurfaceY
+            if surfaceY < -100 then return end
+            local state    = hum:GetState()
+            local isSwim   = (state == Enum.HumanoidStateType.Swimming)
+            local isSub    = pos.Y < (surfaceY + 2.2)
+            -- If still submerged and stuck timer has been running for >0.4 s, hard rescue
+            if (isSwim or isSub) and WOW_StuckTimer >= 0.4 then
+                WOW_ForceRescue(hrp, hum, surfaceY)
+            end
+        end)
+    end
 end)
 local function _tp(targetPos, abortCheck)
     local startChar = LocalPlayer.Character
