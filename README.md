@@ -9,12 +9,29 @@ if _G.AutoLeviathanFull_Loaded then
 end
 _G.AutoLeviathanFull_Loaded = true
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
+task.wait(1)
 pcall(function()
     local Remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
     local CommF_ = Remotes and Remotes:FindFirstChild("CommF_")
     if CommF_ then
-        CommF_:InvokeServer("SetTeam", "Marines")
+        pcall(function() CommF_:InvokeServer("SetTeam", "Marines") end)
+        task.wait(0.5)
+        pcall(function() CommF_:InvokeServer("SetTeam", "Marine") end)
     end
+end)
+-- Force enable performance effects
+_G.FPSBoost = true
+_G.RemoveFog = true
+_G.AutoFastMode = true
+if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
+pcall(function()
+    if PerformanceAPI and PerformanceAPI.ApplyFPSBoost then PerformanceAPI.ApplyFPSBoost() end
+end)
+pcall(function()
+    if PerformanceAPI and PerformanceAPI.ApplyAutoFastMode then PerformanceAPI.ApplyAutoFastMode() end
+end)
+pcall(function()
+    if DoRemoveFog then DoRemoveFog() end
 end)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
