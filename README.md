@@ -7262,5 +7262,21 @@ task.defer(function()
     end
 end)
 
+_G.RemoveFog = true
+_G.AutoFastMode = true
+_G.FPSBoost = true
+pcall(function() if typeof(DoRemoveFog)=="function" then DoRemoveFog() end end)
+pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyAutoFastMode)=="function" then PerformanceAPI.ApplyAutoFastMode() end end)
+pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyFPSBoost)=="function" then PerformanceAPI.ApplyFPSBoost() end end)
+pcall(function()
+    local Remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+    local CommF_ = Remotes and Remotes:FindFirstChild("CommF_")
+    if CommF_ then
+        pcall(function() CommF_:InvokeServer("SetTeam","Marines") end)
+        task.wait()
+        pcall(function() CommF_:InvokeServer("SetTeam","Marine") end)
+    end
+end)
+
 SendNotify(T("notify.title"), T("notify.ready"))
 end)()
