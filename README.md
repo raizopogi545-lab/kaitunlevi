@@ -5475,7 +5475,8 @@ do
                 local lighting = game:GetService("Lighting")
                 for _, v in ipairs(lighting:GetDescendants()) do
                     if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
-                        pcall(function() v.Enabled=false; v:Destroy() end)
+                        pcall(function() v.Enabled=false end)
+                        pcall(function() v:Destroy() end)
                     end
                 end
                 for _, v in ipairs(lighting:GetChildren()) do
@@ -5484,7 +5485,8 @@ do
                     end
                 end
                 for _, v in ipairs(lighting:GetChildren()) do
-                    if string.find(string.lower(tostring(v.Name)), "atmo") or string.find(string.lower(tostring(v.Name)), "fog") or string.find(string.lower(tostring(v.Name)), "sky") then
+                    local n = tostring(v.Name):lower()
+                    if string.find(n, "atmo") or string.find(n, "fog") or string.find(n, "sky") then
                         pcall(function() v:Destroy() end)
                     end
                 end
@@ -5500,12 +5502,12 @@ do
             end)
             pcall(function()
                 local s = settings()
-                if s.Rendering then
+                if s and s.Rendering then
                     pcall(function() s.Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
                 end
             end)
             pcall(function()
-                if setfflag then
+                if type(setfflag) == "function" then
                     pcall(function() setfflag("FIntRomarkStartScriptsSkipVendorTexture", "1") end)
                     pcall(function() setfflag("DFFlagDisableDPIScale", "True") end)
                     pcall(function() setfflag("FFlagDebugDisableTelemetryEphemeralCounter", "True") end)
@@ -5539,6 +5541,7 @@ do
                             if item:IsA("ParticleEmitter") then item.Enabled=false; item.Rate=0; item.Lifetime=NumberRange.new(0); pcall(function() item:Clear() end) end
                             if item:IsA("Trail") then item.Enabled=false; item.Lifetime=NumberRange.new(0) end
                             if item:IsA("Beam") then item.Enabled=false end
+                            pcall(function() item.Enabled=false end)
                         end)
                     elseif item:IsA("Decal") or item:IsA("Texture") then
                         pcall(function() item.Transparency = 1 end)
@@ -5587,15 +5590,18 @@ do
                 end
             end)
             pcall(function()
-                local optimizer = LocalPlayer.PlayerScripts:FindFirstChild("OptimizerClientActor")
-                if optimizer and optimizer.SendMessage then pcall(function() optimizer:SendMessage("Optimize", true) end) end
+                local ps = LocalPlayer:FindFirstChild("PlayerScripts")
+                if ps then
+                    local optimizer = ps:FindFirstChild("OptimizerClientActor")
+                    if optimizer and optimizer.SendMessage then pcall(function() optimizer:SendMessage("Optimize", true) end) end
+                end
             end)
             if FPSBoostHookDone then return end
             FPSBoostHookDone = true
             task.spawn(function()
                 local worldOrigin = workspace:FindFirstChild("_WorldOrigin")
                 local waited = 0
-                while not worldOrigin and waited < 150 do
+                while not worldOrigin and waited < 200 do
                     task.wait(1)
                     waited = waited + 1
                     worldOrigin = workspace:FindFirstChild("_WorldOrigin")
@@ -7436,7 +7442,18 @@ task.defer(function()
     pcall(function() if typeof(DoRemoveFog)=="function" then DoRemoveFog() end end)
     pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyAutoFastMode)=="function" then PerformanceAPI.ApplyAutoFastMode() end end)
     pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyFPSBoost)=="function" then PerformanceAPI.ApplyFPSBoost() end end)
-    task.wait(1)
+    task.wait(0.5)
+    pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyFPSBoost)=="function" then PerformanceAPI.ApplyFPSBoost() end end)
+end)
+task.delay(3, function()
+    pcall(function()
+        local lighting = game:GetService("Lighting")
+        for _, v in ipairs(lighting:GetDescendants()) do
+            if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
+                pcall(function() v.Enabled=false; v:Destroy() end)
+            end
+        end
+    end)
     pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyFPSBoost)=="function" then PerformanceAPI.ApplyFPSBoost() end end)
 end)
 pcall(function()
