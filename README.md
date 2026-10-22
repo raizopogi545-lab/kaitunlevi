@@ -7438,22 +7438,10 @@ end)
 _G.RemoveFog = true
 _G.AutoFastMode = true
 _G.FPSBoost = true
+_G.AntiDracoAura = false
 task.defer(function()
     pcall(function() if typeof(DoRemoveFog)=="function" then DoRemoveFog() end end)
     pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyAutoFastMode)=="function" then PerformanceAPI.ApplyAutoFastMode() end end)
-    pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyFPSBoost)=="function" then PerformanceAPI.ApplyFPSBoost() end end)
-    task.wait(0.5)
-    pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyFPSBoost)=="function" then PerformanceAPI.ApplyFPSBoost() end end)
-end)
-task.delay(3, function()
-    pcall(function()
-        local lighting = game:GetService("Lighting")
-        for _, v in ipairs(lighting:GetDescendants()) do
-            if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
-                pcall(function() v.Enabled=false; v:Destroy() end)
-            end
-        end
-    end)
     pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyFPSBoost)=="function" then PerformanceAPI.ApplyFPSBoost() end end)
 end)
 pcall(function()
