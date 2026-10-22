@@ -7233,11 +7233,22 @@ task.defer(function()
     if _G.SoloSeaFarm and _G.RJR_AutoFullToggle and _G.RJR_AutoFullToggle.Lock then
         pcall(function() _G.RJR_AutoFullToggle:Lock() end)
     end
+    -- Force performance on
+    _G.RemoveFog = true
+    _G.AutoFastMode = true
+    _G.FPSBoost = true
     if _G.DragonGunFarm then pcall(SeaAPI.StartDragonAttack) end
-    if _G.RemoveFog then pcall(DoRemoveFog) end
-    if _G.AntiDracoAura then pcall(PerformanceAPI.ApplyAntiDracoAura) end
-    if _G.AutoFastMode then pcall(PerformanceAPI.ApplyAutoFastMode) end
-    if _G.FPSBoost then pcall(PerformanceAPI.ApplyFPSBoost) end
+    if _G.RemoveFog then pcall(function() if DoRemoveFog then DoRemoveFog() end end) end
+    if _G.AntiDracoAura then pcall(function() if PerformanceAPI and PerformanceAPI.ApplyAntiDracoAura then PerformanceAPI.ApplyAntiDracoAura() end end) end
+    if _G.AutoFastMode then pcall(function() if PerformanceAPI and PerformanceAPI.ApplyAutoFastMode then PerformanceAPI.ApplyAutoFastMode() end end) end
+    if _G.FPSBoost then pcall(function() if PerformanceAPI and PerformanceAPI.ApplyFPSBoost then PerformanceAPI.ApplyFPSBoost() end end) end
+    task.wait(0.5)
+    _G.RemoveFog = true
+    _G.AutoFastMode = true
+    _G.FPSBoost = true
+    pcall(function() if DoRemoveFog then DoRemoveFog() end end)
+    pcall(function() if PerformanceAPI and PerformanceAPI.ApplyAutoFastMode then PerformanceAPI.ApplyAutoFastMode() end end)
+    pcall(function() if PerformanceAPI and PerformanceAPI.ApplyFPSBoost then PerformanceAPI.ApplyFPSBoost() end end)
     if _G.WalkOnWater then
         pcall(function()
             if workspace.Terrain then
