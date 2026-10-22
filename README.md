@@ -9,30 +9,6 @@ if _G.AutoLeviathanFull_Loaded then
 end
 _G.AutoLeviathanFull_Loaded = true
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
-task.wait(1)
-pcall(function()
-    local Remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-    local CommF_ = Remotes and Remotes:FindFirstChild("CommF_")
-    if CommF_ then
-        pcall(function() CommF_:InvokeServer("SetTeam", "Marines") end)
-        task.wait(0.5)
-        pcall(function() CommF_:InvokeServer("SetTeam", "Marine") end)
-    end
-end)
--- Force enable performance effects
-_G.FPSBoost = true
-_G.RemoveFog = true
-_G.AutoFastMode = true
-if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
-pcall(function()
-    if PerformanceAPI and PerformanceAPI.ApplyFPSBoost then PerformanceAPI.ApplyFPSBoost() end
-end)
-pcall(function()
-    if PerformanceAPI and PerformanceAPI.ApplyAutoFastMode then PerformanceAPI.ApplyAutoFastMode() end
-end)
-pcall(function()
-    if DoRemoveFog then DoRemoveFog() end
-end)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local RS = game:GetService("ReplicatedStorage")
@@ -281,10 +257,10 @@ if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
 if _G.DragonShotsPerBurst == nil then _G.DragonShotsPerBurst = 3 end
 if _G.DragonFireInterval == nil then _G.DragonFireInterval = 0.30 end
 -- [/DRAGONSTORM MULTI-SHOT]
-if _G.RemoveFog == nil then _G.RemoveFog = true end
+if _G.RemoveFog == nil then _G.RemoveFog = false end
 if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
-if _G.AutoFastMode == nil then _G.AutoFastMode = true end
-if _G.FPSBoost == nil then _G.FPSBoost = true end
+if _G.AutoFastMode == nil then _G.AutoFastMode = false end
+if _G.FPSBoost == nil then _G.FPSBoost = false end
 if _G.AutoV3 == nil then _G.AutoV3 = false end
 if _G.AutoV4 == nil then _G.AutoV4 = false end
 if _G.BoatLockY == nil then _G.BoatLockY = 150 end
@@ -5473,88 +5449,41 @@ do
         task.spawn(function()
             pcall(function()
                 local lighting = game:GetService("Lighting")
-                for _, v in ipairs(lighting:GetDescendants()) do
-                    if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
-                        pcall(function() v.Enabled=false end)
-                        pcall(function() v:Destroy() end)
-                    end
+                local atmosphere = lighting:FindFirstChild("BaseAtmosphere")
+                if atmosphere then atmosphere:Destroy() end
+            end)
+            pcall(function() settings().Rendering.QualityLevel = "Level01" end)
+            pcall(function()
+                local terrain = workspace.Terrain
+                if terrain then
+                    terrain.WaterWaveSize = 0
+                    terrain.WaterWaveSpeed = 0
+                    terrain.WaterReflectance = 0
+                    terrain.WaterTransparency = 0
                 end
-                for _, v in ipairs(lighting:GetChildren()) do
-                    if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
-                        pcall(function() v:Destroy() end)
-                    end
-                end
-                for _, v in ipairs(lighting:GetChildren()) do
-                    local n = tostring(v.Name):lower()
-                    if string.find(n, "atmo") or string.find(n, "fog") or string.find(n, "sky") then
-                        pcall(function() v:Destroy() end)
-                    end
-                end
-                local atmosphere = lighting:FindFirstChildOfClass("Atmosphere")
-                if atmosphere then pcall(function() atmosphere:Destroy() end) end
+            end)
+            pcall(function()
+                local lighting = game:GetService("Lighting")
                 lighting.GlobalShadows = false
-                lighting.FogEnd = 9e18
-                lighting.FogStart = 9e18
-                lighting.Brightness = 1
-                lighting.EnvironmentDiffuseScale = 0
-                lighting.EnvironmentSpecularScale = 0
-                lighting.ClockTime = 12
-            end)
-            pcall(function()
-                local s = settings()
-                if s and s.Rendering then
-                    pcall(function() s.Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
-                end
-            end)
-            pcall(function()
-                if type(setfflag) == "function" then
-                    pcall(function() setfflag("FIntRomarkStartScriptsSkipVendorTexture", "1") end)
-                    pcall(function() setfflag("DFFlagDisableDPIScale", "True") end)
-                    pcall(function() setfflag("FFlagDebugDisableTelemetryEphemeralCounter", "True") end)
-                    pcall(function() setfflag("FFlagEnableQuickGameLaunch", "False") end)
-                    pcall(function() setfflag("FIntRenderShadowIntensity", "0") end)
-                    pcall(function() setfflag("FIntRenderGrassDetailStrands", "0") end)
-                    pcall(function() setfflag("FIntRenderGrassHeightScaler", "0") end)
-                    pcall(function() setfflag("FIntFRMMaxGrassDistance", "0") end)
-                    pcall(function() setfflag("FIntFRMMinGrassDistance", "0") end)
-                    pcall(function() setfflag("DFFlagTextureQualityOverrideEnabled", "True") end)
-                    pcall(function() setfflag("FIntTextureCompressorCrunchQuality", "0") end)
-                    pcall(function() setfflag("FIntDebugTextureManagerSkipMips", "1") end)
-                    pcall(function() setfflag("DFFlagRenderDynamicResolutionScale", "False") end)
-                end
-            end)
-            pcall(function()
-                local terrain = workspace.Terrain
-                if terrain then
-                    terrain.WaterWaveSize = 0
-                    terrain.WaterWaveSpeed = 0
-                    terrain.WaterReflectance = 0
-                    terrain.WaterTransparency = 1
-                    terrain.Decoration = false
+                for _, item in ipairs(lighting:GetDescendants()) do
+                    if item:IsA("BlurEffect") then item.Enabled = false end
                 end
             end)
             pcall(function()
                 local sliceStarted = os.clock()
                 for _, item in ipairs(game:GetDescendants()) do
-                    if item:IsA("ParticleEmitter") or item:IsA("Trail") or item:IsA("Beam") or item:IsA("Smoke") or item:IsA("Fire") or item:IsA("Sparkles") then
-                        pcall(function()
-                            if item:IsA("ParticleEmitter") then item.Enabled=false; item.Rate=0; item.Lifetime=NumberRange.new(0); pcall(function() item:Clear() end) end
-                            if item:IsA("Trail") then item.Enabled=false; item.Lifetime=NumberRange.new(0) end
-                            if item:IsA("Beam") then item.Enabled=false end
-                            pcall(function() item.Enabled=false end)
-                        end)
+                    if item:IsA("ParticleEmitter") or item:IsA("Trail") then
+                        item.Lifetime = NumberRange.new(0)
                     elseif item:IsA("Decal") or item:IsA("Texture") then
-                        pcall(function() item.Transparency = 1 end)
-                    elseif item:IsA("SpotLight") or item:IsA("SurfaceLight") or item:IsA("PointLight") then
-                        pcall(function() item.Enabled=false; item.Brightness=0; item.Range=0 end)
+                        item.Transparency = 1
+                    elseif item:IsA("Fire") or item:IsA("SpotLight") or item:IsA("Smoke") then
+                        item.Enabled = false
                     elseif item:IsA("Explosion") then
-                        pcall(function() item.BlastPressure=0; item.BlastRadius=0 end)
-                    elseif item:IsA("BasePart") or item:IsA("UnionOperation") or item:IsA("CornerWedgePart") or item:IsA("TrussPart") or item:IsA("MeshPart") or item:IsA("WedgePart") then
-                        pcall(function() item.Material = Enum.Material.SmoothPlastic end)
-                        pcall(function() item.Reflectance = 0 end)
-                        pcall(function() item.CastShadow = false end)
+                        item.BlastPressure, item.BlastRadius = 1, 1
+                    elseif item:IsA("BasePart") or item:IsA("UnionOperation") or item:IsA("CornerWedgePart") or item:IsA("TrussPart") then
+                        item.Reflectance = 0
                     end
-                    if os.clock() - sliceStarted >= 0.001 then task.wait(); sliceStarted = os.clock() end
+                    if os.clock() - sliceStarted >= 0.0042 then task.wait(); sliceStarted = os.clock() end
                 end
             end)
             pcall(function()
@@ -5567,128 +5496,13 @@ do
                 local unloaded = replicated:FindFirstChild("Unloaded")
                 if unloaded then folders[#folders + 1] = unloaded end
                 for _, folder in ipairs(folders) do
-                    if folder then
-                        for _, item in ipairs(folder:GetDescendants()) do
-                            if item:IsA("BasePart") or item:IsA("MeshPart") or item:IsA("UnionOperation") or item:IsA("CornerWedgePart") then
-                                pcall(function() item.Material = smooth end)
-                                pcall(function() item.Reflectance = 0 end)
-                                pcall(function() item.CastShadow = false end)
-                            elseif item:IsA("Texture") and not item:GetAttribute("Offset") then
-                                pcall(function() item:Destroy() end)
-                            elseif item:IsA("Decal") then
-                                pcall(function() item.Transparency = 1 end)
-                            elseif item:IsA("ParticleEmitter") or item:IsA("Trail") or item:IsA("Beam") then
-                                pcall(function()
-                                    if item:IsA("ParticleEmitter") then item.Enabled=false; item.Rate=0; item.Lifetime=NumberRange.new(0); pcall(function() item:Clear() end) end
-                                    if item:IsA("Trail") then item.Enabled=false; item.Lifetime=NumberRange.new(0) end
-                                    if item:IsA("Beam") then item.Enabled=false end
-                                end)
-                            end
-                            if os.clock() - sliceStarted >= 0.001 then task.wait(); sliceStarted = os.clock() end
+                    for _, item in ipairs(folder:GetDescendants()) do
+                        if item:IsA("BasePart") then
+                            item.Material = smooth
+                        elseif item:IsA("Texture") and not item:GetAttribute("Offset") then
+                            item:Destroy()
                         end
-                    end
-                end
-            end)
-            pcall(function()
-                local ps = LocalPlayer:FindFirstChild("PlayerScripts")
-                if ps then
-                    local optimizer = ps:FindFirstChild("OptimizerClientActor")
-                    if optimizer and optimizer.SendMessage then pcall(function() optimizer:SendMessage("Optimize", true) end) end
-                end
-            end)
-            if FPSBoostHookDone then return end
-            FPSBoostHookDone = true
-            task.spawn(function()
-                local worldOrigin = workspace:FindFirstChild("_WorldOrigin")
-                local waited = 0
-                while not worldOrigin and waited < 200 do
-                    task.wait(1)
-                    waited = waited + 1
-                    worldOrigin = workspace:FindFirstChild("_WorldOrigin")
-                end
-                if not worldOrigin then return end
-                worldOrigin.DescendantAdded:Connect(function(obj)
-                    task.defer(function()
-                        pcall(function()
-                            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
-                                pcall(function()
-                                    if obj:IsA("ParticleEmitter") then obj.Enabled=false; obj.Rate=0; obj.Lifetime=NumberRange.new(0); pcall(function() obj:Clear() end) end
-                                    if obj:IsA("Trail") then obj.Enabled=false; obj.Lifetime=NumberRange.new(0) end
-                                    if obj:IsA("Beam") then obj.Enabled=false end
-                                end)
-                            elseif obj:IsA("Decal") or obj:IsA("Texture") then pcall(function() obj.Transparency=1 end)
-                            elseif obj:IsA("SpotLight") or obj:IsA("SurfaceLight") or obj:IsA("PointLight") then pcall(function() obj.Enabled=false; obj.Range=0 end)
-                            elseif obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("UnionOperation") or obj:IsA("CornerWedgePart") then
-                                pcall(function() obj.Material=Enum.Material.SmoothPlastic end)
-                                pcall(function() obj.Reflectance=0 end)
-                                pcall(function() obj.CastShadow=false end)
-                            end
-                        end)
-                    end)
-                end)
-            end)
-        end)
-    end
-            pcall(function() 
-                local s = settings()
-                if s.Rendering then 
-                    s.Rendering.QualityLevel = Enum.QualityLevel.Level01
-                end
-            end)
-            pcall(function()
-                local terrain = workspace.Terrain
-                if terrain then
-                    terrain.WaterWaveSize = 0
-                    terrain.WaterWaveSpeed = 0
-                    terrain.WaterReflectance = 0
-                    terrain.WaterTransparency = 1
-                    terrain.Decoration = false
-                end
-            end)
-            pcall(function()
-                local sliceStarted = os.clock()
-                for _, item in ipairs(game:GetDescendants()) do
-                    if item:IsA("ParticleEmitter") or item:IsA("Trail") or item:IsA("Beam") or item:IsA("Smoke") or item:IsA("Fire") or item:IsA("Sparkles") or item:IsA("Attachment") then
-                        pcall(function() if item:IsA("ParticleEmitter") then item.Enabled=false; item.Rate=0; item.Lifetime=NumberRange.new(0) end end)
-                        pcall(function() if item:IsA("Trail") then item.Lifetime=NumberRange.new(0) end end)
-                        pcall(function() if item:IsA("Beam") then item.Enabled=false end end)
-                    elseif item:IsA("Decal") or item:IsA("Texture") then
-                        pcall(function() item.Transparency = 1 end)
-                    elseif item:IsA("SpotLight") or item:IsA("SurfaceLight") or item:IsA("PointLight") then
-                        pcall(function() item.Enabled=false; item.Brightness=0 end)
-                    elseif item:IsA("Explosion") then
-                        pcall(function() item.BlastPressure=1; item.BlastRadius=1 end)
-                    elseif item:IsA("BasePart") or item:IsA("UnionOperation") or item:IsA("CornerWedgePart") or item:IsA("TrussPart") or item:IsA("MeshPart") or item:IsA("WedgePart") then
-                        pcall(function() item.Material = Enum.Material.SmoothPlastic end)
-                        pcall(function() item.Reflectance = 0 end)
-                        pcall(function() item.CastShadow = false end)
-                    end
-                    if os.clock() - sliceStarted >= 0.002 then task.wait(); sliceStarted = os.clock() end
-                end
-            end)
-            pcall(function()
-                local replicated = game:GetService("ReplicatedStorage")
-                local smooth = Enum.Material.SmoothPlastic
-                local sliceStarted = os.clock()
-                local folders = {}
-                local map = workspace:FindFirstChild("Map")
-                if map then folders[#folders + 1] = map end
-                local unloaded = replicated:FindFirstChild("Unloaded")
-                if unloaded then folders[#folders + 1] = unloaded end
-                for _, folder in ipairs(folders) do
-                    if folder then
-                        for _, item in ipairs(folder:GetDescendants()) do
-                            if item:IsA("BasePart") or item:IsA("MeshPart") or item:IsA("UnionOperation") then
-                                pcall(function() item.Material = smooth end)
-                                pcall(function() item.Reflectance = 0 end)
-                                pcall(function() item.CastShadow = false end)
-                            elseif item:IsA("Texture") and not item:GetAttribute("Offset") then
-                                pcall(function() item:Destroy() end)
-                            elseif item:IsA("Decal") then
-                                pcall(function() item.Transparency = 1 end)
-                            end
-                            if os.clock() - sliceStarted >= 0.002 then task.wait(); sliceStarted = os.clock() end
-                        end
+                        if os.clock() - sliceStarted >= 0.0042 then task.wait(); sliceStarted = os.clock() end
                     end
                 end
             end)
@@ -5708,18 +5522,7 @@ do
                 end
                 if not worldOrigin then return end
                 worldOrigin.DescendantAdded:Connect(function(obj)
-                    pcall(function()
-                        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
-                            pcall(function() if obj:IsA("ParticleEmitter") then obj.Enabled=false; obj.Rate=0; obj.Lifetime=NumberRange.new(0) end end)
-                            pcall(function() if obj:IsA("Trail") then obj.Lifetime=NumberRange.new(0) end end)
-                        elseif obj:IsA("Decal") or obj:IsA("Texture") then pcall(function() obj.Transparency=1 end)
-                        elseif obj:IsA("SpotLight") or obj:IsA("SurfaceLight") or obj:IsA("PointLight") then pcall(function() obj.Enabled=false end)
-                        elseif obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("UnionOperation") then
-                            pcall(function() obj.Material=Enum.Material.SmoothPlastic end)
-                            pcall(function() obj.Reflectance=0 end)
-                            pcall(function() obj.CastShadow=false end)
-                        end
-                    end)
+                    pcall(ApplyFPSBoostToNew, obj)
                 end)
             end)
         end)
@@ -7406,22 +7209,11 @@ task.defer(function()
     if _G.SoloSeaFarm and _G.RJR_AutoFullToggle and _G.RJR_AutoFullToggle.Lock then
         pcall(function() _G.RJR_AutoFullToggle:Lock() end)
     end
-    -- Force performance on
-    _G.RemoveFog = true
-    _G.AutoFastMode = true
-    _G.FPSBoost = true
     if _G.DragonGunFarm then pcall(SeaAPI.StartDragonAttack) end
-    if _G.RemoveFog then pcall(function() if DoRemoveFog then DoRemoveFog() end end) end
-    if _G.AntiDracoAura then pcall(function() if PerformanceAPI and PerformanceAPI.ApplyAntiDracoAura then PerformanceAPI.ApplyAntiDracoAura() end end) end
-    if _G.AutoFastMode then pcall(function() if PerformanceAPI and PerformanceAPI.ApplyAutoFastMode then PerformanceAPI.ApplyAutoFastMode() end end) end
-    if _G.FPSBoost then pcall(function() if PerformanceAPI and PerformanceAPI.ApplyFPSBoost then PerformanceAPI.ApplyFPSBoost() end end) end
-    task.wait(0.5)
-    _G.RemoveFog = true
-    _G.AutoFastMode = true
-    _G.FPSBoost = true
-    pcall(function() if DoRemoveFog then DoRemoveFog() end end)
-    pcall(function() if PerformanceAPI and PerformanceAPI.ApplyAutoFastMode then PerformanceAPI.ApplyAutoFastMode() end end)
-    pcall(function() if PerformanceAPI and PerformanceAPI.ApplyFPSBoost then PerformanceAPI.ApplyFPSBoost() end end)
+    if _G.RemoveFog then pcall(DoRemoveFog) end
+    if _G.AntiDracoAura then pcall(PerformanceAPI.ApplyAntiDracoAura) end
+    if _G.AutoFastMode then pcall(PerformanceAPI.ApplyAutoFastMode) end
+    if _G.FPSBoost then pcall(PerformanceAPI.ApplyFPSBoost) end
     if _G.WalkOnWater then
         pcall(function()
             if workspace.Terrain then
@@ -7432,25 +7224,6 @@ task.defer(function()
                 hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
             end
         end)
-    end
-end)
-
-_G.RemoveFog = true
-_G.AutoFastMode = true
-_G.FPSBoost = true
-_G.AntiDracoAura = false
-task.defer(function()
-    pcall(function() if typeof(DoRemoveFog)=="function" then DoRemoveFog() end end)
-    pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyAutoFastMode)=="function" then PerformanceAPI.ApplyAutoFastMode() end end)
-    pcall(function() if typeof(PerformanceAPI)=="table" and typeof(PerformanceAPI.ApplyFPSBoost)=="function" then PerformanceAPI.ApplyFPSBoost() end end)
-end)
-pcall(function()
-    local Remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-    local CommF_ = Remotes and Remotes:FindFirstChild("CommF_")
-    if CommF_ then
-        pcall(function() CommF_:InvokeServer("SetTeam","Marines") end)
-        task.wait()
-        pcall(function() CommF_:InvokeServer("SetTeam","Marine") end)
     end
 end)
 
