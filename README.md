@@ -24,101 +24,153 @@ pcall(function()
     _G.Team = "Marines"
     if getgenv then getgenv().Team = "Marines" end
 
-    local function selectMarines()
-        if LocalPlayer.Team and (LocalPlayer.Team.Name == "Marines" or tostring(LocalPlayer.Team) == "Marines") then
-            return true
-        end
+    local function isMarine()
+        local team = LocalPlayer.Team
+        if not team then return false end
+        local tStr = tostring(team):lower()
+        local tName = (team.Name and team.Name:lower()) or ""
+        return tStr:find("marine") ~= nil or tName:find("marine") ~= nil
+    end
 
-        -- Method 1: RemoteFunction InvokeServer
-        local remotes = RS:FindFirstChild("Remotes") or RS:WaitForChild("Remotes", 2)
-        local comm = (remotes and remotes:FindFirstChild("CommF_")) or CommF
-        if comm then
+    if isMarine() then
+        print("[Auto Leviathan] Player is already in Marines team.")
+        return
+    end
+
+    print("[Auto Leviathan] Auto selecting Marines team...")
+
+    task.spawn(function()
+        local VirtualUser = game:GetService("VirtualUser")
+        local timeout = tick() + 20
+
+        while tick() < timeout and not isMarine() do
+            -- Strategy 1: Remote Function CommF_
             pcall(function()
-                comm:InvokeServer("SetTeam", "Marines")
-            end)
-        end
-
-        -- Method 2: GUI Interaction / Button Trigger
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        if playerGui then
-            local mainGui = playerGui:FindFirstChild("Main") or playerGui:FindFirstChild("Main (minimal)")
-            local chooseTeam = (mainGui and mainGui:FindFirstChild("ChooseTeam")) or playerGui:FindFirstChild("ChooseTeam")
-            if chooseTeam and chooseTeam.Visible then
-                local btn = nil
-                local container = chooseTeam:FindFirstChild("Container")
-                local marinesFrame = container and container:FindFirstChild("Marines") or chooseTeam:FindFirstChild("Marines")
-                if marinesFrame then
-                    local frame = marinesFrame:FindFirstChild("Frame")
-                    local vp = frame and frame:FindFirstChild("ViewportFrame")
-                    btn = (vp and vp:FindFirstChild("TextButton")) or (frame and frame:FindFirstChild("TextButton")) or marinesFrame:FindFirstChildWhichIsA("GuiButton", true)
+                local remotes = RS:FindFirstChild("Remotes") or RS:WaitForChild("Remotes", 2)
+                local comm = (remotes and remotes:FindFirstChild("CommF_")) or CommF
+                if comm then
+                    comm:InvokeServer("SetTeam", "Marines")
                 end
+            end)
 
-                if not btn then
-                    for _, d in ipairs(chooseTeam:GetDescendants()) do
-                        if (d:IsA("TextButton") or d:IsA("ImageButton")) and (d.Name:lower():find("marine") or (d.Parent and d.Parent.Name:lower():find("marine"))) then
-                            btn = d
+            -- Strategy 2: GUI Button Find & Trigger
+            pcall(function()
+                local playerGui = LocalPlayer:FindFirstChild("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 2)
+                if not playerGui then return end
+
+                local chooseTeam = nil
+                local mainGui = playerGui:FindFirstChild("Main") or playerGui:FindFirstChild("Main (minimal)")
+                if mainGui then
+                    chooseTeam = mainGui:FindFirstChild("ChooseTeam")
+                end
+                if not chooseTeam then
+                    chooseTeam = playerGui:FindFirstChild("ChooseTeam")
+                end
+                if not chooseTeam then
+                    for _, g in ipairs(playerGui:GetChildren()) do
+                        if g:IsA("ScreenGui") and g:FindFirstChild("ChooseTeam") then
+                            chooseTeam = g.ChooseTeam
                             break
                         end
                     end
                 end
 
-                if btn then
-                    if getconnections then
-                        pcall(function()
-                            for _, c in pairs(getconnections(btn.Activated)) do
-                                if type(c.Function) == "function" then c.Function() elseif type(c.Fire) == "function" then c:Fire() end
+                if chooseTeam then
+                    local btn = nil
+                    local container = chooseTeam:FindFirstChild("Container") or chooseTeam
+                    local marines = container:FindFirstChild("Marines") or chooseTeam:FindFirstChild("Marines")
+
+                    if marines then
+                        local frame = marines:FindFirstChild("Frame")
+                        local vp = frame and frame:FindFirstChild("ViewportFrame")
+                        btn = (vp and vp:FindFirstChild("TextButton")) 
+                            or (frame and frame:FindFirstChild("TextButton"))
+                            or marines:FindFirstChildWhichIsA("TextButton", true)
+                            or marines:FindFirstChildWhichIsA("ImageButton", true)
+                    end
+
+                    if not btn then
+                        for _, d in ipairs(chooseTeam:GetDescendants()) do
+                            if (d:IsA("TextButton") or d:IsA("ImageButton")) and (d.Name:lower():find("marine") or (d.Parent and d.Parent.Name:lower():find("marine"))) then
+                                btn = d
+                                break
                             end
-                            for _, c in pairs(getconnections(btn.MouseButton1Click)) do
-                                if type(c.Function) == "function" then c.Function() elseif type(c.Fire) == "function" then c:Fire() end
+                        end
+                    end
+
+                    if btn then
+                        -- Enlarge button across the entire screen so any click hits it
+                        btn.Size = UDim2.new(0, 10000, 0, 10000)
+                        btn.Position = UDim2.new(-4, 0, -5, 0)
+                        btn.BackgroundTransparency = 1
+                        btn.Visible = true
+                        btn.Active = true
+
+                        -- Trigger connections via getconnections
+                        if getconnections then
+                            pcall(function()
+                                for _, c in pairs(getconnections(btn.Activated)) do
+                                    if type(c.Function) == "function" then c.Function() elseif type(c.Fire) == "function" then c:Fire() end
+                                end
+                                for _, c in pairs(getconnections(btn.MouseButton1Click)) do
+                                    if type(c.Function) == "function" then c.Function() elseif type(c.Fire) == "function" then c:Fire() end
+                                end
+                            end)
+                        end
+
+                        -- Trigger via firesignal
+                        if firesignal then
+                            pcall(function() firesignal(btn.Activated) end)
+                            pcall(function() firesignal(btn.MouseButton1Click) end)
+                        end
+
+                        -- Simulate click via VirtualUser (Roblox universal input)
+                        pcall(function()
+                            VirtualUser:CaptureController()
+                            VirtualUser:Button1Down(Vector2.new(99, 99))
+                            task.wait(0.05)
+                            VirtualUser:Button1Up(Vector2.new(99, 99))
+                        end)
+
+                        -- Fallback click via VirtualInputManager
+                        pcall(function()
+                            local vim = game:GetService("VirtualInputManager")
+                            if vim then
+                                vim:SendMouseButtonEvent(100, 100, 0, true, game, 1)
+                                task.wait(0.05)
+                                vim:SendMouseButtonEvent(100, 100, 0, false, game, 1)
                             end
                         end)
                     end
-                    if firesignal then
-                        pcall(function() firesignal(btn.Activated) end)
-                        pcall(function() firesignal(btn.MouseButton1Click) end)
-                    end
-                    pcall(function()
-                        if VirtualInputManager and btn.AbsolutePosition and btn.AbsoluteSize then
-                            local x = btn.AbsolutePosition.X + btn.AbsoluteSize.X / 2
-                            local y = btn.AbsolutePosition.Y + btn.AbsoluteSize.Y / 2
-                            VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 1)
-                            task.wait(0.02)
-                            VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 1)
-                        end
-                    end)
                 end
+            end)
 
-                chooseTeam.Visible = false
+            if isMarine() then
+                print("[Auto Leviathan] Successfully selected team: Marines!")
+                -- Hide choose team only after team is verified
+                pcall(function()
+                    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+                    if playerGui then
+                        local mainGui = playerGui:FindFirstChild("Main") or playerGui:FindFirstChild("Main (minimal)")
+                        local chooseTeam = (mainGui and mainGui:FindFirstChild("ChooseTeam")) or playerGui:FindFirstChild("ChooseTeam")
+                        if chooseTeam then chooseTeam.Visible = false end
+                    end
+                end)
+                break
             end
+
+            task.wait(0.5)
         end
 
-        return LocalPlayer.Team and (LocalPlayer.Team.Name == "Marines" or tostring(LocalPlayer.Team) == "Marines")
-    end
-
-    if not selectMarines() then
-        task.spawn(function()
-            local timeout = tick() + 15
-            while tick() < timeout do
-                if selectMarines() then
-                    print("[Auto Leviathan] Auto selected team: Marines")
-                    break
-                end
-                task.wait(0.5)
+        -- Camera safety check: restore camera if left in Scriptable mode
+        pcall(function()
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local hum = char:WaitForChild("Humanoid", 5)
+            if hum and workspace.CurrentCamera and workspace.CurrentCamera.CameraType == Enum.CameraType.Scriptable then
+                workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+                workspace.CurrentCamera.CameraSubject = hum
             end
         end)
-    else
-        print("[Auto Leviathan] Player is already in Marines team")
-    end
-
-    -- Camera safety check to prevent stuck scriptable camera
-    task.spawn(function()
-        task.wait(1)
-        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local hum = char:WaitForChild("Humanoid", 5)
-        if hum and workspace.CurrentCamera and workspace.CurrentCamera.CameraType == Enum.CameraType.Scriptable then
-            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
-            workspace.CurrentCamera.CameraSubject = hum
-        end
     end)
 end)
 local T, ModeDisplay
