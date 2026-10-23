@@ -18,6 +18,109 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 local Remote = RS:FindFirstChild("Remotes")
 local CommF = Remote and Remote:FindFirstChild("CommF_")
+
+-- [AUTO SELECT TEAM: MARINES]
+pcall(function()
+    _G.Team = "Marines"
+    if getgenv then getgenv().Team = "Marines" end
+
+    local function selectMarines()
+        if LocalPlayer.Team and (LocalPlayer.Team.Name == "Marines" or tostring(LocalPlayer.Team) == "Marines") then
+            return true
+        end
+
+        -- Method 1: RemoteFunction InvokeServer
+        local remotes = RS:FindFirstChild("Remotes") or RS:WaitForChild("Remotes", 2)
+        local comm = (remotes and remotes:FindFirstChild("CommF_")) or CommF
+        if comm then
+            pcall(function()
+                comm:InvokeServer("SetTeam", "Marines")
+            end)
+        end
+
+        -- Method 2: GUI Interaction / Button Trigger
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if playerGui then
+            local mainGui = playerGui:FindFirstChild("Main") or playerGui:FindFirstChild("Main (minimal)")
+            local chooseTeam = (mainGui and mainGui:FindFirstChild("ChooseTeam")) or playerGui:FindFirstChild("ChooseTeam")
+            if chooseTeam and chooseTeam.Visible then
+                local btn = nil
+                local container = chooseTeam:FindFirstChild("Container")
+                local marinesFrame = container and container:FindFirstChild("Marines") or chooseTeam:FindFirstChild("Marines")
+                if marinesFrame then
+                    local frame = marinesFrame:FindFirstChild("Frame")
+                    local vp = frame and frame:FindFirstChild("ViewportFrame")
+                    btn = (vp and vp:FindFirstChild("TextButton")) or (frame and frame:FindFirstChild("TextButton")) or marinesFrame:FindFirstChildWhichIsA("GuiButton", true)
+                end
+
+                if not btn then
+                    for _, d in ipairs(chooseTeam:GetDescendants()) do
+                        if (d:IsA("TextButton") or d:IsA("ImageButton")) and (d.Name:lower():find("marine") or (d.Parent and d.Parent.Name:lower():find("marine"))) then
+                            btn = d
+                            break
+                        end
+                    end
+                end
+
+                if btn then
+                    if getconnections then
+                        pcall(function()
+                            for _, c in pairs(getconnections(btn.Activated)) do
+                                if type(c.Function) == "function" then c.Function() elseif type(c.Fire) == "function" then c:Fire() end
+                            end
+                            for _, c in pairs(getconnections(btn.MouseButton1Click)) do
+                                if type(c.Function) == "function" then c.Function() elseif type(c.Fire) == "function" then c:Fire() end
+                            end
+                        end)
+                    end
+                    if firesignal then
+                        pcall(function() firesignal(btn.Activated) end)
+                        pcall(function() firesignal(btn.MouseButton1Click) end)
+                    end
+                    pcall(function()
+                        if VirtualInputManager and btn.AbsolutePosition and btn.AbsoluteSize then
+                            local x = btn.AbsolutePosition.X + btn.AbsoluteSize.X / 2
+                            local y = btn.AbsolutePosition.Y + btn.AbsoluteSize.Y / 2
+                            VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 1)
+                            task.wait(0.02)
+                            VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 1)
+                        end
+                    end)
+                end
+
+                chooseTeam.Visible = false
+            end
+        end
+
+        return LocalPlayer.Team and (LocalPlayer.Team.Name == "Marines" or tostring(LocalPlayer.Team) == "Marines")
+    end
+
+    if not selectMarines() then
+        task.spawn(function()
+            local timeout = tick() + 15
+            while tick() < timeout do
+                if selectMarines() then
+                    print("[Auto Leviathan] Auto selected team: Marines")
+                    break
+                end
+                task.wait(0.5)
+            end
+        end)
+    else
+        print("[Auto Leviathan] Player is already in Marines team")
+    end
+
+    -- Camera safety check to prevent stuck scriptable camera
+    task.spawn(function()
+        task.wait(1)
+        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local hum = char:WaitForChild("Humanoid", 5)
+        if hum and workspace.CurrentCamera and workspace.CurrentCamera.CameraType == Enum.CameraType.Scriptable then
+            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+            workspace.CurrentCamera.CameraSubject = hum
+        end
+    end)
+end)
 local T, ModeDisplay
 T, ModeDisplay = (function()
     local LANGUAGE_LABELS = { "English", "Español", "中文" }
