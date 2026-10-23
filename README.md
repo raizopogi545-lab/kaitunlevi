@@ -1539,110 +1539,41 @@ local function Leviathan_CommF()
 end
 local BribeCache = nil
 local BribeCacheAt = 0
-local IsBribing = false
-
-local function InvalidateBribeCache()
-    BribeCache = nil
-    BribeCacheAt = 0
-end
-
-local function GetBribeStatus(forceFresh)
-    if not forceFresh and BribeCache ~= nil and (os.clock() - BribeCacheAt < 1.5) then
-        return BribeCache
-    end
+local function GetBribeStatus()
+    if BribeCache and os.clock() - BribeCacheAt < 2 then return BribeCache end
     local CommF2 = Leviathan_CommF()
     if not CommF2 then return nil end
     local ok, result = pcall(function() return CommF2:InvokeServer("InfoLeviathan", "1") end)
-    if ok and result ~= nil then
-        -- 1. Number result (-1 = cooldown, 0..5 = bribe count)
+    if ok then
         local n = tonumber(result)
-        if n ~= nil then
+        if n then
             BribeCache = n
             BribeCacheAt = os.clock()
             return n
         end
-        -- 2. String result parsing
-        if typeof(result) == "string" then
-            local str = result:lower()
-            -- Check for cooldown keywords
-            if str:find("wait") or str:find("cool") or str:find("rest") or str:find("busy") or str:find("later") then
-                BribeCache = -1
-                BribeCacheAt = os.clock()
-                return -1
-            end
-            -- Check for Leviathan ready / spawned keywords
-            if str:find("out there") or str:find("destruction") or str:find("ready") or str:find("found") or str:find("spawn") then
-                BribeCache = 5
-                BribeCacheAt = os.clock()
-                return 5
-            end
-            -- Check for numeric progress like "1/5", "2/5", or isolated digit
-            local digits = str:match("(%d+)%s*/%s*5") or str:match("%d+")
-            if digits then
-                local dn = tonumber(digits)
-                if dn and dn >= 0 and dn <= 5 then
-                    BribeCache = dn
-                    BribeCacheAt = os.clock()
-                    return dn
-                end
-            end
-        elseif typeof(result) == "boolean" then
-            if result == true then
-                BribeCache = 5
-                BribeCacheAt = os.clock()
-                return 5
-            end
-        end
-        -- Safe fallback if response received
         BribeCache = 5
         BribeCacheAt = os.clock()
         return 5
     end
     return nil
 end
-
 local function DoBribe()
-    InvalidateBribeCache()
     local CommF2 = Leviathan_CommF()
     if not CommF2 then return nil end
     local ok, result = pcall(function() return CommF2:InvokeServer("InfoLeviathan", "2") end)
-    InvalidateBribeCache()
     if ok then return result end
     return nil
 end
-
 local function BribeUntilDone()
-    if IsBribing then return GetBribeStatus() end
-    IsBribing = true
-    local ok, res = pcall(function()
-        InvalidateBribeCache()
-        local S0 = GetBribeStatus(true)
-        if S0 == 5 or S0 == -1 or S0 == nil then return S0 end
-
-        local lastS = S0
-        for i = 1, 4 do
-            SetStatus("Sobornando al espía (intento " .. i .. "/4)")
-            print("[Leviathan] Auto-bribing spy (attempt " .. i .. "/4, status: " .. tostring(lastS) .. "/5)")
-            DoBribe()
-            task.wait(0.8)
-            local S = GetBribeStatus(true)
-            if S ~= nil then
-                lastS = S
-                if S == 5 then
-                    SetStatus("Soborno completado: empiezo la caza del Leviathan")
-                    print("[Leviathan] Spy bribe complete (5/5)!")
-                    break
-                elseif S == -1 then
-                    SetStatus("Soborno incompleto: farmeo eventos mientras espero")
-                    print("[Leviathan] Spy entered cooldown (-1).")
-                    break
-                end
-            end
-        end
-        return lastS
-    end)
-    IsBribing = false
-    return res or GetBribeStatus(true)
+    local S0 = GetBribeStatus()
+    if S0 == 5 or S0 == -1 or S0 == nil then return end
+    for i = 1, 4 do
+        SetStatus("Sobornando al espía (intento " .. i .. "/4)")
+        DoBribe()
+        task.wait(0.5)
+        local S = GetBribeStatus()
+        if S == 5 or S == -1 or S == nil then break end
+    end
 end
 local BoatDealerCF = CFrame.new(-16917.1523, 8.59936905, 511.799042)
 local BoatFindRange = 5000
@@ -4249,25 +4180,9 @@ local function CaptainFarmPhase()
     if not _G.SoloSeaFarm then
         task.spawn(function()
             while _G.AutoLeviathanFull and not FarmDone do
-                task.wait(1.5)
-                local S = GetBribeStatus(true)
-                if S ~= nil and S ~= -1 then
-                    -- Cooldown is over! Auto-bribe immediately!
-                    if S < 5 then
-                        print("[Leviathan] Cooldown ended! Current progress: " .. tostring(S) .. "/5. Bribing now...")
-                        SetStatus("Soborno incompleto (" .. tostring(S) .. "/5): soborno ahora")
-                        S = BribeUntilDone()
-                    end
-                    if S == 5 then
-                        print("[Leviathan] Bribe completed (5/5)! Ending farm phase to hunt Leviathan.")
-                        SetStatus("Soborno completado: empiezo la caza del Leviathan")
-                        FarmDone = true
-                        break
-                    elseif S == -1 then
-                        print("[Leviathan] Spy back on cooldown (-1). Continuing farm.")
-                        SetStatus("Soborno incompleto: farmeo eventos mientras espero")
-                    end
-                end
+                task.wait(2)
+                local S = GetBribeStatus()
+                if S == nil or S ~= -1 then FarmDone = true end
             end
         end)
     end
@@ -4598,7 +4513,7 @@ local function StartCaptain()
                     return
                 end
                 if not _G.SoloSeaFarm then
-                    local S = GetBribeStatus(true)
+                    local S = GetBribeStatus()
                     if S == nil then
                         SetStatus("Esperando el estado del soborno (no disponible)")
                         task.wait(2)
@@ -4607,7 +4522,7 @@ local function StartCaptain()
                     if S ~= -1 and S ~= 5 then
                         SetStatus("Soborno incompleto (" .. tostring(S) .. "/5): soborno ahora")
                         BribeUntilDone()
-                        S = GetBribeStatus(true)
+                        S = GetBribeStatus()
                     end
                     if SeaAPI.Leviathan_SegmentsExist() or (Map and Map:FindFirstChild("LeviathanGate")) then
                         SetStatus("Leviathan detectado: voy a cazarlo")
