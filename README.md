@@ -827,8 +827,8 @@ task.spawn(function()
 end)
 if Character == nil then
     Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    HD = Character:FindFirstChild("Humanoid") or Character:WaitForChild("Humanoid")
-    HRP = Character:FindFirstChild("HumanoidRootPart") or Character:WaitForChild("HumanoidRootPart")
+    HD = Character:FindFirstChild("Humanoid") or (Character:WaitForChild("Humanoid", 10))
+    HRP = Character:FindFirstChild("HumanoidRootPart") or (Character:WaitForChild("HumanoidRootPart", 10))
 end
 local function GetCharacterParts()
     local char = LocalPlayer.Character
@@ -1140,59 +1140,72 @@ local function _tp(targetPos, abortCheck)
     local nextAbortAt = 0
     local connection
     connection = RunService.Stepped:Connect(function(_, deltaTime)
-        local dt = deltaTime or (1 / 60)
-        local curChar = LocalPlayer.Character
-        local curHum = curChar and curChar:FindFirstChildOfClass("Humanoid")
-        local curHRP = select(2, GetCharacterParts())
-        if not curHRP or curChar ~= startChar or not curHum or curHum.Health <= 0 then
-            aborted = true
-            if tween then tween:Cancel() end
-        elseif curHRP.Position.Y < -300 then
-            aborted = true
-            if tween then tween:Cancel() end
-        else
-            if not seatedStop and curHum.SeatPart ~= nil then
-                seatedStop = true
-                arrived = true
+        local okStep, errStep = pcall(function()
+            local dt = deltaTime or (1 / 60)
+            local curChar = LocalPlayer.Character
+            local curHum = curChar and curChar:FindFirstChildOfClass("Humanoid")
+            local curHRP = select(2, GetCharacterParts())
+            if not curHRP or curChar ~= startChar or not curHum or curHum.Health <= 0 then
+                aborted = true
                 if tween then tween:Cancel() end
-            end
-            if not seatedStop then
-                if liveTarget then
-                    local tgt = liveTarget()
-                    if tgt and tgt.Position.Y < -300 then
-                        aborted = true
-                        if tween then tween:Cancel() end
-                    elseif tgt then
-                        local cur = part.Position
-                        local delta = tgt.Position - cur
-                        local dist = delta.Magnitude
-                        if dist <= 5 then
-                            arrived = true
-                        else
-                            part.CFrame = CFrame.new(cur + delta.Unit * math.min(dist, tweenSpeed * dt))
-                                * (part.CFrame - part.CFrame.Position)
-                        end
-                    end
-                end
-                if not aborted then
-                    curHRP.CFrame = part.CFrame
-                    curHRP.AssemblyLinearVelocity = Vector3.zero
-                    for _, p in ipairs(curChar:GetDescendants()) do
-                        if p:IsA("BasePart") then p.CanCollide = false end
-                    end
-                end
-            end
-        end
-        if abortCheck and not aborted then
-            local now = tick()
-            if now >= nextAbortAt then
-                nextAbortAt = now + 0.1
-                local ok, stop = pcall(abortCheck)
-                if ok and stop then
-                    aborted = true
+            elseif curHRP.Position.Y < -300 then
+                aborted = true
+                if tween then tween:Cancel() end
+            else
+                if not seatedStop and curHum.SeatPart ~= nil then
+                    seatedStop = true
+                    arrived = true
                     if tween then tween:Cancel() end
                 end
+                if not seatedStop then
+                    if liveTarget then
+                        local tgtOk, tgt = pcall(liveTarget)
+                        if tgtOk and tgt and tgt.Position.Y < -300 then
+                            aborted = true
+                            if tween then tween:Cancel() end
+                        elseif tgtOk and tgt then
+                            local cur = part.Position
+                            local delta = tgt.Position - cur
+                            local dist = delta.Magnitude
+                            if dist <= 5 then
+                                arrived = true
+                            else
+                                local moveDir = delta.Unit
+                                if moveDir.Magnitude > 0 then
+                                    part.CFrame = CFrame.new(cur + moveDir * math.min(dist, tweenSpeed * dt))
+                                        * (part.CFrame - part.CFrame.Position)
+                                end
+                            end
+                        end
+                    end
+                    if not aborted and curHRP and part and part.Parent then
+                        pcall(function()
+                            curHRP.CFrame = part.CFrame
+                            curHRP.AssemblyLinearVelocity = Vector3.zero
+                        end)
+                        pcall(function()
+                            for _, p in ipairs(curChar:GetDescendants()) do
+                                if p:IsA("BasePart") then p.CanCollide = false end
+                            end
+                        end)
+                    end
+                end
             end
+            if abortCheck and not aborted then
+                local now = tick()
+                if now >= nextAbortAt then
+                    nextAbortAt = now + 0.1
+                    local ok, stop = pcall(abortCheck)
+                    if ok and stop then
+                        aborted = true
+                        if tween then tween:Cancel() end
+                    end
+                end
+            end
+        end)
+        if not okStep then
+            aborted = true
+            if tween then pcall(function() tween:Cancel() end) end
         end
     end)
     pcall(function()
@@ -1230,67 +1243,80 @@ local function ClearHover()
     LiveHoldFn = nil
 end
 RunService.Heartbeat:Connect(function(dt)
-    if _G.StopTween then return end
-    local _, hrp, hum = GetCharacterParts()
-    if not hrp then return end
-    if hum and hum.SeatPart ~= nil then return end
-    if TpActive then return end
-    if CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing then return end
-    local goal = nil
-    if AttackModel then
-        if not AttackModel.Parent then
-            AttackModel, AttackStandFn = nil, nil
-        else
-            local ok, cf = pcall(AttackStandFn)
-            if ok and cf and cf.Position.Y < -300 then
-                cf = nil
+    local okHover, errHover = pcall(function()
+        if _G.StopTween then return end
+        local _, hrp, hum = GetCharacterParts()
+        if not hrp then return end
+        if hum and hum.SeatPart ~= nil then return end
+        if TpActive then return end
+        if CurrentTween and CurrentTween.PlaybackState == Enum.PlaybackState.Playing then return end
+        local goal = nil
+        if AttackModel then
+            if not AttackModel.Parent then
                 AttackModel, AttackStandFn = nil, nil
-            end
-            if ok and cf then
-                goal = cf
-                if FightTarget then
-                    FightTarget.CF = cf
-                    FightTarget.At = os.clock()
+            else
+                local ok, cf = pcall(AttackStandFn)
+                if ok and cf and cf.Position.Y < -300 then
+                    cf = nil
+                    AttackModel, AttackStandFn = nil, nil
+                end
+                if ok and cf then
+                    goal = cf
+                    if FightTarget then
+                        FightTarget.CF = cf
+                        FightTarget.At = os.clock()
+                    end
                 end
             end
         end
-    end
-    if not goal and LiveHoldFn then
-        local ok, cf = pcall(LiveHoldFn)
-        if ok and cf then
-            if cf.Position.Y < -300 then
+        if not goal and LiveHoldFn then
+            local ok, cf = pcall(LiveHoldFn)
+            if ok and cf then
+                if cf.Position.Y < -300 then
+                    ClearHover()
+                    return
+                end
+                goal = cf
+            end
+        end
+        if not goal then
+            goal = HoldCFrame
+            if goal and goal.Position.Y < -300 then
                 ClearHover()
                 return
             end
-            goal = cf
         end
-    end
-    if not goal then
-        goal = HoldCFrame
-        if goal and goal.Position.Y < -300 then
-            ClearHover()
-            return
+        if not goal then return end
+        if not AttackModel and goal.Position.Y < 20 then
+            goal = CFrame.new(goal.Position.X, 25, goal.Position.Z) * (goal - goal.Position)
         end
-    end
-    if not goal then return end
-    if not AttackModel and goal.Position.Y < 20 then
-        goal = CFrame.new(goal.Position.X, 25, goal.Position.Z) * (goal - goal.Position)
-    end
-    if not LiveHoldFn then HoldCFrame = goal end
-    hrp.AssemblyLinearVelocity = Vector3.zero
-    hrp.AssemblyAngularVelocity = Vector3.zero
-    local char = LocalPlayer.Character
-    if char then
-        for _, p in ipairs(char:GetDescendants()) do
-            if p:IsA("BasePart") then p.CanCollide = false end
+        if not LiveHoldFn then HoldCFrame = goal end
+        pcall(function()
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end)
+        local char = LocalPlayer.Character
+        if char then
+            pcall(function()
+                for _, p in ipairs(char:GetDescendants()) do
+                    if p:IsA("BasePart") then p.CanCollide = false end
+                end
+            end)
         end
-    end
-    local dist = (goal.Position - hrp.Position).Magnitude
-    if dist <= 3 then
-        hrp.CFrame = goal
-    else
-        local step = math.min(dist, HoverSpeedNow() * (dt or (1 / 60)))
-        hrp.CFrame = hrp.CFrame:Lerp(goal, step / dist)
+        local dist = (goal.Position - hrp.Position).Magnitude
+        if dist <= 3 then
+            pcall(function() hrp.CFrame = goal end)
+        else
+            local step = math.min(dist, HoverSpeedNow() * (dt or (1 / 60)))
+            pcall(function()
+                if hrp and hrp.Parent then
+                    hrp.CFrame = hrp.CFrame:Lerp(goal, step / dist)
+                end
+            end)
+        end
+    end)
+    if not okHover then
+        -- recover silently on error
     end
 end)
 local function StopTweenAll()
@@ -1465,7 +1491,10 @@ local function CoolDown_Auto()
         Equip_Auto("Blox Fruit"); task.wait(0.5)
         SkillCoolDown = false
     end
-    local Skills = LocalPlayer.PlayerGui.Main.Skills
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    local mainGui = playerGui and playerGui:FindFirstChild("Main")
+    local Skills = mainGui and mainGui:FindFirstChild("Skills")
+    if not Skills then return end
     for _, Weapon in pairs(Skills:GetChildren()) do
         for _, v in pairs(Weapon:GetChildren()) do
             if table.find({"Z", "X", "C", "V", "F"}, v.Name) then
@@ -1491,8 +1520,9 @@ local function CoolDown_Auto()
 end
 local function Haki_Auto()
     if not _G.AutoBuso then return end
-    if Character and HRP then
-        if not Character:FindFirstChild("HasBuso") then
+    local char, hrp, hd = GetCharacterParts()
+    if char and hrp and hd then
+        if not char:FindFirstChild("HasBuso") then
             pcall(function() CommF:InvokeServer("Buso") end)
         end
     end
@@ -1598,13 +1628,14 @@ local function Attack_GetSeed()
     return AttackSeedCache or 1
 end
 local function Attack_Auto()
-    if not Character or not HRP or not HD then return end
-    local tool = Character:FindFirstChildOfClass("Tool")
+    local char, hrp, hd = GetCharacterParts()
+    if not char or not hrp or not hd then return end
+    local tool = char:FindFirstChildOfClass("Tool")
     if not tool then return end
     local WT = tool:GetAttribute("WeaponType")
     if WT ~= "Melee" and WT ~= "Sword" then return end
     if not Attack_EnsureRemotes() then return end
-    local hitList = Attack_BuildHitList(Character, HRP.Position)
+    local hitList = Attack_BuildHitList(char, hrp.Position)
     if #hitList == 0 then return end
     pcall(function()
         local okNet, netApi = pcall(function() return require(AttackNet) end)
@@ -2239,10 +2270,17 @@ local CruiseToB = true
 local function SailBoatStream(seat, speed)
     speed = speed or _G.BoatSpeed or 150
     if not seat or not seat.Parent then return false end
+    local _, hrpCheck, humCheck = GetCharacterParts()
+    if humCheck and (humCheck.Sit or humCheck.SeatPart ~= nil) then
+        if seat.Parent and IsSittingOn and not IsSittingOn(seat) then
+            pcall(function() BoardSeat(seat, 2) end)
+        end
+    end
     LastSailAt = os.clock()
     local _, hrp = GetCharacterParts()
     if not hrp then return false end
-    local dt = RunService.Heartbeat:Wait() or (1 / 60)
+    local dtOk, dt = pcall(function() return RunService.Heartbeat:Wait() end)
+    if not dtOk or typeof(dt) ~= "number" then dt = 1 / 60 end
     if (seat.Position or hrp.Position).Y < -35 then
         SetStatus("Barco hundido (Y<-35): lo abandono y compro otro")
         pcall(function()
@@ -2251,7 +2289,7 @@ local function SailBoatStream(seat, speed)
                 print("[Leviathan] Barco con Y<-35 abandonado: " .. seat.Parent.Name)
             end
         end)
-        Unseat()
+        pcall(Unseat)
         CruiseCheckPos = nil
         if _G.RespawnRebuy and _G.RJR_ResetCharacterAtTiki then
             task.spawn(_G.RJR_ResetCharacterAtTiki, "Barco hundido (Y<-35)")
@@ -2278,12 +2316,14 @@ local function SailBoatStream(seat, speed)
                 CruiseStalls = 0
                 CruiseCheckPos = nil
                 CruiseCheckAt = os.clock()
-                if _G.RJR_RecoverLock then _G.RJR_RecoverLock("el barco no avanza") end
+                if _G.RJR_RecoverLock then
+                    pcall(function() _G.RJR_RecoverLock("el barco no avanza") end)
+                end
             else
                 SetStatus("Crucero atascado: bajo y vuelvo a subir para reiniciar")
-                Unseat()
+                pcall(Unseat)
                 task.wait(0.3)
-                if seat.Parent then BoardSeatRetry(seat, 10) end
+                if seat.Parent then pcall(function() BoardSeatRetry(seat, 10) end) end
                 CruiseCheckPos = nil
             end
         else
@@ -2292,14 +2332,17 @@ local function SailBoatStream(seat, speed)
         end
         CruiseCheckAt = os.clock()
     end
-    local dir = flat.Unit
+    local dir = flat.Magnitude > 0 and flat.Unit or Vector3.new(0, 0, -1)
     local step = math.min(dist, speed * dt)
     local np = pos + dir * step
     local lockY = _G.BoatHeight or 150
     pcall(function()
-        hrp.CFrame = CFrame.lookAt(Vector3.new(np.X, lockY, np.Z),
+        local _, hrpNow = GetCharacterParts()
+        if not hrpNow or not hrpNow.Parent then return end
+        if humCheck and not (humCheck.Sit or humCheck.SeatPart ~= nil) then return end
+        hrpNow.CFrame = CFrame.lookAt(Vector3.new(np.X, lockY, np.Z),
             Vector3.new(np.X, lockY, np.Z - 1), Vector3.new(0, 1, 0))
-        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrpNow.AssemblyLinearVelocity = Vector3.zero
     end)
     return true
 end
@@ -3075,7 +3118,8 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
                     Equip_Auto("Dragonstorm")
                 end
             elseif Stand and HRP then
-                local Distance = (Stand.Position - HRP.Position).Magnitude
+                local _, hrpNowFight = GetCharacterParts()
+                local Distance = Stand and hrpNowFight and (Stand.Position - hrpNowFight.Position).Magnitude or 0
                 local RootNow = Sea_EventRoot(Mob)
                 local MobUp = (RootNow and RootNow.Position and RootNow.Position.Y or 0) >= -600
                 if Skill and Distance <= 80 and MobUp then
@@ -3348,7 +3392,14 @@ local function FightLeviathan(ShouldBreak, WaitSec)
                             end
                         end
                     else
-                        if not IsOnBoat() then Equip_Auto("Dragonstorm") end
+                if not IsOnBoat() then
+                    Equip_Auto("Dragonstorm")
+                else
+                    local _, hrpEquip = GetCharacterParts()
+                    if hrpEquip and not (hrpEquip.SeatPart or (GetCharacterParts() and select(3, GetCharacterParts()) and select(3, GetCharacterParts()).Sit)) then
+                        Equip_Auto("Dragonstorm")
+                    end
+                end
                     end
                 else
                     local _, hrpAtk = GetCharacterParts()
@@ -3386,7 +3437,9 @@ SeaAPI.NormalizeSelection = Sea_NormalizeSelection
 SeaAPI.GetLeviathanTarget = getLeviathanTarget
 SeaAPI.GetAllLeviathanTargets = getAllLeviathanTargets
 SeaAPI.GetClosestSeaTarget = getClosestSeaTarget
-SeaAPI.PerformWaterRecovery = PerformWaterRecovery
+if PerformWaterRecovery then
+    SeaAPI.PerformWaterRecovery = PerformWaterRecovery
+end
 do
     local RawSelection = _G.HuntSelectEvents
     local CleanSelection = Sea_NormalizeSelection(RawSelection)
@@ -3701,6 +3754,11 @@ local function RecoverPositionLock(reason)
 end
 _G.RJR_RecoverLock = PerformWaterRecovery
 _G.PerformWaterRecovery = PerformWaterRecovery
+pcall(function()
+    if SeaAPI and PerformWaterRecovery then
+        SeaAPI.PerformWaterRecovery = PerformWaterRecovery
+    end
+end)
 
 task.spawn(function()
     while true do
@@ -4859,13 +4917,13 @@ local function FollowerBoardSeat(boat)
                 ReleaseClaim()
                 tried[seat] = true
             else
-                local ok = BoardSeat(seat, 1.5)
-                ReleaseClaim() -- always release regardless of outcome
-                if ok then
-                    FollowSeatsFull = false
-                    return true
-                end
-                tried[seat] = true
+    local okSeat, seatRes = pcall(function() return BoardSeat(seat, 1.5) end)
+    ReleaseClaim() -- always release regardless of outcome
+    if okSeat and seatRes then
+        FollowSeatsFull = false
+        return true
+    end
+    tried[seat] = true
             end
         end
         task.wait(0.05) -- was 0.1 s — tighter poll prevents aagawan
@@ -5402,14 +5460,16 @@ task.spawn(function()
     end
 end)
 RunService.Heartbeat:Connect(function()
-    if tick() - LastAttackTime < 0.1 then return end
-    if _G.AutoLeviathanFull and _G.FastAttack then
-        local _, _, hum = GetCharacterParts()
-        if hum and hum.SeatPart == nil and not hum.Sit then
-            pcall(Attack_Auto)
+    pcall(function()
+        if tick() - LastAttackTime < 0.1 then return end
+        if _G.AutoLeviathanFull and _G.FastAttack then
+            local _, _, hum = GetCharacterParts()
+            if hum and hum.SeatPart == nil and not hum.Sit then
+                pcall(function() Attack_Auto() end)
+            end
+            LastAttackTime = tick()
         end
-        LastAttackTime = tick()
-    end
+    end)
 end)
 local function HandleAbility(abilityType)
     task.spawn(function()
@@ -5435,11 +5495,16 @@ end
 HandleAbility("V3")
 HandleAbility("V4")
 RunService.Heartbeat:Connect(function()
-    if _G.AutoLeviathanFull and HRP then
-        if not IsOnBoat() then
-            HRP.AssemblyLinearVelocity = Vector3.zero
+    pcall(function()
+        if _G.AutoLeviathanFull then
+            local _, hrp, hum = GetCharacterParts()
+            if hrp and hum and hum.Health > 0 then
+                if not IsOnBoat() then
+                    pcall(function() hrp.AssemblyLinearVelocity = Vector3.zero end)
+                end
+            end
         end
-    end
+    end)
 end)
 local function DoRemoveFog()
     local layers = game:GetService("Lighting"):FindFirstChild("LightingLayers")
@@ -5736,10 +5801,10 @@ pcall(function()
     end)
     setreadonly(mt, true)
 end)
-local function Update_Character()
+Update_Character = function()
     Character = LocalPlayer.Character
-    HD = Character and (Character:FindFirstChild("Humanoid") or Character:WaitForChild("Humanoid"))
-    HRP = Character and (Character:FindFirstChild("HumanoidRootPart") or Character:WaitForChild("HumanoidRootPart"))
+    HD = Character and (Character:FindFirstChild("Humanoid") or Character:WaitForChild("Humanoid", 10))
+    HRP = Character and (Character:FindFirstChild("HumanoidRootPart") or Character:WaitForChild("HumanoidRootPart", 10))
 end
 LocalPlayer.CharacterAdded:Connect(function()
     if _G.AutoLeviathanFull and _G.Mode == "Capitán" then
@@ -5898,7 +5963,7 @@ task.spawn(function()
             else
                 StorageFull = false
                 local attempted = false
-                local Containers = { LocalPlayer.Backpack, Character }
+                local Containers = { LocalPlayer.Backpack, LocalPlayer.Character }
                 for _, container in ipairs(Containers) do
                     if container and not attempted then
                         for _, k in ipairs(container:GetChildren()) do
