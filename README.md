@@ -2426,20 +2426,23 @@ local function Sea_Mob(MaxDistance, Exclude)
         {Name = "PirateGrandBrigade", ConfigName = "Pirate Grand Brigade Ship", Folder = Enemies, Skill = true},
         {Name = "PirateBasic", ConfigName = "Pirate Basic Ship", Folder = Enemies, Skill = true},
         {Name = "SeaBeast1", ConfigName = "Sea Beast", Folder = SeaBeasts, Skill = true},
+        {Name = "Leviathan Segment", ConfigName = "Leviathan Segment", Folder = SeaBeasts, Skill = true},
+        {Name = "Leviathan", ConfigName = "Leviathan", Folder = SeaBeasts, Skill = true},
     }
     local SelectedSet = Sea_SelectionSet()
     local Best, BestRoot, BestSkill, BestDist = nil, nil, false, MaxDistance
     for _, Data in ipairs(MobList) do
         if not (SelectedSet and not SelectedSet[Data.ConfigName]) and Data.Folder then
             for _, Mob in ipairs(Data.Folder:GetChildren()) do
-                if Mob.Name == Data.Name and not (Exclude and Exclude[Mob]) then
-                    local Alive = Sea_MobStillAlive(Mob)
+                if (Mob.Name == Data.Name or Data.Name == "Leviathan Segment" and (Mob.Name == "Leviathan Segment" or Mob.Name == "Leviathan"))
+                    and not (Exclude and Exclude[Mob]) then
+                    if not Sea_MobStillAlive(Mob) then continue end
                     local Root = Mob:FindFirstChild("HumanoidRootPart")
                         or Mob:FindFirstChild("RootPart")
                         or Mob.PrimaryPart
                         or Mob:FindFirstChild("Head")
                         or Mob:FindFirstChildWhichIsA("BasePart", true)
-                    if Alive and Root and Root.Position and HRP then
+                    if Root and Root.Position and HRP then
                         local Dist = (Root.Position - HRP.Position).Magnitude
                         if Dist < BestDist then
                             Best, BestRoot, BestSkill, BestDist = Mob, Root, Data.Skill == true, Dist
@@ -2453,11 +2456,62 @@ local function Sea_Mob(MaxDistance, Exclude)
 end
 Sea_MobStillAlive = function(Mob)
     if not Mob or not Mob.Parent then return false end
+    pcall(function()
+        if Mob.Parent == nil then return false end
+    end)
+    if not Mob.Parent then return false end
+    local function CheckVal(v)
+        if not v then return nil end
+        if typeof(v) == "number" then return v end
+        if v:IsA("ValueBase") then
+            local ok, val = pcall(function() return v.Value end)
+            if ok and typeof(val) == "number" then return val end
+        end
+        if v:IsA("Humanoid") then
+            if typeof(v.Health) == "number" then return v.Health end
+        end
+        return nil
+    end
     local Health = Mob:FindFirstChild("Health")
-    if Health and Health:IsA("ValueBase") and Health.Value <= 0 then return false end
+    local hv = CheckVal(Health)
+    if hv ~= nil and hv <= 0 then
+        for _, d in ipairs(Mob:GetDescendants()) do
+            if d ~= Health and d.Name:lower():find("health") then
+                local hv2 = CheckVal(d)
+                if hv2 ~= nil and hv2 > 0 then
+                    return true
+                end
+                if hv2 ~= nil and hv2 <= 0 then
+                    return false
+                end
+            end
+        end
+        return false
+    end
     local Humanoid = Mob:FindFirstChildOfClass("Humanoid")
-    if Humanoid and Humanoid.Health <= 0 then return false end
-    return (Health ~= nil and Health:IsA("ValueBase")) or (Humanoid ~= nil)
+    local humv = CheckVal(Humanoid)
+    if humv ~= nil and humv <= 0 then
+        return false
+    end
+    if hv ~= nil and hv > 0 then return true end
+    if humv ~= nil and humv > 0 then return true end
+    for _, d in ipairs(Mob:GetDescendants()) do
+        if d:IsA("Humanoid") then
+            local hv3 = CheckVal(d)
+            if hv3 ~= nil then
+                if hv3 <= 0 then return false end
+                if hv3 > 0 then return true end
+            end
+        end
+        if d.Name:lower():find("health") and d:IsA("ValueBase") then
+            local hv4 = CheckVal(d)
+            if hv4 ~= nil then
+                if hv4 <= 0 then return false end
+                if hv4 > 0 then return true end
+            end
+        end
+    end
+    return true
 end
 local FaceTargetCF = (function()
     local Cached = { model = nil, part = nil, at = 0 }
@@ -2814,10 +2868,8 @@ end
 -- ============================================================
 local function getAllSeaTargets()
     local targets = {}
-    local char = LocalPlayer.Character
-    if not char then return targets end
-    local myHRP = char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then return targets end
+    local char, myHRP = GetCharacterParts()
+    if not char or not myHRP then return targets end
     local myPos = myHRP.Position
     local playerBoats = getAllPlayerBoatModels()
     local selectionSet = Sea_SelectionSet()
@@ -2826,22 +2878,28 @@ local function getAllSeaTargets()
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
+            if not e.Parent then continue end
             local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
             local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
             local allowed = isLeviathan or configName == nil
                 or (selectionSet == nil or selectionSet[configName] == true)
             if allowed then
+                if not Sea_MobStillAlive(e) then continue end
                 local hp = e:FindFirstChild("Health")
-                local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
-                if alive then
-                    local part
-                    if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
-                    part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
-                    if part and part:IsA("BasePart") then
-                        local d = (part.Position - myPos).Magnitude
-                        if d < Range then
-                            table.insert(targets, {part = part, model = e, dist = d, isLeviathan = isLeviathan})
-                        end
+                local alive = true
+                if hp and hp:IsA("ValueBase") then
+                    local hv = tonumber(hp.Value)
+                    if hv ~= nil and hv <= 0 then alive = false end
+                end
+                if not alive then continue end
+                local part
+                if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
+                part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
+                if part and part.Parent and part:IsA("BasePart") then
+                    local ppos = part.Position
+                    local d = (ppos - myPos).Magnitude
+                    if d < Range then
+                        table.insert(targets, {part = part, model = e, dist = d, isLeviathan = isLeviathan})
                     end
                 end
             end
@@ -2851,29 +2909,36 @@ local function getAllSeaTargets()
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, e in ipairs(enemies:GetChildren()) do
+            if not e.Parent then continue end
             if table.find(VALID_SEA_ENEMIES, e.Name)
                 and not playerBoats[e.Name]
                 and Sea_SelectionAllows(e.Name) then
+                if not Sea_MobStillAlive(e) then continue end
                 local hp = e:FindFirstChild("Health")
                 local hum = e:FindFirstChildOfClass("Humanoid")
-                local alive = (hp and hp:IsA("ValueBase") and hp.Value > 0)
-                    or (hum and hum.Health > 0)
-                if alive then
-                    local engine = e:FindFirstChild("Engine")
-                    local isBoat = engine and e:FindFirstChild("VehicleSeat")
-                    local part
-                    if isBoat then part = engine
-                    else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
-                    if part and part:IsA("BasePart") then
-                        local d = (part.Position - myPos).Magnitude
-                        if d < Range then
-                            table.insert(targets, {part = part, model = e, dist = d})
-                        end
+                local alive = true
+                if hp and hp:IsA("ValueBase") then
+                    local hv = tonumber(hp.Value)
+                    if hv ~= nil and hv <= 0 then alive = false end
+                end
+                if hum and typeof(hum.Health) == "number" and hum.Health <= 0 then alive = false end
+                if not alive then continue end
+                local engine = e:FindFirstChild("Engine")
+                local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                local part
+                if isBoat then part = engine
+                else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
+                if part and part.Parent and part:IsA("BasePart") then
+                    local ppos = part.Position
+                    local d = (ppos - myPos).Magnitude
+                    if d < Range then
+                        table.insert(targets, {part = part, model = e, dist = d})
                     end
                 end
             end
         end
     end
+    table.sort(targets, function(a,b) return a.dist < b.dist end)
     return targets
 end
 
@@ -3054,6 +3119,8 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
     local function CurrentStand()
         local r = Sea_EventRoot(Mob)
         if not r then return nil end
+        if Mob and not Mob.Parent then return nil end
+        if not Sea_MobStillAlive(Mob) then return nil end
         return Sea_Stand(Mob, r)
     end
     -- Do one initial approach tween so the player is near the mob stand position.
@@ -3071,11 +3138,14 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
             if ShouldBreak and ShouldBreak() then return true end
             local _, h = GetCharacterParts()
             if not h then return true end
-            return (CurrentStand() ~= nil and (h.Position - CurrentStand().Position).Magnitude <= 60)
+            local sNow = CurrentStand()
+            if not sNow then return true end
+            return (sNow.Position - h.Position).Magnitude <= 65
         end)
     end
     DoApproach()
-    while _G.AutoLeviathanFull and os.clock() - start < 600 do
+    local fightStart = os.clock()
+    while _G.AutoLeviathanFull and os.clock() - start < 900 do
         if ShouldBreak and ShouldBreak() then
             SetStatus("El capitán volvió al barco: dejo de pelear y vuelvo")
             break
@@ -3083,15 +3153,24 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
         -- Use GetCharacterParts() for fresh character state every iteration.
         local _, hrpLoop, humLoop = GetCharacterParts()
         if not humLoop or humLoop.Health <= 0 then break end
-        if not Mob or not Mob.Parent or not Sea_MobStillAlive(Mob) then
-            if Mob then SetStatus("Evento marino derrotado: " .. Mob.Name) end
-            break
+        if not Mob or not Mob.Parent then break end
+        if not Sea_MobStillAlive(Mob) then
+            if os.clock() - fightStart > 1.2 then
+                if Mob then SetStatus("Evento marino derrotado: " .. Mob.Name) end
+                break
+            else
+                task.wait(0.2)
+                if not Sea_MobStillAlive(Mob) then
+                    if Mob then SetStatus("Evento marino derrotado: " .. Mob.Name) end
+                    break
+                end
+            end
         end
         SetStatus("Farmeo marino: " .. Mob.Name .. " (llevo " .. math.floor(os.clock() - start) .. " s)")
         -- Exit seat immediately if somehow seated mid-fight.
         if humLoop and (humLoop.Sit or humLoop.SeatPart ~= nil) then
             SetStatus("Farmeo marino: comprobando salir del asiento")
-            Unseat()
+            pcall(Unseat)
             task.wait(0.2)
         end
         local Stand = CurrentStand()
@@ -3101,35 +3180,50 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
             AttackStandFn = CurrentStand
             FightTarget = { CF = Stand, At = os.clock() }
             -- Only re-tween if we drifted far (e.g. knocked back), so attacks aren't interrupted.
-            if hrpLoop and (Stand.Position - hrpLoop.Position).Magnitude > 80 then
+            if hrpLoop and (Stand.Position - hrpLoop.Position).Magnitude > 90 then
                 DoApproach()
+            end
+        else
+            if os.clock() - fightStart > 2 then
+                break
             end
         end
         if not IsOnBoat() then
             if _G.DragonGunFarm then
                 if HasDragonstormEquipped() then
-                    -- [MULTI-HIT] Burst-fire at ALL sea targets in range in the same frame.
-                    -- DragonMultiFire handles DragonLastFire rate-limiting internally.
-                    local seaTargets = getAllSeaTargets()
-                    if #seaTargets > 0 then
-                        DragonMultiFire(seaTargets) -- no cap: all in range
-                    end
+                local seaTargets = getAllSeaTargets()
+                if #seaTargets > 0 then
+                    DragonMultiFire(seaTargets)
                 else
-                    Equip_Auto("Dragonstorm")
+                    -- Fallback to single target
+                    local tgt, tmodel = getClosestSeaTarget()
+                    if tgt and tgt.Parent and tgt:IsA("BasePart") then
+                        pcall(function()
+                            local interval = _G.DragonFireInterval or 0.30
+                            local now2 = os.clock()
+                            if now2 - DragonLastFire >= interval then
+                                DragonLastFire = now2
+                                fireShot(tgt.Position, tgt)
+                            end
+                        end)
+                    end
                 end
-            elseif Stand and HRP then
+                else
+                    pcall(function() Equip_Auto("Dragonstorm") end)
+                end
+            elseif Stand and hrpLoop then
                 local _, hrpNowFight = GetCharacterParts()
                 local Distance = Stand and hrpNowFight and (Stand.Position - hrpNowFight.Position).Magnitude or 0
                 local RootNow = Sea_EventRoot(Mob)
                 local MobUp = (RootNow and RootNow.Position and RootNow.Position.Y or 0) >= -600
-                if Skill and Distance <= 80 and MobUp then
+                if Skill and Distance <= 90 and MobUp then
                     pcall(CoolDown_Auto)
                 else
-                    Equip_Auto(_G.SelectWeapon or "Sword")
+                    pcall(function() Equip_Auto(_G.SelectWeapon or "Sword") end)
                 end
             end
         end
-        Haki_Auto()
+        pcall(Haki_Auto)
         task.wait(0.05)
     end
     AttackModel = nil
