@@ -22,13 +22,13 @@ local CommF = Remote and Remote:FindFirstChild("CommF_")
 -- [AUTO FPS CAP]
 pcall(function()
     if typeof(setfpscap) == "function" then
-        setfpscap(60)
+        setfpscap(30)
     elseif typeof(syn) == "table" and typeof(syn.setfpscap) == "function" then
-        syn.setfpscap(60)
+        syn.setfpscap(30)
     elseif typeof(getgenv) == "function" then
         local env = getgenv()
         if typeof(env.setfpscap) == "function" then
-            env.setfpscap(60)
+            env.setfpscap(30)
         end
     end
 end)
@@ -2590,6 +2590,35 @@ local DragonLastFire     = 0
 local DragonFireLock     = false
 local DragonShootRetries = 0
 
+-- Dragonstorm Targeting Config
+_G.DragonRange = _G.DragonRange or 2500
+_G.DragonMaxTargets = _G.DragonMaxTargets or 10
+_G.DragonTargetRefresh = _G.DragonTargetRefresh or 0.08
+_G.DragonDebug = _G.DragonDebug or false
+
+local function DragonDebug(msg)
+    if _G.DragonDebug then
+        print("[Dragonstorm][DBG] " .. tostring(msg))
+    end
+end
+
+local function isValidSeaPart(part, model)
+    if typeof(part) ~= "Instance" or not part.Parent then return false end
+    if not part:IsA("BasePart") then return false end
+    if model then
+        if not model.Parent then return false end
+        if Sea_MobStillAlive and not Sea_MobStillAlive(model) then return false end
+        local hp = model:FindFirstChild("Health")
+        if hp and hp:IsA("ValueBase") then
+            local hv = tonumber(hp.Value)
+            if hv ~= nil and hv <= 0 then return false end
+        end
+        local hum = model:FindFirstChildOfClass("Humanoid")
+        if hum and typeof(hum.Health) == "number" and hum.Health <= 0 then return false end
+    end
+    return true
+end
+
 local VALID_SEA_ENEMIES = {
     "Terrorshark", "Shark", "Piranha",
     "Fish Crew Member", "Haunted Crew Member",
@@ -2795,95 +2824,37 @@ local function targetOwnerAlive(part)
     local model = part:FindFirstAncestorWhichIsA("Model")
     if not model then return true end
     local hum = model:FindFirstChildOfClass("Humanoid")
-    if hum and hum.Health <= 0 then return false end
+    if hum and typeof(hum.Health) == "number" and hum.Health <= 0 then return false end
     local hp = model:FindFirstChild("Health")
-    if hp and hp:IsA("ValueBase") and hp.Value <= 0 then return false end
+    if hp and hp:IsA("ValueBase") then
+        local hv = tonumber(hp.Value)
+        if hv ~= nil and hv <= 0 then return false end
+    end
     return true
 end
 
-local AttackRange = 2500
+AttackRange = tonumber(_G.DragonRange) or 2500
 local SeaTargetCache, SeaTargetAt, SeaTargetModel
 
 local function getClosestSeaTarget()
     local now = os.clock()
-    if SeaTargetCache and SeaTargetCache.Parent and (now - SeaTargetAt) < 0.1 then
-        if targetOwnerAlive(SeaTargetCache) then
-            if Sea_MobStillAlive(SeaTargetModel) then
+    local refresh = tonumber(_G.DragonTargetRefresh) or 0.08
+    if SeaTargetCache and SeaTargetCache.Parent and SeaTargetModel and SeaTargetModel.Parent then
+        if (now - (SeaTargetAt or 0)) < refresh then
+            if isValidSeaPart(SeaTargetCache, SeaTargetModel) and targetOwnerAlive(SeaTargetCache) then
                 return SeaTargetCache, SeaTargetModel
             end
         end
-        SeaTargetCache, SeaTargetModel, SeaTargetAt = nil, nil, 0
     end
-    local char, myHRP = GetCharacterParts()
-    if not char or not myHRP then return nil, nil end
-    local myPos = myHRP.Position
-    local best, bestModel, bestDist = nil, nil, AttackRange
-    local playerBoats = getAllPlayerBoatModels()
-    local selectionSet = Sea_SelectionSet()
+    SeaTargetCache, SeaTargetModel, SeaTargetAt = nil, nil, 0
 
-    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
-    if seaBeasts then
-        for _, e in ipairs(seaBeasts:GetChildren()) do
-            if not e.Parent then continue end
-            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
-            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
-            local allowed = isLeviathan or configName == nil
-                or (selectionSet == nil or selectionSet[configName] == true)
-            if allowed then
-                if not Sea_MobStillAlive(e) then continue end
-                local hp = e:FindFirstChild("Health")
-                local alive = true
-                if hp and hp:IsA("ValueBase") then
-                    local hv = tonumber(hp.Value)
-                    if hv ~= nil and hv <= 0 then alive = false end
-                end
-                if not alive then continue end
-                local part
-                if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
-                part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
-                if part and part.Parent and part:IsA("BasePart") then
-                    local d = (part.Position - myPos).Magnitude
-                    if d < bestDist then
-                        bestDist, best, bestModel = d, part, e
-                    end
-                end
-            end
-        end
+    local list = getAllSeaTargets()
+    if #list > 0 then
+        local best = list[1]
+        SeaTargetCache, SeaTargetAt, SeaTargetModel = best.part, now, best.model
+        return best.part, best.model
     end
-
-    local enemies = workspace:FindFirstChild("Enemies")
-    if enemies then
-        for _, e in ipairs(enemies:GetChildren()) do
-            if not e.Parent then continue end
-            if table.find(VALID_SEA_ENEMIES, e.Name)
-                and not playerBoats[e.Name]
-                and Sea_SelectionAllows(e.Name) then
-                if not Sea_MobStillAlive(e) then continue end
-                local hp = e:FindFirstChild("Health")
-                local hum = e:FindFirstChildOfClass("Humanoid")
-                local alive = true
-                if hp and hp:IsA("ValueBase") then
-                    local hv = tonumber(hp.Value)
-                    if hv ~= nil and hv <= 0 then alive = false end
-                end
-                if hum and typeof(hum.Health) == "number" and hum.Health <= 0 then alive = false end
-                if not alive then continue end
-                local engine = e:FindFirstChild("Engine")
-                local isBoat = engine and e:FindFirstChild("VehicleSeat")
-                local part
-                if isBoat then part = engine
-                else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
-                if part and part.Parent and part:IsA("BasePart") then
-                    local d = (part.Position - myPos).Magnitude
-                    if d < bestDist then
-                        bestDist, best, bestModel = d, part, e
-                    end
-                end
-            end
-        end
-    end
-    SeaTargetCache, SeaTargetAt, SeaTargetModel = best, now, bestModel
-    return best, bestModel
+    return nil, nil
 end
 
 -- ============================================================
@@ -2895,37 +2866,32 @@ end
 local function getAllSeaTargets()
     local targets = {}
     local char, myHRP = GetCharacterParts()
-    if not char or not myHRP then return targets end
+    if not char or not myHRP or not myHRP.Parent then return targets end
     local myPos = myHRP.Position
     local playerBoats = getAllPlayerBoatModels()
     local selectionSet = Sea_SelectionSet()
-    local Range = 2500
+    local Range = tonumber(_G.DragonRange) or 2500
+    local MaxT  = tonumber(_G.DragonMaxTargets) or 10
 
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if seaBeasts then
         for _, e in ipairs(seaBeasts:GetChildren()) do
-            if not e.Parent then continue end
-            local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
-            local configName = SEA_EVENT_OPTIONS_BY_MOB[e.Name]
-            local allowed = isLeviathan or configName == nil
-                or (selectionSet == nil or selectionSet[configName] == true)
-            if allowed then
-                if not Sea_MobStillAlive(e) then continue end
-                local hp = e:FindFirstChild("Health")
-                local alive = true
-                if hp and hp:IsA("ValueBase") then
-                    local hv = tonumber(hp.Value)
-                    if hv ~= nil and hv <= 0 then alive = false end
-                end
-                if not alive then continue end
-                local part
-                if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
-                part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
-                if part and part.Parent and part:IsA("BasePart") then
-                    local ppos = part.Position
-                    local d = (ppos - myPos).Magnitude
-                    if d < Range then
-                        table.insert(targets, {part = part, model = e, dist = d, isLeviathan = isLeviathan})
+            if e.Parent then
+                local isLeviathan = (e.Name == "Leviathan Segment") or (e.Name == "Leviathan")
+                local configName = SEA_EVENT_OPTIONS_BY_MOB and SEA_EVENT_OPTIONS_BY_MOB[e.Name]
+                local allowed = isLeviathan or configName == nil
+                    or (selectionSet == nil or selectionSet[configName] == true)
+                if allowed then
+                    if Sea_MobStillAlive and Sea_MobStillAlive(e) then
+                        local part
+                        if isLeviathan then part = e:FindFirstChild("Leviathan Segment") end
+                        part = part or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
+                        if isValidSeaPart(part, e) then
+                            local d = (part.Position - myPos).Magnitude
+                            if d <= Range then
+                                table.insert(targets, { part = part, model = e, dist = d, isLeviathan = isLeviathan })
+                            end
+                        end
                     end
                 end
             end
@@ -2935,103 +2901,85 @@ local function getAllSeaTargets()
     local enemies = workspace:FindFirstChild("Enemies")
     if enemies then
         for _, e in ipairs(enemies:GetChildren()) do
-            if not e.Parent then continue end
-            if table.find(VALID_SEA_ENEMIES, e.Name)
-                and not playerBoats[e.Name]
-                and Sea_SelectionAllows(e.Name) then
-                if not Sea_MobStillAlive(e) then continue end
-                local hp = e:FindFirstChild("Health")
-                local hum = e:FindFirstChildOfClass("Humanoid")
-                local alive = true
-                if hp and hp:IsA("ValueBase") then
-                    local hv = tonumber(hp.Value)
-                    if hv ~= nil and hv <= 0 then alive = false end
-                end
-                if hum and typeof(hum.Health) == "number" and hum.Health <= 0 then alive = false end
-                if not alive then continue end
-                local engine = e:FindFirstChild("Engine")
-                local isBoat = engine and e:FindFirstChild("VehicleSeat")
-                local part
-                if isBoat then part = engine
-                else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
-                if part and part.Parent and part:IsA("BasePart") then
-                    local ppos = part.Position
-                    local d = (ppos - myPos).Magnitude
-                    if d < Range then
-                        table.insert(targets, {part = part, model = e, dist = d})
+            if e.Parent and table.find(VALID_SEA_ENEMIES, e.Name) then
+                if not (playerBoats and playerBoats[e.Name]) and Sea_SelectionAllows(e.Name) then
+                    if Sea_MobStillAlive and Sea_MobStillAlive(e) then
+                        local engine = e:FindFirstChild("Engine")
+                        local isBoat = engine and e:FindFirstChild("VehicleSeat")
+                        local part
+                        if isBoat then part = engine
+                        else part = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChildWhichIsA("BasePart", true) end
+                        if isValidSeaPart(part, e) then
+                            local d = (part.Position - myPos).Magnitude
+                            if d <= Range then
+                                table.insert(targets, { part = part, model = e, dist = d })
+                            end
+                        end
                     end
                 end
             end
         end
     end
-    table.sort(targets, function(a,b) return a.dist < b.dist end)
-    return targets
+
+    local seen, unique = {}, {}
+    for i = 1, #targets do
+        local t = targets[i]
+        local key = t.model or t.part
+        if key and not seen[key] then
+            seen[key] = true
+            unique[#unique + 1] = t
+        end
+    end
+
+    table.sort(unique, function(a,b) return a.dist < b.dist end)
+    if #unique > MaxT then
+        local trimmed = {}
+        for i = 1, MaxT do trimmed[i] = unique[i] end
+        unique = trimmed
+    end
+
+    DragonDebug(("scan: %d targets (range=%d, max=%d)"):format(#unique, Range, MaxT))
+    return unique
 end
 
 local function getLeviathanTarget()
-    local seaBeasts = workspace:FindFirstChild("SeaBeasts")
-    if not seaBeasts then return nil, nil end
-    local char = LocalPlayer.Character
-    if not char then return nil, nil end
-    local myHRP = char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then return nil, nil end
-    local myPos = myHRP.Position
-    local best, bestModel, bestDist = nil, nil, AttackRange
-    for _, e in ipairs(seaBeasts:GetChildren()) do
-        if e.Name == "Leviathan Segment" or e.Name == "Leviathan" then
-            local hp = e:FindFirstChild("Health")
-            local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
-            if alive then
-                local part = e:FindFirstChild("Leviathan Segment")
-                    or e:FindFirstChild("HumanoidRootPart")
-                    or e.PrimaryPart
-                if part and part:IsA("BasePart") then
-                    local d = (part.Position - myPos).Magnitude
-                    if d < bestDist then
-                        bestDist, best, bestModel = d, part, e
-                    end
-                end
-            end
-        end
-    end
-    return best, bestModel
+    local list = getAllLeviathanTargets()
+    if #list == 0 then return nil, nil end
+    return list[1].part, list[1].model
 end
 
 -- ============================================================
 -- getAllLeviathanTargets — MULTI-SEGMENT LEVIATHAN SCANNER
 -- ------------------------------------------------------------
 -- Returns EVERY Leviathan segment (and/or "Leviathan" model)
--- within AttackRange so the Dragonstorm can hit them all in
+-- within DragonRange so the Dragonstorm can hit them all in
 -- the same frame. Sorted closest-first.
 -- ============================================================
 local function getAllLeviathanTargets()
     local targets = {}
-    local char = LocalPlayer.Character
-    if not char then return targets end
-    local myHRP = char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then return targets end
+    local char, myHRP = GetCharacterParts()
+    if not char or not myHRP or not myHRP.Parent then return targets end
     local myPos = myHRP.Position
     local seaBeasts = workspace:FindFirstChild("SeaBeasts")
     if not seaBeasts then return targets end
+    local Range = tonumber(_G.DragonRange) or AttackRange
     for _, e in ipairs(seaBeasts:GetChildren()) do
-        if e.Name == "Leviathan Segment" or e.Name == "Leviathan" then
-            local hp = e:FindFirstChild("Health")
-            local alive = (not hp) or (not hp:IsA("ValueBase")) or hp.Value > 0
-            if alive then
+        if e.Parent and (e.Name == "Leviathan Segment" or e.Name == "Leviathan") then
+            if Sea_MobStillAlive and Sea_MobStillAlive(e) then
                 local part = e:FindFirstChild("Leviathan Segment")
                     or e:FindFirstChild("HumanoidRootPart")
                     or e.PrimaryPart
                     or e:FindFirstChildWhichIsA("BasePart", true)
-                if part and part:IsA("BasePart") then
+                if isValidSeaPart(part, e) then
                     local d = (part.Position - myPos).Magnitude
-                    if d < AttackRange then
+                    if d <= Range then
                         table.insert(targets, { part = part, model = e, dist = d })
                     end
                 end
             end
         end
     end
-    table.sort(targets, function(a, b) return a.dist < b.dist end)
+    table.sort(targets, function(a,b) return a.dist < b.dist end)
     return targets
 end
 
@@ -3049,16 +2997,24 @@ local function DragonMultiFire(targets, maxTargets)
     local interval = _G.DragonFireInterval or 0.30
     if now - DragonLastFire < interval then return 0 end
     DragonLastFire = now
-    maxTargets = maxTargets or #targets
-    local fired = 0
+
+    maxTargets = maxTargets or tonumber(_G.DragonMaxTargets) or #targets
+    if maxTargets < 1 then maxTargets = 1 end
+
+    local seen, fired = {}, 0
     for i = 1, math.min(#targets, maxTargets) do
         local tgt = targets[i]
-        if tgt.part and tgt.part.Parent then
-            -- Prefer the named hit-part child if present (Leviathan Segment aim point)
-            local aimPart = tgt.model and tgt.model:FindFirstChild("Leviathan Segment")
-            local aimPos = (aimPart and aimPart.Position) or tgt.part.Position
-            fireShot(aimPos, tgt.part)
-            fired = fired + 1
+        if tgt and tgt.part and tgt.part.Parent then
+            local model = tgt.model
+            if not model or not seen[model] then
+                if model then seen[model] = true end
+                if isValidSeaPart(tgt.part, model) then
+                    local aimPart = model and model:FindFirstChild("Leviathan Segment")
+                    local aimPos  = (aimPart and aimPart.Position) or tgt.part.Position
+                    fireShot(aimPos, tgt.part)
+                    fired = fired + 1
+                end
+            end
         end
     end
     return fired
@@ -3082,56 +3038,48 @@ local function StartDragonAttack()
         print("[Dragonstorm] listo")
         local lastDiag = 0
         while _G.DragonGunFarm do
-            local ok, err = pcall(function()
-                ensureDragonRemotes()
-                if not ShootGunEvent or not Validator2 then return end
-                local char = LocalPlayer.Character
-                if not char then return end
-                local tool = char:FindFirstChildOfClass("Tool")
-                if not tool or tool.Name ~= "Dragonstorm" then
-                    if not IsOnBoat() then Equip_Auto("Dragonstorm") end
-                    return
-                end
-                
-                local now = os.clock()
-                local interval = _G.DragonFireInterval or 0.30
-                if now - DragonLastFire < interval then return end
-                DragonLastFire = now
-                
-                local targets = getAllSeaTargets()
-                if #targets == 0 then
-                    if os.clock() - lastDiag > 2 then
-                        lastDiag = os.clock()
-                        print("[Dragonstorm] sin objetivo dentro de rango")
-                    end
-                    return
-                end
-                
-                -- Sort targets by distance (closest first)
-                table.sort(targets, function(a, b) return a.dist < b.dist end)
-
-                -- [MULTI-HIT] Fire at ALL targets inside the range in the SAME frame.
-                -- No task.wait between targets so every target receives
-                -- `DragonShotsPerBurst` shots back-to-back in one network tick.
-                local MaxTargets = 10
-                local fired = 0
-                for i = 1, math.min(#targets, MaxTargets) do
-                    local target = targets[i]
-                    if target.part and target.part.Parent then
-                        fireShot(target.part.Position, target.part)
-                        fired = fired + 1
-                    end
-                end
-                if fired > 1 and os.clock() - lastDiag > 2 then
-                    lastDiag = os.clock()
-                    print("[Dragonstorm] multi-hit burst on " .. fired .. " targets")
-                end
-            end)
-            if not ok and os.clock() - lastDiag > 2 then
-                lastDiag = os.clock()
-                warn("[Dragonstorm] error en bucle: " .. tostring(err))
+        local ok, err = pcall(function()
+            ensureDragonRemotes()
+            if not ShootGunEvent or not Validator2 then return end
+            local char = LocalPlayer.Character
+            if not char then return end
+            local tool = char:FindFirstChildOfClass("Tool")
+            if not tool or tool.Name ~= "Dragonstorm" then
+                if not IsOnBoat() then Equip_Auto("Dragonstorm") end
+                return
             end
-            task.wait(0.05) -- Check frequently, rate limit handles actual firing
+            
+            local now = os.clock()
+            local interval = _G.DragonFireInterval or 0.30
+            if now - DragonLastFire < interval then return end
+            
+            local targets = getAllSeaTargets()
+            if #targets == 0 then
+                if os.clock() - lastDiag > 2 then
+                    lastDiag = os.clock()
+                    DragonDebug("sin objetivo dentro de rango")
+                end
+                local tgt = getClosestSeaTarget()
+                if tgt and tgt.Parent and tgt:IsA("BasePart") then
+                    DragonLastFire = now
+                    fireShot(tgt.Position, tgt)
+                end
+                return
+            end
+            
+            DragonLastFire = now
+            local MaxTargets = tonumber(_G.DragonMaxTargets) or 10
+            local fired = DragonMultiFire(targets, MaxTargets)
+            if fired > 1 and os.clock() - lastDiag > 2 then
+                lastDiag = os.clock()
+                DragonDebug(("multi-hit burst on %d targets"):format(fired))
+            end
+        end)
+        if not ok and os.clock() - lastDiag > 2 then
+            lastDiag = os.clock()
+            warn("[Dragonstorm] error en bucle: " .. tostring(err))
+        end
+        task.wait(0.03) -- Check frequently, rate limit handles actual firing
         end
         DragonAttackRunning = false
     end)
