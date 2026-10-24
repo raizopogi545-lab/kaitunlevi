@@ -3048,11 +3048,7 @@ local function StartDragonAttack()
                 if not IsOnBoat() then Equip_Auto("Dragonstorm") end
                 return
             end
-            
-            local now = os.clock()
-            local interval = _G.DragonFireInterval or 0.30
-            if now - DragonLastFire < interval then return end
-            
+
             local targets = getAllSeaTargets()
             if #targets == 0 then
                 if os.clock() - lastDiag > 2 then
@@ -3061,13 +3057,16 @@ local function StartDragonAttack()
                 end
                 local tgt = getClosestSeaTarget()
                 if tgt and tgt.Parent and tgt:IsA("BasePart") then
-                    DragonLastFire = now
-                    fireShot(tgt.Position, tgt)
+                    local interval = _G.DragonFireInterval or 0.30
+                    local now2 = os.clock()
+                    if now2 - DragonLastFire >= interval then
+                        DragonLastFire = now2
+                        fireShot(tgt.Position, tgt)
+                    end
                 end
                 return
             end
-            
-            DragonLastFire = now
+
             local MaxTargets = tonumber(_G.DragonMaxTargets) or 10
             local fired = DragonMultiFire(targets, MaxTargets)
             if fired > 1 and os.clock() - lastDiag > 2 then
@@ -3162,22 +3161,20 @@ local function FightSeaEvent(Mob, Root, Skill, ShouldBreak)
         if not IsOnBoat() then
             if _G.DragonGunFarm then
                 if HasDragonstormEquipped() then
-                    local seaTargets = getAllSeaTargets()
-                    if #seaTargets > 0 then
-                        DragonMultiFire(seaTargets)
-                    else
-                        local tgt, tmodel = getClosestSeaTarget()
-                        if tgt and tgt.Parent and tgt:IsA("BasePart") then
-                            pcall(function()
-                                local interval = _G.DragonFireInterval or 0.30
-                                local now2 = os.clock()
-                                if now2 - DragonLastFire >= interval then
-                                    DragonLastFire = now2
-                                    fireShot(tgt.Position, tgt)
-                                end
-                            end)
+                local seaTargets = getAllSeaTargets()
+                if #seaTargets > 0 then
+                    DragonMultiFire(seaTargets)
+                else
+                    local tgt = getClosestSeaTarget()
+                    if tgt and tgt.Parent and tgt:IsA("BasePart") then
+                        local interval = _G.DragonFireInterval or 0.30
+                        local now2 = os.clock()
+                        if now2 - DragonLastFire >= interval then
+                            DragonLastFire = now2
+                            fireShot(tgt.Position, tgt)
                         end
                     end
+                end
                 else
                     pcall(function() Equip_Auto("Dragonstorm") end)
                 end
