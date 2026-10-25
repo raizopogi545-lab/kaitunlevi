@@ -408,6 +408,8 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         ["Enganche fallido: no pude subir al asiento del arpón"] = { en = "Hook failed, could not board harpoon seat", zh = "勾心脏失败 上鱼叉座位失败", th = "เกี่ยวไม่สำเร็จ ขึ้นที่นั่งฉมวกไม่ได้" },
         ["Enganche: el corazón desapareció"] = { en = "Hook: heart gone", zh = "勾心脏 心脏已消失", th = "เกี่ยว: หัวใจหายไปแล้ว" },
         ["Enganche fallido: bajo del arpón para reintentar"] = { en = "Hook missed, unseating for next round", zh = "勾心脏 未勾中 下鱼叉座准备下一轮", th = "เกี่ยวพลาด ลงจากที่นั่งเพื่อรอบถัดไป" },
+        ["Enganche: la proa no apunta al corazón, no disparo esta ronda"] = { en = "Bow is not aimed at the heart, skipping this shot", zh = "船头没有对准心脏 本轮不开炮", th = "หัวเรือยังไม่หันเข้าหาหัวใจ ข้ามการยิงรอบนี้" },
+        ["Enganche: la proa se movió, vuelvo a alinearla"] = { en = "Bow moved, aligning it again before firing", zh = "船头跑偏了 回到驾驶座重新对准", th = "หัวเรือเบี้ยว กลับไปจัดแนวใหม่ก่อนยิง" },
         ["No pude bajar del arpón: intento la siguiente ronda"] = { en = "Hook: unseat failed, retrying next round", zh = "勾心脏 下鱼叉座失败 仍尝试下一轮", th = "เกี่ยว: ลงจากที่นั่งไม่สำเร็จ จะลองรอบถัดไป" },
         ["¡Corazón enganchado!"] = { en = "Heart hooked", zh = "勾心脏成功", th = "เกี่ยวหัวใจได้แล้ว" },
         ["Fallo: el corazón no quedó enganchado"] = { en = "Hook failed, heart not hooked", zh = "勾心脏失败 心脏未勾中", th = "เกี่ยวไม่สำเร็จ ยังไม่ได้หัวใจ" },
@@ -491,6 +493,7 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         ["Corazón presente y sin barco: voy a comprar uno"] = { en = "Heart present but no boat: going to buy one", zh = "心脏已出现但没有船 去买船", th = "มีหัวใจแต่ไม่มีเรือ: กำลังไปซื้อเรือ" },
         ["Reinicio en curso: espero para comprar barco"] = { en = "Character reset in progress, waiting before buying a boat", zh = "正在重置角色 等待后再买船", th = "กำลังรีเซ็ตตัวละคร รอก่อนซื้อเรือ" },
         ["El reinicio en Tiki falló: reintentando"] = { en = "Reset at Tiki failed, retrying", zh = "Tiki 重置失败 正在重试", th = "รีเซ็ตที่ Tiki ล้มเหลว กำลังลองใหม่" },
+        ["El reinicio se quedó colgado: lo libero y sigo"] = { en = "Reset got stuck: releasing it and continuing", zh = "重生卡住了 已解除锁定并继续", th = "การรีเซ็ตค้างอยู่ ปลดล็อกและทำต่อ" },
     }
     local StatusPatterns = {
         { es = "Personaje bloqueado en el sitio ({1}): lo libero", en = "Character stuck in place ({1}): freeing it", zh = "人物卡在原地 ({1}) 正在解卡", nested = false, th = "ตัวละครติดอยู่กับที่ ({1}): กำลังปลด" },
@@ -508,6 +511,7 @@ TranslateStatus, SetStatus = (function(LanguageCode)
         { es = "Enganche: navegando a X+300 del corazón (dist {1})", en = "Hook: sailing to heart X+300 (dist {1})", zh = "勾心脏 开船前往心脏X+300 (距离 {1})", nested = false, th = "เกี่ยว: แล่นเรือไปที่หัวใจ X+300 (ระยะ {1})" },
         { es = "Volviendo a Tiki: corazón a {1} del barco, cancelo", en = "Returning, heart {1} from boat, aborting", zh = "回Tiki 心脏离船 {1} 中断航程", nested = false, th = "กำลังกลับ หัวใจห่างจากเรือ {1} ยกเลิก" },
         { es = "Siguiendo: pruebo el asiento {1} (cambio cada {2} s)", en = "Following, trying seat {1} (rotating every {2}s)", zh = "跟随 尝试上船 {1} 座位 (每 {2} 秒换下一个)", nested = false, th = "กำลังตาม ลองที่นั่ง {1} (สลับทุก {2} วินาที)" },
+        { es = "Siguiendo: asiento {1} ocupado por otro jugador, pruebo otro", en = "Following: seat {1} taken by another player, trying the next one", zh = "跟随 {1} 座位被别人坐了 立刻停止等待 换下一个座位", nested = false, th = "กำลังตาม: ที่นั่ง {1} ถูกผู้เล่นอื่นนั่งแล้ว หยุดรอทันทีและลองที่นั่งถัดไป" },
         { es = "Enganche: apunto la proa al corazón (intento {1})", en = "Hook: aiming bow at heart (attempt {1})", zh = "勾心脏 调整船头对准心脏 (第{1}次尝试)", nested = false, th = "เกี่ยว: หันหัวเรือไปที่หัวใจ (ครั้งที่ {1})" },
         { es = "Enganche: bajo al asiento del arpón (intento {1})", en = "Hook: unseating to harpoon seat (attempt {1})", zh = "勾心脏 下船上鱼叉座 (第{1}次尝试)", nested = false, th = "เกี่ยว: ลงจากที่นั่งไปที่นั่งฉมวก (ครั้งที่ {1})" },
         { es = "Esperando a que aparezca el corazón (llevo {1} s)", en = "Waiting for heart ({1}s)", zh = "等待心脏出现 (已等 {1} 秒)", nested = false, th = "กำลังรอหัวใจ ({1} วินาที)" },
@@ -2204,6 +2208,34 @@ local function IsSeatOccupied(seat)
     end
     return false
 end
+local function SeatHeldByOtherPlayer(seat, hum)
+    if not seat or not seat.Parent then
+        return false
+    end
+    local function IsOtherPlayerHumanoid(otherHum)
+        if not otherHum or otherHum == hum or otherHum.Health <= 0 then
+            return false
+        end
+        local model = otherHum.Parent
+        local owner = model and Players:GetPlayerFromCharacter(model)
+        return owner ~= nil and owner ~= LocalPlayer
+    end
+    local Occupant = seat.Occupant
+    if Occupant and Occupant:IsA("Humanoid") and IsOtherPlayerHumanoid(Occupant) then
+        return true
+    end
+    local Weld = seat:FindFirstChild("SeatWeld")
+    if Weld then
+        local p1 = Weld.Part1
+        if p1 and p1:IsA("BasePart") and p1:IsDescendantOf(workspace) then
+            local model = p1:FindFirstAncestorWhichIsA("Model")
+            if IsOtherPlayerHumanoid(model and model:FindFirstChildOfClass("Humanoid")) then
+                return true
+            end
+        end
+    end
+    return false
+end
 local function CountTeammatesOnBoat(boat)
     if not boat or not boat.Parent then
         return 0
@@ -2313,6 +2345,11 @@ local function BoardSeat(seat, timeout)
             _G.RJR_BoardStall = nil
             return true
         end
+        if SeatHeldByOtherPlayer(seat, hum) then
+            ClearHover()
+            _G.RJR_BoardStall = nil
+            return false, true
+        end
         if hum and (hum.Sit or hum.SeatPart ~= nil) then
             Unseat()
             task.wait(0.3)
@@ -2341,8 +2378,17 @@ local function BoardSeat(seat, timeout)
                         return true
                     end
                     local _, _, humNow = GetCharacterParts()
-                    return humNow ~= nil and humNow.SeatPart ~= nil
+                    if humNow ~= nil and humNow.SeatPart ~= nil then
+                        return true
+                    end
+                    return SeatHeldByOtherPlayer(seat, humNow)
                 end)
+                local _, _, humAfter = GetCharacterParts()
+                if SeatHeldByOtherPlayer(seat, humAfter) then
+                    ClearHover()
+                    _G.RJR_BoardStall = nil
+                    return false, true
+                end
             else
                 AbandonIfTooFar(seat)
                 return false
@@ -2371,8 +2417,12 @@ local function BoardSeatRetry(seat, timeout, attempts)
         if not seat or not seat.Parent then
             return false
         end
-        if BoardSeat(seat, timeout) then
+        local Ok, Taken = BoardSeat(seat, timeout)
+        if Ok then
             return true
+        end
+        if Taken then
+            return false
         end
         Unseat()
         task.wait(0.5)
@@ -3463,6 +3513,7 @@ _G.RJR_ResetCharacterAtTiki = function(reason, force)
         return
     end
     _G.RJR_Resetting = true
+    _G.RJR_ResetStartedAt = os.clock()
     local ok, err = pcall(function()
         local WaitStart = os.clock()
         while _G.AutoLeviathanFull and os.clock() - WaitStart < 120 do
@@ -3486,16 +3537,20 @@ _G.RJR_ResetCharacterAtTiki = function(reason, force)
         end
         SetStatus(reason .. ": reiniciando en Tiki para comprar barco")
         pcall(Unseat)
-        pcall(function()
-            local CommF2 = Leviathan_CommF()
-            if CommF2 then
-                CommF2:InvokeServer("SetLastSpawnPoint", "Tiki")
-            end
-        end)
+        local CommF2 = Leviathan_CommF()
+        if CommF2 then
+            task.spawn(function()
+                pcall(function()
+                    CommF2:InvokeServer("SetLastSpawnPoint", "Tiki")
+                end)
+            end)
+            task.wait(0.2)
+        end
         if _G.RJR_LeviathanPresent() then
             SetStatus("Leviathan, puerta o corazón presentes: no reinicio")
             return
         end
+        local CharBefore = LocalPlayer.Character
         local _, _, hum = GetCharacterParts()
         if hum and hum.Health > 0 then
             pcall(function()
@@ -3503,19 +3558,42 @@ _G.RJR_ResetCharacterAtTiki = function(reason, force)
             end)
         end
         local Deadline = os.clock() + 20
+        local LastKillTry = os.clock()
+        local KillTries = 0
+        local Respawned = false
         while os.clock() < Deadline do
-            local _, h, hm = GetCharacterParts()
-            if h and hm and hm.Health > 0 then
-                break
+            local CharNow, h, hm = GetCharacterParts()
+            if CharNow and h and hm and hm.Health > 0 then
+                if CharNow ~= CharBefore then
+                    Respawned = true
+                    break
+                end
+                if os.clock() - LastKillTry > 3 and KillTries < 3 then
+                    KillTries = KillTries + 1
+                    LastKillTry = os.clock()
+                    pcall(function()
+                        hm.Health = 0
+                    end)
+                    if KillTries >= 2 and CharNow.BreakJoints then
+                        pcall(function()
+                            CharNow:BreakJoints()
+                        end)
+                    end
+                end
             end
             task.wait(0.2)
         end
+        if not Respawned then
+            print("[Leviathan] El reinicio no confirmó el respawn (intentos de muerte: " .. KillTries .. ")")
+        end
+        _G.RJR_ResetFailed = (not Respawned) and os.clock() or nil
         for _, boat in ipairs(OwnedBoatsOf(LocalPlayer)) do
             _G.RJR_AbandonedBoats[boat] = true
             print("[Leviathan] Reinicio hecho, barco viejo abandonado: " .. boat.Name)
         end
     end)
     _G.RJR_Resetting = false
+    _G.RJR_ResetStartedAt = nil
     if not ok then
         print("[Leviathan] Reinicio en Tiki falló: " .. tostring(err))
         SetStatus("El reinicio en Tiki falló: reintentando")
@@ -3526,11 +3604,12 @@ _G.RJR_StartBoatDeadMonitor = function()
         return
     end
     _G.RJR_BoatDeadMonitorRunning = true
+    _G.RJR_ResetFailed = nil
     task.spawn(function()
         local StartAt = os.clock()
         local SawRealBoat = false
         local BoatGoneSince = nil
-        local LastResetAt = 0
+        local LastResetAt = -math.huge
         local SawCaptainAlive = false
         local CaptainDownSince = nil
         local CaptainDeathFollowed = false
@@ -3539,6 +3618,13 @@ _G.RJR_StartBoatDeadMonitor = function()
         local TEAMMATE_RANGE = 5000
         local TEAMMATE_WANTED = 4
         while _G.AutoLeviathanFull do
+            if _G.RJR_Resetting and _G.RJR_ResetStartedAt
+                and os.clock() - _G.RJR_ResetStartedAt > 200 then
+                _G.RJR_Resetting = false
+                _G.RJR_ResetStartedAt = nil
+                print("[Leviathan] Reinicio colgado: libero el bloqueo")
+                SetStatus("El reinicio se quedó colgado: lo libero y sigo")
+            end
             local Trigger = nil
             if _G.RespawnRebuy then
                 local isCaptain = _G.Mode == "Capitán"
@@ -3550,6 +3636,7 @@ _G.RJR_StartBoatDeadMonitor = function()
                     if #Boats > 0 then
                         SawRealBoat = true
                         BoatGoneSince = nil
+                        _G.RJR_ResetFailed = nil
                     elseif SawRealBoat and SelfAlive and not _G.RJR_Resetting then
                         BoatGoneSince = BoatGoneSince or os.clock()
                         if os.clock() - BoatGoneSince >= 10 then
@@ -3616,10 +3703,13 @@ _G.RJR_StartBoatDeadMonitor = function()
                     Trigger = nil
                 end
                 if Trigger then
-                    if _G.RJR_BoatDeadArmed and os.clock() - StartAt > 8 then
+                    local Cooldown = _G.RJR_ResetFailed and 25 or 120
+                    if os.clock() - LastResetAt < Cooldown then
+                        _G.RJR_BoatDeadArmed = true
+                    elseif _G.RJR_BoatDeadArmed and os.clock() - StartAt > 8 then
                         _G.RJR_BoatDeadArmed = false
                         LastResetAt = os.clock()
-                        SawRealBoat = false
+                        SawRealBoat = true
                         BoatGoneSince = nil
                         CaptainDownSince = nil
                         ShortCrewSince = nil
@@ -3628,7 +3718,7 @@ _G.RJR_StartBoatDeadMonitor = function()
                         end
                         print("[Leviathan] Reinicio por: " .. Trigger)
                         task.spawn(_G.RJR_ResetCharacterAtTiki, Trigger)
-                    elseif not _G.RJR_BoatDeadArmed and os.clock() - LastResetAt > 120 then
+                    else
                         _G.RJR_BoatDeadArmed = true
                     end
                 else
@@ -3860,6 +3950,41 @@ function HarpoonHeart()
     local function AimYaw(flat)
         return math.atan2(flat.X, flat.Z) + math.pi
     end
+    local function ReadHeartPos()
+        local HeartNow = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("FrozenHeart")
+        return HeartNow and GetHeartPos(HeartNow) or nil
+    end
+    local function BowError(HeartPosNow)
+        if not DriverSeat or not DriverSeat.Parent or not HeartPosNow then
+            return nil
+        end
+        local pos = DriverSeat.Position
+        local aim = Vector3.new(HeartPosNow.X - pos.X, 0, HeartPosNow.Z - pos.Z)
+        if aim.Magnitude < 1 then
+            return nil
+        end
+        local look = DriverSeat.CFrame.LookVector
+        local dot = math.clamp(look.X * aim.Unit.X + look.Z * aim.Unit.Z, -1, 1)
+        return math.acos(dot)
+    end
+    local function ParkShotPose()
+        local HeartPosNow = ReadHeartPos()
+        if not DriverSeat or not DriverSeat.Parent or not HeartPosNow then
+            return false
+        end
+        local Target = Vector3.new(HeartPosNow.X + 300, BoatStartY, HeartPosNow.Z)
+        local flat = Vector3.new(HeartPosNow.X - Target.X, 0, HeartPosNow.Z - Target.Z)
+        if flat.Magnitude < 1 then
+            return false
+        end
+        return pcall(function()
+            DriverSeat.Throttle, DriverSeat.ThrottleFloat = 0, 0
+            DriverSeat.Steer, DriverSeat.SteerFloat = 0, 0
+            DriverSeat.CFrame = CFrame.new(Target) * CFrame.Angles(0, AimYaw(flat), 0)
+            DriverSeat.AssemblyLinearVelocity = Vector3.zero
+            DriverSeat.AssemblyAngularVelocity = Vector3.zero
+        end)
+    end
     local CommF2 = Leviathan_CommF()
     local Fires = 0
     local Rounds = 0
@@ -3879,28 +4004,38 @@ function HarpoonHeart()
         if not BoardSeatRetry(DriverSeat) then
             break
         end
+        local ShotPoint = Vector3.new(CurrentHeartPos.X + 300, BoatStartY, CurrentHeartPos.Z)
+        local pos0 = DriverSeat.Position
+        local NeedStaging = true
+        if (Vector3.new(pos0.X - ShotPoint.X, 0, pos0.Z - ShotPoint.Z)).Magnitude <= 40 then
+            local Err0 = BowError(CurrentHeartPos)
+            NeedStaging = (Err0 ~= nil and Err0 > math.rad(3))
+        end
+        local Stages = NeedStaging and { 600, 300 } or { 300 }
         SetStatus("Enganche: navego a X+300 del corazón (intento " .. Rounds .. ")")
-        local ApproachStart = os.clock()
-        while _G.AutoLeviathanFull and os.clock() - ApproachStart < 60 do
-            if not DriverSeat or not DriverSeat.Parent then
-                break
-            end
-            local HeartNow = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("FrozenHeart")
-            local HeartPosNow = HeartNow and GetHeartPos(HeartNow)
-            if not HeartPosNow then
-                break
-            end
-            local pos = DriverSeat.Position
-            local TargetPoint = Vector3.new(HeartPosNow.X + 300, BoatStartY, HeartPosNow.Z)
-            local flat = Vector3.new(TargetPoint.X - pos.X, 0, TargetPoint.Z - pos.Z)
-            local dist = flat.Magnitude
-            SetStatus("Enganche: navegando a X+300 del corazón (dist " .. math.floor(dist) .. ")")
-            if dist < 10 then
-                break
-            end
-            SailBoatTurn(DriverSeat, TargetPoint, _G.BoatSpeed, BoatStartY)
-            if not IsSittingOn(DriverSeat) then
-                break
+        for _, OffsetX in ipairs(Stages) do
+            local StageStart = os.clock()
+            while _G.AutoLeviathanFull and os.clock() - StageStart < 45 do
+                if not DriverSeat or not DriverSeat.Parent then
+                    break
+                end
+                local HeartNow = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("FrozenHeart")
+                local HeartPosNow = HeartNow and GetHeartPos(HeartNow)
+                if not HeartPosNow then
+                    break
+                end
+                local pos = DriverSeat.Position
+                local TargetPoint = Vector3.new(HeartPosNow.X + OffsetX, BoatStartY, HeartPosNow.Z)
+                local flat = Vector3.new(TargetPoint.X - pos.X, 0, TargetPoint.Z - pos.Z)
+                local dist = flat.Magnitude
+                SetStatus("Enganche: navegando a X+300 del corazón (dist " .. math.floor(dist) .. ")")
+                if dist < 15 then
+                    break
+                end
+                SailBoatTurn(DriverSeat, TargetPoint, _G.BoatSpeed, BoatStartY)
+                if not IsSittingOn(DriverSeat) then
+                    break
+                end
             end
         end
         if not IsSittingOn(DriverSeat) then
@@ -3909,6 +4044,7 @@ function HarpoonHeart()
         end
         SetStatus("Enganche: apunto la proa al corazón (intento " .. Rounds .. ")")
         local AdjustStart = os.clock()
+        local Aligned = false
         while _G.AutoLeviathanFull and os.clock() - AdjustStart < 15 do
             if not DriverSeat or not DriverSeat.Parent then
                 break
@@ -3917,8 +4053,7 @@ function HarpoonHeart()
                 SetStatus("Enganche: me caí del asiento, dejo de girar")
                 break
             end
-            local HeartNow = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("FrozenHeart")
-            local HeartPosNow = HeartNow and GetHeartPos(HeartNow)
+            local HeartPosNow = ReadHeartPos()
             if not HeartPosNow then
                 break
             end
@@ -3927,14 +4062,24 @@ function HarpoonHeart()
             if flat.Magnitude < 0.5 then
                 break
             end
+            DriverSeat.Throttle, DriverSeat.ThrottleFloat = 0, 0
+            DriverSeat.Steer, DriverSeat.SteerFloat = 0, 0
             DriverSeat.CFrame = CFrame.new(pos.X, BoatStartY, pos.Z) * CFrame.Angles(0, AimYaw(flat), 0)
-            local dir = flat.Unit
-            local look = DriverSeat.CFrame.LookVector
-            local dot = math.clamp(look.X * dir.X + look.Z * dir.Z, -1, 1)
-            if math.acos(dot) <= 0.02 then
-                break
-            end
             task.wait()
+            local ErrNow = BowError(HeartPosNow)
+            if ErrNow == nil or ErrNow <= math.rad(1.5) then
+                task.wait()
+                local ErrStable = BowError(HeartPosNow)
+                if ErrStable == nil or ErrStable <= math.rad(2) then
+                    Aligned = true
+                    break
+                end
+            end
+        end
+        if not Aligned then
+            SetStatus("Enganche: la proa no apunta al corazón, no disparo esta ronda")
+            Unseat()
+            break
         end
         SetStatus("Enganche: bajo al asiento del arpón (intento " .. Rounds .. ")")
         if not Unseat() then
@@ -3948,27 +4093,58 @@ function HarpoonHeart()
         end
         local YKeepStart = os.clock()
         while _G.AutoLeviathanFull and os.clock() - YKeepStart < 3 do
-            if DriverSeat and DriverSeat.Parent then
-                local pos = DriverSeat.Position
-                if math.abs(pos.Y - BoatStartY) > 5 then
-                    DriverSeat.CFrame = CFrame.new(pos.X, BoatStartY, pos.Z) * (DriverSeat.CFrame - DriverSeat.CFrame.Position)
-                end
-            end
+            ParkShotPose()
             task.wait(0.2)
-        end
-        local FireOrigin = HarpoonMuzzle(Harpoon, HarpoonSeat)
-        local HeartAtFire = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("FrozenHeart")
-        local HeartPosAtFire = HeartAtFire and GetHeartPos(HeartAtFire)
-        local Pitch = HARPOON_PITCH_MAX
-        if FireOrigin and HeartPosAtFire then
-            Pitch = HarpoonSolvePitch(FireOrigin.Position, HeartPosAtFire)
         end
         local FireRejected = false
         if CommF2 then
             local CdStart = os.clock()
             while _G.AutoLeviathanFull and HarpoonCooling(Harpoon) and os.clock() - CdStart < 10 do
                 SetStatus("Enganche: espero la recarga del arpón (intento " .. Rounds .. ")")
+                ParkShotPose()
                 task.wait(0.2)
+            end
+            ParkShotPose()
+            task.wait()
+            local ErrFire = BowError(ReadHeartPos())
+            if ErrFire ~= nil and ErrFire > math.rad(3) then
+                SetStatus("Enganche: la proa se movió, vuelvo a alinearla")
+                local ReAligned = false
+                if Unseat() then
+                    task.wait(0.2)
+                    if BoardSeatRetry(DriverSeat) then
+                        local ReStart = os.clock()
+                        while _G.AutoLeviathanFull and os.clock() - ReStart < 10 do
+                            ParkShotPose()
+                            task.wait()
+                            local ErrRe = BowError(ReadHeartPos())
+                            if ErrRe == nil or ErrRe <= math.rad(1.5) then
+                                ReAligned = true
+                                break
+                            end
+                        end
+                    end
+                    if ReAligned then
+                        Unseat()
+                        task.wait(0.2)
+                        ReAligned = BoardSeatRetry(HarpoonSeat)
+                        if ReAligned then
+                            ParkShotPose()
+                            task.wait(0.2)
+                        end
+                    end
+                end
+                if not ReAligned then
+                    SetStatus("Enganche: la proa no apunta al corazón, no disparo esta ronda")
+                    Unseat()
+                    break
+                end
+            end
+            local FireOrigin = HarpoonMuzzle(Harpoon, HarpoonSeat)
+            local HeartPosFire = ReadHeartPos()
+            local Pitch = HARPOON_PITCH_MAX
+            if FireOrigin and HeartPosFire then
+                Pitch = HarpoonSolvePitch(FireOrigin.Position, HeartPosFire)
             end
             SetStatus("Enganche: disparo el arpón nº " .. Rounds .. " (ángulo " .. string.format("%.1f", math.deg(Pitch)) .. "°)")
             local FireDone, FireResult = false, nil
@@ -5121,8 +5297,12 @@ local function FollowerBoardSeat(boat)
             _G.RJR_BoardStall = nil
             local SeatName = seat.Parent and seat.Parent.Name or "?"
             SetStatus("Siguiendo: pruebo el asiento " .. SeatName .. " (cambio cada " .. SeatTrySeconds .. " s)")
-            if BoardSeat(seat, SeatTrySeconds) then
+            local BoardOk, SeatTaken = BoardSeat(seat, SeatTrySeconds)
+            if BoardOk then
                 return true
+            end
+            if SeatTaken then
+                SetStatus("Siguiendo: asiento " .. SeatName .. " ocupado por otro jugador, pruebo otro")
             end
             tried[seat] = true
             local _, _, humTried = GetCharacterParts()
