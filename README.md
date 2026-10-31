@@ -1478,6 +1478,7 @@ do
     local SkillOrder = {"Melee", "Sword", "Blox Fruit", "Gun"}
     local SkillVars = {Melee="SkillMelee", Sword="SkillSword", ["Blox Fruit"]="SkillFruit", Gun="SkillGun"}
     local lastFruitAt = 0
+    local FruitFallbackTarget, FruitFallbackAt = nil, 0
     local function ToolOf(tip)
         local function scan(container)
             if not container then return nil end
@@ -1584,14 +1585,17 @@ end
 CombatAPI.FruitM1 = function()
     if not _G.FruitM1 or not _G.AutoLeviathanFull or NavigationOwner or SkillCoolDown then return end
     local now = os.clock()
-    if now - lastFruitAt < 0.05 then return end
+    if now - lastFruitAt < 0.01 then return end
     local char, root, hum = GetCharacterParts()
     if not char or not root or not hum or hum.Health <= 0 or hum.Sit or hum.SeatPart then return end
 
     local model = AttackModel
     if not model or not model.Parent then
-        -- Universal fallback: find nearest valid sea-event target
-        local best, bestDist = nil, 600
+        if FruitFallbackTarget and FruitFallbackTarget.Parent and (os.clock() - FruitFallbackAt) < 0.2 then
+            model = FruitFallbackTarget
+        else
+            -- Universal fallback: find nearest valid sea-event target
+            local best, bestDist = nil, 600
         local folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("SeaBeasts"),
             workspace:FindFirstChild("Boats"), workspace:FindFirstChild("Characters")}
         for _, folder in ipairs(folders) do
@@ -1646,6 +1650,7 @@ CombatAPI.FruitM1 = function()
             end
         end
         model = best
+        if model then FruitFallbackTarget = model; FruitFallbackAt = os.clock() end
     end
     if not model or not model.Parent then return end
 
@@ -1758,7 +1763,7 @@ local AttackHitCache, AttackHitOrigin, AttackHitAt
 function Attack_BuildHitList(character, origin)
     local now = os.clock()
     if AttackHitCache and AttackHitOrigin
-        and (now - AttackHitAt) < 0.1
+        and (now - AttackHitAt) < 0.05
         and (origin - AttackHitOrigin).Magnitude < 40 then
         return AttackHitCache
     end
@@ -3204,6 +3209,12 @@ local function fireShot(pos, hit)
     if not shootFunc or not Validator2 or not ShootGunEvent then
         return
     end
+    if not pos or not hit or not hit.Parent then
+        return
+    end
+    if typeof(pos) ~= "Vector3" then
+        if hit and hit:IsA("BasePart") then pos = hit.Position else return end
+    end
     local u20 = debug.getupvalue(shootFunc, idx.u20)
     local u21 = debug.getupvalue(shootFunc, idx.u21)
     local u22 = debug.getupvalue(shootFunc, idx.u22)
@@ -3248,7 +3259,7 @@ local function getAllPlayerBoatModels()
     SeaBoatModelsCache, SeaBoatModelsAt = models, now
     return models
 end
-local AttackRange = 450
+local AttackRange = 1000
 local SeaTargetCache, SeaTargetAt
 local function getClosestSeaTarget()
     local now = os.clock()
@@ -3270,9 +3281,13 @@ local function getClosestSeaTarget()
         for _, e in ipairs(seaBeasts:GetChildren()) do
             local hrp = e:FindFirstChild("HumanoidRootPart")
             local hp = e:FindFirstChild("Health")
-            if hrp and hp and hp:IsA("ValueBase") and hp.Value > 0 then
+            local hum = e:FindFirstChildOfClass("Humanoid")
+            local alive = false
+            if hp and hp:IsA("ValueBase") and hp.Value > 0 then alive = true end
+            if hum and typeof(hum.Health) == "number" and hum.Health > 0 then alive = true end
+            if hrp and alive then
                 local segment = e:FindFirstChild("Leviathan Segment")
-                if segment then
+                if segment and segment:IsA("BasePart") then
                     local dist = (segment.Position - myHRP.Position).Magnitude
                     if dist < bestDist then
                         bestDist = dist
@@ -3313,6 +3328,44 @@ local function getClosestSeaTarget()
                             best = getRandomLimb(e) or hrp
                         end
                     end
+                end
+            end
+        end
+    end
+    -- Universal fallback: ships/sea-event models in Boats folder and direct workspace children
+    local boatsFolder = workspace:FindFirstChild("Boats")
+    if boatsFolder then
+        for _, e in ipairs(boatsFolder:GetChildren()) do
+            if e ~= char and e.Parent and not playerBoats[e.Name] then
+                local hp = e:FindFirstChild("Health")
+                local root = e:FindFirstChild("Engine") or e:FindFirstChild("VehicleSeat")
+                    or e:FindFirstChild("HumanoidRootPart") or e.PrimaryPart
+                    or e:FindFirstChildWhichIsA("BasePart")
+                if root and root:IsA("BasePart") and hp and hp:IsA("ValueBase") and hp.Value > 0 then
+                    local dist = (root.Position - myHRP.Position).Magnitude
+                    if dist < bestDist then
+                        bestDist = dist
+                        best = root
+                    end
+                end
+            end
+        end
+    end
+    for _, e in ipairs(workspace:GetChildren()) do
+        if e:IsA("Model") and e ~= char and e.Parent and not playerBoats[e.Name] then
+            local hp = e:FindFirstChild("Health")
+            local hum = e:FindFirstChildOfClass("Humanoid")
+            local root = e:FindFirstChild("HumanoidRootPart") or e:FindFirstChild("RootPart")
+                or e:FindFirstChild("Engine") or e:FindFirstChild("VehicleSeat")
+                or e.PrimaryPart or e:FindFirstChildWhichIsA("BasePart")
+            local alive = false
+            if hp and hp:IsA("ValueBase") and hp.Value > 0 then alive = true end
+            if hum and typeof(hum.Health) == "number" and hum.Health > 0 then alive = true end
+            if alive and root and root:IsA("BasePart") then
+                local dist = (root.Position - myHRP.Position).Magnitude
+                if dist < bestDist then
+                    bestDist = dist
+                    best = root
                 end
             end
         end
@@ -6032,7 +6085,7 @@ task.spawn(function()
     end
 end)
 RunService.Heartbeat:Connect(function()
-    if tick() - LastAttackTime < 0.1 then
+    if tick() - LastAttackTime < 0.03 then
         return
     end
     if _G.AutoLeviathanFull and (_G.FastAttack or _G.FruitM1) then
