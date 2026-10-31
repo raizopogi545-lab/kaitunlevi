@@ -1,3 +1,30 @@
+pcall(function()
+    if typeof(setfpscap) == "function" then
+        pcall(setfpscap, 30)
+    elseif typeof(syn) == "table" and typeof(syn.setfpscap) == "function" then
+        pcall(syn.setfpscap, 30)
+    elseif typeof(krnl) == "table" and typeof(krnl.setfpscap) == "function" then
+        pcall(krnl.setfpscap, 30)
+    elseif typeof(fluxus) == "table" and typeof(fluxus.setfpscap) == "function" then
+        pcall(fluxus.setfpscap, 30)
+    elseif typeof(clipfps) == "function" then
+        pcall(clipfps, 30)
+    elseif typeof(set_fps_cap) == "function" then
+        pcall(set_fps_cap, 30)
+    else
+        pcall(function()
+            if settings and typeof(settings) == "function" then
+                local rs = settings():GetService("RenderSettings")
+                if rs and typeof(rs.FramerateCap) == "number" then rs.FramerateCap = 30 end
+            end
+        end)
+        if typeof(getgenv) == "function" then
+            local env = getgenv()
+            if env and typeof(env.setfpscap) == "function" then pcall(env.setfpscap, 30) end
+        end
+    end
+end)
+
 if _G.AutoLeviathanFull_Loaded then
     local env = (getgenv and getgenv()) or _G
     if not env.ForceReload then
@@ -1508,15 +1535,24 @@ do
             end
         end
     end
-    CombatAPI.TargetPart = function(model, root)
-        if not model or not model.Parent then return nil end
-        for _, name in ipairs({"Leviathan Segment", "Hitbox", "Engine"}) do
-            local part = model:FindFirstChild(name)
-            if part and part:IsA("BasePart") then return part end
-        end
-        return root or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("RootPart")
-            or model.PrimaryPart or model:FindFirstChild("Head")
+CombatAPI.TargetPart = function(model, root)
+    if not model or not model.Parent then return nil end
+    local candidates = {
+        "Leviathan Segment", "Hitbox", "Engine", "VehicleSeat", "Mast",
+        "Hull", "RootPart", "HumanoidRootPart", "Head", "Torso", "UpperTorso",
+        "LowerTorso", "MainPart", "Body", "Core"
+    }
+    for _, name in ipairs(candidates) do
+        local part = model:FindFirstChild(name, true)
+        if part and part:IsA("BasePart") and part.Parent then return part end
     end
+    if root and root.Parent and root:IsA("BasePart") then return root end
+    local primary = model.PrimaryPart
+    if primary and primary.Parent then return primary end
+    local first = model:FindFirstChildWhichIsA("BasePart", true)
+    if first and first.Parent then return first end
+    return nil
+end
     CombatAPI.Skills = function()
         if SkillCoolDown or NavigationOwner or not _G.AutoLeviathanFull then return end
         local target = AttackModel
@@ -1545,32 +1581,93 @@ do
         SkillCoolDown = false
         if not ok then error(err) end
     end
-    CombatAPI.FruitM1 = function()
-        if not _G.FruitM1 or not _G.AutoLeviathanFull or NavigationOwner or SkillCoolDown then return end
-        local now = os.clock()
-        if now - lastFruitAt < 0.05 then return end
-        local model = AttackModel
-        local char, root, hum = GetCharacterParts()
-        if not model or not model.Parent or not root or not hum or hum.Health <= 0 or hum.Sit or hum.SeatPart then return end
-        local target = CombatAPI.TargetPart(model)
-        if not target or not target.Parent then return end
-        local delta = target.Position - root.Position
-        if delta.Magnitude < 0.001 or delta.Magnitude > 450 then return end
-        local tool = ToolOf("Blox Fruit")
-        if not tool then return end
-        lastFruitAt = now
-        local remote = tool:FindFirstChild("LeftClickRemote")
-        if not remote then
-            local event = tool:FindFirstChild("RemoteEvent")
-            if event and event:IsA("RemoteEvent") then event:FireServer(target.Position); return end
-            local fn = tool:FindFirstChild("RemoteFunction")
-            if fn and fn:IsA("RemoteFunction") then fn:InvokeServer("TAP") end
-            return
+CombatAPI.FruitM1 = function()
+    if not _G.FruitM1 or not _G.AutoLeviathanFull or NavigationOwner or SkillCoolDown then return end
+    local now = os.clock()
+    if now - lastFruitAt < 0.05 then return end
+    local char, root, hum = GetCharacterParts()
+    if not char or not root or not hum or hum.Health <= 0 or hum.Sit or hum.SeatPart then return end
+
+    local model = AttackModel
+    if not model or not model.Parent then
+        -- Universal fallback: find nearest valid sea-event target
+        local best, bestDist = nil, 600
+        local folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("SeaBeasts"),
+            workspace:FindFirstChild("Boats"), workspace:FindFirstChild("Characters")}
+        for _, folder in ipairs(folders) do
+            if folder then
+                for _, m in ipairs(folder:GetChildren()) do
+                    if m ~= char and m.Parent then
+                        local r = CombatAPI.TargetPart(m, nil)
+                        if r and r.Parent then
+                            local d = (r.Position - root.Position).Magnitude
+                            if d < bestDist then
+                                -- alive check
+                                local h = m:FindFirstChildOfClass("Humanoid")
+                                local hp = m:FindFirstChild("Health")
+                                local alive = true
+                                if h and typeof(h.Health) == "number" and h.Health <= 0 then alive = false end
+                                if hp and (hp:IsA("NumberValue") or hp:IsA("IntValue")) and hp.Value <= 0 then alive = false end
+                                -- skip player-owned boats
+                                local owner = m:FindFirstChild("Owner")
+                                if owner and owner.Value ~= nil then
+                                    if tostring(owner.Value) == tostring(LocalPlayer.Name) or tostring(owner.Value) == tostring(LocalPlayer.UserId) then
+                                        alive = false
+                                    end
+                                end
+                                if alive then best = m; bestDist = d end
+                            end
+                        end
+                    end
+                end
+            end
         end
-        if tool.Name == "Mammoth-Mammoth" then remote:FireServer(target.Position); return end
-        local dir = delta.Unit
-        remote:FireServer(Vector3.new(dir.X, dir.Y, dir.Z), 1, true)
+        -- also direct workspace children (ship sea events)
+        for _, m in ipairs(workspace:GetChildren()) do
+            if m:IsA("Model") and m ~= char and m.Parent then
+                local r = CombatAPI.TargetPart(m, nil)
+                if r and r.Parent then
+                    local d = (r.Position - root.Position).Magnitude
+                    if d < bestDist then
+                        local h = m:FindFirstChildOfClass("Humanoid")
+                        local hp = m:FindFirstChild("Health")
+                        local alive = true
+                        if h and typeof(h.Health) == "number" and h.Health <= 0 then alive = false end
+                        if hp and (hp:IsA("NumberValue") or hp:IsA("IntValue")) and hp.Value <= 0 then alive = false end
+                        local owner = m:FindFirstChild("Owner")
+                        if owner and owner.Value ~= nil then
+                            if tostring(owner.Value) == tostring(LocalPlayer.Name) or tostring(owner.Value) == tostring(LocalPlayer.UserId) then
+                                alive = false
+                            end
+                        end
+                        if alive then best = m; bestDist = d end
+                    end
+                end
+            end
+        end
+        model = best
     end
+    if not model or not model.Parent then return end
+
+    local target = CombatAPI.TargetPart(model, nil)
+    if not target or not target.Parent then return end
+    local delta = target.Position - root.Position
+    if delta.Magnitude < 0.001 or delta.Magnitude > 1000 then return end
+    local tool = ToolOf("Blox Fruit")
+    if not tool then return end
+    lastFruitAt = now
+    local remote = tool:FindFirstChild("LeftClickRemote")
+    if not remote then
+        local event = tool:FindFirstChild("RemoteEvent")
+        if event and event:IsA("RemoteEvent") then event:FireServer(target.Position); return end
+        local fn = tool:FindFirstChild("RemoteFunction")
+        if fn and fn:IsA("RemoteFunction") then fn:InvokeServer("TAP") end
+        return
+    end
+    if tool.Name == "Mammoth-Mammoth" then remote:FireServer(target.Position); return end
+    local dir = delta.Unit
+    remote:FireServer(Vector3.new(dir.X, dir.Y, dir.Z), 1, true)
+end
 end
 local function CoolDown_Auto()
     return CombatAPI.Skills()
@@ -1667,21 +1764,65 @@ function Attack_BuildHitList(character, origin)
     end
     local hitList = AttackHitCache or {}
     table.clear(hitList)
-    local folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Characters")}
-    for _, folder in ipairs(folders) do
-        if folder then
-            for _, model in ipairs(folder:GetChildren()) do
-                if model ~= character then
-                    local root = model:FindFirstChild("HumanoidRootPart")
-                    local hum = model:FindFirstChild("Humanoid")
-                    if root and hum and hum.Health > 0 and (root.Position - origin).Magnitude <= 60 then
-                        for _, part in ipairs(model:GetChildren()) do
-                            if part:IsA("BasePart") then
-                                hitList[#hitList + 1] = {model, part}
-                            end
-                        end
-                    end
+    local seen = {}
+    local function addModel(model, maxDist)
+        if not model or model == character or not model.Parent or seen[model] then return end
+        seen[model] = true
+        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("RootPart")
+            or model:FindFirstChild("Leviathan Segment") or model:FindFirstChild("Engine")
+            or model:FindFirstChild("VehicleSeat") or model.PrimaryPart
+            or model:FindFirstChildWhichIsA("BasePart", true)
+        if not root or not root:IsA("BasePart") then return end
+        local dist = (root.Position - origin).Magnitude
+        if dist > maxDist then return end
+        local hum = model:FindFirstChildOfClass("Humanoid")
+        local hp = model:FindFirstChild("Health")
+        if hum and typeof(hum.Health) == "number" and hum.Health <= 0 then return end
+        if hp and (hp:IsA("NumberValue") or hp:IsA("IntValue")) and hp.Value <= 0 then return end
+        local owner = model:FindFirstChild("Owner")
+        if owner and owner.Value ~= nil then
+            if tostring(owner.Value) == tostring(LocalPlayer.Name) or tostring(owner.Value) == tostring(LocalPlayer.UserId) then
+                return
+            end
+        end
+        for _, part in ipairs(model:GetDescendants()) do
+            if part:IsA("BasePart") and part.Parent then
+                hitList[#hitList + 1] = {model, part}
+            end
+        end
+    end
+
+    local folders = {
+        {f = workspace:FindFirstChild("Enemies"), d = 2500},
+        {f = workspace:FindFirstChild("SeaBeasts"), d = 4000},
+        {f = workspace:FindFirstChild("Boats"), d = 3500},
+        {f = workspace:FindFirstChild("Characters"), d = 300},
+    }
+    for _, e in ipairs(folders) do
+        if e.f then
+            for _, model in ipairs(e.f:GetChildren()) do
+                addModel(model, e.d)
+            end
+        end
+    end
+    for _, child in ipairs(workspace:GetChildren()) do
+        if child:IsA("Model") and child ~= character then
+            addModel(child, 5000)
+        end
+    end
+    -- priority AttackModel
+    if AttackModel and AttackModel.Parent and AttackModel ~= character then
+        local pm = AttackModel
+        if not seen[pm] then
+            seen[pm] = true
+            local plist = {}
+            for _, part in ipairs(pm:GetDescendants()) do
+                if part:IsA("BasePart") and part.Parent then
+                    plist[#plist + 1] = {pm, part}
                 end
+            end
+            for i = #plist, 1, -1 do
+                table.insert(hitList, 1, plist[i])
             end
         end
     end
@@ -1706,6 +1847,10 @@ function Attack_GetSeed()
     return AttackSeedCache or 1
 end
 function Attack_Auto()
+    local c, h, hd = GetCharacterParts()
+    if c then Character = c end
+    if h then HRP = h end
+    if hd then HD = hd end
     if not Character or not HRP or not HD then
         return
     end
@@ -1733,7 +1878,7 @@ function Attack_Auto()
         end
         AttackRegisterAttack:FireServer()
         local primaryModel = hitList[1][1]
-        local head = primaryModel and primaryModel:FindFirstChild("Head")
+        local head = CombatAPI.TargetPart(primaryModel, nil)
         if not head then
             return
         end
