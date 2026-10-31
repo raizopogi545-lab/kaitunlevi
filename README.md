@@ -55,8 +55,6 @@ T, ModeDisplay = (function()
         ["ann.copied"] = { en = "DC link copied", es = "Enlace de Discord copiado", zh = "已复制 DC 链接", th = "คัดลอกลิงก์ DC แล้ว" },
         ["ann.copy"] = { en = "Copy DC Link", es = "Copiar enlace de Discord", zh = "复制 DC 链接", th = "คัดลอกลิงก์ DC" },
         ["ann.dc"] = { en = "DC Server", es = "Servidor de Discord", zh = "DC 服务器", th = "เซิร์ฟเวอร์ DC" },
-        ["anti.draco"] = { en = "Anti Draco Aura", es = "Anti Draco Aura", zh = "反 Draco Aura", th = "กันออร่า Draco" },
-        ["anti.draco.desc"] = { en = "Raises the RemoteEvent invocation size limit", es = "Sube el límite de tamaño de los RemoteEvent", zh = "提高 RemoteEvent 调用大小限制", th = "เพิ่มขีดจำกัดขนาดการเรียก RemoteEvent" },
         ["auto.buso"] = { en = "Auto Buso (Haki)", es = "Buso automático (Haki)", zh = "自动霸气 (Buso)", th = "บูโสะอัตโนมัติ (ฮาคิ)" },
         ["auto.fast"] = { en = "Auto Fast Mode", es = "Modo rápido automático", zh = "自动快速模式", th = "โหมดเร็วอัตโนมัติ" },
         ["auto.fast.desc"] = { en = "Enables Fast Mode and reduces map materials", es = "Activa el modo rápido del juego y reduce los materiales del mapa", zh = "启用游戏快速模式并降低地图材质", th = "เปิดโหมดเร็วของเกมและลดวัสดุของแผนที่" },
@@ -90,6 +88,7 @@ T, ModeDisplay = (function()
         ["craft.miss.progress"] = { en = "Missing progress {k} ({a}/{b})", es = "Falta progreso {k} ({a}/{b})", zh = "进度缺 {k} ({a}/{b})", th = "ความคืบหน้าขาด {k} ({a}/{b})" },
         ["craft.quality"] = { en = "Scroll Quality", es = "Calidad del pergamino", zh = "选择卷轴品质", th = "ระดับของม้วน" },
         ["craft.quality.desc"] = { en = "Auto craft scrolls when materials ready", es = "Fabrica cuando tengas materiales y progreso", zh = "材料/进度够时自动制作卷轴", th = "คราฟต์ม้วนอัตโนมัติเมื่อวัตถุดิบพร้อม" },
+        ["webhook.send.fruit"] = { en = "Fruit Obtained (Legendary / Mythical)", es = "Fruta obtenida (Legendaria / Mítica)", zh = "果实获取（传说／神话）", th = "ได้รับผลไม้ (Legendary / Mythical)" },
         ["craft.roll"] = { en = "Auto Roll Fruit", es = "Girar fruta automáticamente", zh = "自动抽果实", th = "สุ่มผลไม้อัตโนมัติ" },
         ["craft.status"] = { en = "Status", es = "Estado", zh = "状态", th = "สถานะ" },
         ["craft.status.done"] = { en = "{name}: Crafted", es = "{name}: fabricado", zh = "{name}: 已制作", th = "{name}: คราฟต์แล้ว" },
@@ -175,6 +174,8 @@ T, ModeDisplay = (function()
         ["sel.weapon"] = { en = "Select Weapon", es = "Seleccionar arma", zh = "选择武器", th = "เลือกอาวุธ" },
         ["silent.aim"] = { en = "Silent aim (skills and shots)", es = "Aim assist (skills y disparos)", zh = "静默瞄准（技能与射击）", th = "เล็งอัตโนมัติ (สกิลและการยิง)" },
         ["silent.aim.desc"] = { en = "Skills and gun shots are aimed at the current mob or Leviathan by rewriting the game remotes and the mouse module, without moving the camera", es = "Las habilidades y los disparos apuntan al mob o al Leviathan reescribiendo los remotes y el modulo del raton, sin mover la camara", zh = "技能和射击自动对准当前怪物或利维坦，改写游戏 remote 与鼠标模块，不移动视角", th = "สกิลและการยิงปืนจะเล็งไปที่มอนหรือลีวายาธานโดยแก้ไข remote ของเกมและโมดูลเมาส์ โดยไม่ขยับกล้อง" },
+        ["fruit.m1"] = { en = "Fruit M1", es = "M1 de fruta", zh = "果实 M1", th = "M1 ผลไม้" },
+        ["fruit.m1.desc"] = { en = "Normal fruit M1 aimed at the current sea-event or Leviathan target", es = "M1 normal de fruta al objetivo marino o Leviathan actual", zh = "向当前海活或利维坦目标部位释放普通果实普攻", th = "โจมตี M1 ผลไม้ไปยังเป้าหมายทะเลหรือลีวายาธานปัจจุบัน" },
         ["skill.fruit"] = { en = "Skill Keys Fruit", es = "Teclas de habilidad (fruta)", zh = "技能按键 Fruit", th = "ปุ่มสกิล ผลไม้" },
         ["skill.gun"] = { en = "Skill Keys Gun", es = "Teclas de habilidad (pistola)", zh = "技能按键 Gun", th = "ปุ่มสกิล ปืน" },
         ["skill.melee"] = { en = "Skill Keys Melee", es = "Teclas de habilidad (puños)", zh = "技能按键 Melee", th = "ปุ่มสกิล หมัด" },
@@ -316,6 +317,7 @@ if _G.SilentAim == nil then _G.SilentAim = true end
 if _G.SelectWeapon == nil then _G.SelectWeapon = "Sword" end
 if _G.SkillMelee == nil then _G.SkillMelee = {"Z", "X", "C"} end
 if _G.SkillSword == nil then _G.SkillSword = {"Z", "X"} end
+if _G.FruitM1 == nil then _G.FruitM1 = false end
 if _G.SkillFruit == nil then _G.SkillFruit = {"X"} end
 if _G.SkillGun == nil then _G.SkillGun = {"Z", "X"} end
 if _G.FastAttack_Mode == nil then _G.FastAttack_Mode = "2" end
@@ -325,7 +327,6 @@ if _G.FastAttack == nil then _G.FastAttack = false end
 if _G.DragonGunFarm == nil then _G.DragonGunFarm = false end
 if _G.DragonGunLeviathan == nil then _G.DragonGunLeviathan = false end
 if _G.RemoveFog == nil then _G.RemoveFog = false end
-if _G.AntiDracoAura == nil then _G.AntiDracoAura = false end
 if _G.AutoFastMode == nil then _G.AutoFastMode = false end
 if _G.FPSBoost == nil then _G.FPSBoost = false end
 if _G.AutoV3 == nil then _G.AutoV3 = false end
@@ -347,6 +348,7 @@ if _G.EnchantWeaponType == nil then _G.EnchantWeaponType = "Sword" end
 if _G.EnchantWeaponName == nil then _G.EnchantWeaponName = "" end
 if _G.EnchantWanted == nil then _G.EnchantWanted = {} end
 if _G.AutoRandomFruit == nil then _G.AutoRandomFruit = false end
+if _G.WebhookSendFruit == nil then _G.WebhookSendFruit = true end
 if _G.AutoStoreFruits == nil then _G.AutoStoreFruits = false end
 if _G.HuntFightEvents == nil then _G.HuntFightEvents = false end
 if _G.SoloSeaFarm == nil then _G.SoloSeaFarm = false end
@@ -372,9 +374,26 @@ local HD = Character and Character:FindFirstChild("Humanoid")
 local HRP = Character and Character:FindFirstChild("HumanoidRootPart")
 local CurrentTween = nil
 local NavigationOwner = nil
+local EnchantHandoff = { requested = false, parked = {}, claimed = false }
+function EnchantHandoff.Park(role)
+    if not EnchantHandoff.requested then return false end
+    EnchantHandoff.parked[role] = true
+    while EnchantHandoff.requested and _G.AutoLeviathanFull do
+        task.wait(0.1)
+    end
+    EnchantHandoff.parked[role] = nil
+    return true
+end
+function EnchantHandoff.Release()
+    EnchantHandoff.requested = false
+    EnchantHandoff.claimed = false
+    EnchantHandoff.returning = false
+    EnchantHandoff.boat, EnchantHandoff.seat = nil, nil
+    EnchantHandoff.character = nil
+end
 local LastAttackTime = 0
 local SkillCoolDown = false
-local LastAllWeapon = 0
+local CombatAPI = {}
 local AttackSeedCache, AttackSeedAt = nil, 0
 local AttackNet, AttackRegisterAttack, AttackRegisterHit, AttackSeedRemote = nil, nil, nil, nil
 local AttackObfuscatedRemote, AttackObfuscatedId = nil, nil
@@ -650,12 +669,12 @@ local ConfigKeys = {
     "SkillMelee",
     "SkillSword",
     "SkillFruit",
+    "FruitM1",
     "SkillGun",
     "FastAttack",
     "DragonGunFarm",
     "DragonGunLeviathan",
     "RemoveFog",
-    "AntiDracoAura",
     "AutoFastMode",
     "FPSBoost",
     "AutoBuso",
@@ -678,6 +697,7 @@ local ConfigKeys = {
     "EnchantWanted",
     "AutoRandomFruit",
     "AutoStoreFruits",
+    "WebhookSendFruit",
     "HuntFightEvents",
     "SoloSeaFarm",
     "SoloSeaBoat",
@@ -1416,74 +1436,144 @@ function HasDragonstormEquipped()
 end
 local RJR_AimBegin, RJR_AimEndSoon
 function Skill_Auto(Key)
-    local Code
-    if Key == "Space" then
-        Code = Enum.KeyCode.Space
-    else
-        Code = Enum.KeyCode[Key:upper()]
-    end
-    if not Code then
-        return
-    end
-    if RJR_AimBegin then
-        RJR_AimBegin()
-    end
-    VirtualInputManager:SendKeyEvent(true, Code, false, game)
-    task.wait(0.1)
-    VirtualInputManager:SendKeyEvent(false, Code, false, game)
-    if RJR_AimEndSoon then
-        RJR_AimEndSoon(0.6)
-    end
+    local code = Enum.KeyCode[tostring(Key):upper()]
+    if not code then return end
+    if RJR_AimBegin then RJR_AimBegin(AttackModel) end
+    local ok, err = pcall(function()
+        VirtualInputManager:SendKeyEvent(true, code, false, game)
+        task.wait(0.3)
+    end)
+    pcall(function() VirtualInputManager:SendKeyEvent(false, code, false, game) end)
+    if RJR_AimEndSoon then RJR_AimEndSoon(0.6) end
+    if not ok then error(err) end
 end
-function CoolDown_Chack(Cooldown)
-    if LocalPlayer.Data.Race == "Ghoul"
-    and LocalPlayer.PlayerGui.Main.BottomHUDList.UniversalContextButtons:FindFirstChild("BoundActionRaceAbility")
-    and tonumber(LocalPlayer.PlayerGui.Main.BottomHUDList.UniversalContextButtons.BoundActionRaceAbility.CooldownLabel.Text) >= 22
-    and Cooldown.Size.X.Scale <= 0.4 then
-        return true
+do
+    local SkillOrder = {"Melee", "Sword", "Blox Fruit", "Gun"}
+    local SkillVars = {Melee="SkillMelee", Sword="SkillSword", ["Blox Fruit"]="SkillFruit", Gun="SkillGun"}
+    local lastFruitAt = 0
+    local function ToolOf(tip)
+        local function scan(container)
+            if not container then return nil end
+            for _, tool in ipairs(container:GetChildren()) do
+                if tool:IsA("Tool") and tool.ToolTip == tip then return tool end
+            end
+        end
+        return scan(LocalPlayer.Character) or scan(LocalPlayer:FindFirstChild("Backpack"))
     end
-    return Cooldown.Size.X.Scale == 0
-end
-local function CoolDown_Auto()
-    if SkillCoolDown then
-        return
+    local function Allowed(tip, key)
+        local list = _G[SkillVars[tip] or ""]
+        if type(list) ~= "table" then return false end
+        local hasMap = false
+        for name, flag in pairs(list) do
+            if type(name) == "string" and type(flag) == "boolean" then hasMap = true; break end
+        end
+        if hasMap then return list[key] == true end
+        return table.find(list, key) ~= nil
     end
-    if tick() - LastAllWeapon >= 10 then
-        SkillCoolDown = true
-        LastAllWeapon = tick()
-        Equip_Auto("Melee")
-        task.wait()
-        Equip_Auto("Sword")
-        task.wait()
-        Equip_Auto("Gun")
-        task.wait()
-        Equip_Auto("Blox Fruit")
-        task.wait(0.5)
-        SkillCoolDown = false
+    local function HasSkills(tip)
+        for _, key in ipairs({"Z", "X", "C", "V", "F"}) do
+            if Allowed(tip, key) then return true end
+        end
+        return false
     end
-    local Skills = LocalPlayer.PlayerGui.Main.Skills
-    for _, Weapon in pairs(Skills:GetChildren()) do
-        for _, v in pairs(Weapon:GetChildren()) do
-            if table.find({"Z", "X", "C", "V", "F"}, v.Name) then
-                local Key = v.Name
-                local Cooldown = v:FindFirstChild("Cooldown", true)
-                local Level = v:FindFirstChild("Level")
-                local Item = CheckItem(Weapon.Name)
-                if Cooldown and Level and Item and CheckSkill(Weapon.Name, Key) then
-                    if CoolDown_Chack(Cooldown)
-                    and tonumber(Level.Text:match("%d+")) <= Item.Level.Value then
-                        task.spawn(function()
-                            SkillCoolDown = true
-                            Equip_Auto(Weapon.Name)
-                            Skill_Auto(Key)
-                            task.wait(0.5)
-                            SkillCoolDown = false
-                        end)
-                    end
+    local function SkillFrameReady(frame)
+        local title = frame:FindFirstChild("Title")
+        local cd = frame:FindFirstChild("Cooldown")
+        if not title or not cd then return false end
+        local white = title.TextColor3 == Color3.new(1, 1, 1)
+        local empty = cd.Size == UDim2.new(0, 0, 1, -1) or cd.Size == UDim2.new(1, 0, 1, -1)
+        return white and empty
+    end
+    local function FindReadySkill(tip)
+        local tool = ToolOf(tip)
+        if not tool then return nil end
+        local pg = LocalPlayer:FindFirstChild("PlayerGui")
+        local main = pg and pg:FindFirstChild("Main")
+        local ui = main and main:FindFirstChild("Skills")
+        if not ui then return nil end
+        local holder = ui:FindFirstChild(tool.Name)
+        if not holder then
+            local _, _, hum = GetCharacterParts()
+            if hum and not hum.Sit then hum:EquipTool(tool); return "prep", tool end
+            return nil
+        end
+        for _, frame in ipairs(holder:GetChildren()) do
+            if frame:IsA("Frame") and frame.Name ~= "Template" then
+                local title = frame:FindFirstChild("Title")
+                local transformed = title and string.find(title.Text, "Transformation")
+                if not transformed and not string.find(frame.Name, "Transformation")
+                    and Allowed(tip, frame.Name) and SkillFrameReady(frame) then
+                    return frame.Name, tool
                 end
             end
         end
     end
+    CombatAPI.TargetPart = function(model, root)
+        if not model or not model.Parent then return nil end
+        for _, name in ipairs({"Leviathan Segment", "Hitbox", "Engine"}) do
+            local part = model:FindFirstChild(name)
+            if part and part:IsA("BasePart") then return part end
+        end
+        return root or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("RootPart")
+            or model.PrimaryPart or model:FindFirstChild("Head")
+    end
+    CombatAPI.Skills = function()
+        if SkillCoolDown or NavigationOwner or not _G.AutoLeviathanFull then return end
+        local target = AttackModel
+        if not target or not target.Parent then return end
+        SkillCoolDown = true
+        local ok, err = pcall(function()
+            for _, tip in ipairs(SkillOrder) do
+                if HasSkills(tip) then
+                    local key, tool = FindReadySkill(tip)
+                    if key == "prep" then return end
+                    if key then
+                        local char, _, hum = GetCharacterParts()
+                        if tool and hum and not hum.Sit then
+                            if tool.Parent ~= char then hum:EquipTool(tool); task.wait(0.05) end
+                            if not _G.AutoLeviathanFull or NavigationOwner or AttackModel ~= target or not target.Parent then return end
+                            char = LocalPlayer.Character
+                            if char and char:FindFirstChildOfClass("Tool") == tool and Allowed(tip, key) then
+                                Skill_Auto(key)
+                                return
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+        SkillCoolDown = false
+        if not ok then error(err) end
+    end
+    CombatAPI.FruitM1 = function()
+        if not _G.FruitM1 or not _G.AutoLeviathanFull or NavigationOwner or SkillCoolDown then return end
+        local now = os.clock()
+        if now - lastFruitAt < 0.05 then return end
+        local model = AttackModel
+        local char, root, hum = GetCharacterParts()
+        if not model or not model.Parent or not root or not hum or hum.Health <= 0 or hum.Sit or hum.SeatPart then return end
+        local target = CombatAPI.TargetPart(model)
+        if not target or not target.Parent then return end
+        local delta = target.Position - root.Position
+        if delta.Magnitude < 0.001 or delta.Magnitude > 450 then return end
+        local tool = ToolOf("Blox Fruit")
+        if not tool then return end
+        lastFruitAt = now
+        local remote = tool:FindFirstChild("LeftClickRemote")
+        if not remote then
+            local event = tool:FindFirstChild("RemoteEvent")
+            if event and event:IsA("RemoteEvent") then event:FireServer(target.Position); return end
+            local fn = tool:FindFirstChild("RemoteFunction")
+            if fn and fn:IsA("RemoteFunction") then fn:InvokeServer("TAP") end
+            return
+        end
+        if tool.Name == "Mammoth-Mammoth" then remote:FireServer(target.Position); return end
+        local dir = delta.Unit
+        remote:FireServer(Vector3.new(dir.X, dir.Y, dir.Z), 1, true)
+    end
+end
+local function CoolDown_Auto()
+    return CombatAPI.Skills()
 end
 local function Haki_Auto()
     if not _G.AutoBuso then
@@ -1497,29 +1587,30 @@ local function Haki_Auto()
         end
     end
 end
-local function CheckSkillTable(v)
-    local result = {}
-    if type(v) == "table" then
-        local isArray = #v > 0
-        if isArray then
-            for _, v in ipairs(v) do
-                if type(v) == "string" and v ~= "" then
-                    result[#result + 1] = v
-                end
+local function CheckSkillTable(value, fromDropdown)
+    local out, seen = {}, {}
+    local function add(name)
+        if type(name) == "string" and name ~= "" and not seen[name] then
+            seen[name] = true
+            out[#out + 1] = name
+        end
+    end
+    if type(value) == "table" then
+        local useMap = fromDropdown == true
+        for key, flag in pairs(value) do
+            if type(key) == "string" and type(flag) == "boolean" then useMap = true; break end
+        end
+        if useMap then
+            for key, flag in pairs(value) do
+                if type(key) == "string" and flag == true then add(key) end
             end
         else
-            for k, v in pairs(v) do
-                if v == true and type(k) == "string" then
-                    result[#result + 1] = k
-                elseif type(v) == "string" and v ~= "" then
-                    result[#result + 1] = v
-                end
-            end
+            for _, name in ipairs(value) do add(name) end
         end
-    elseif type(v) == "string" and v ~= "" then
-        result[1] = v
+    elseif type(value) == "string" then
+        add(value)
     end
-    return result
+    return out
 end
 function Attack_Clone(inst)
     if typeof(cloneref) == "function" then
@@ -1833,7 +1924,8 @@ local function IsBeastHunterBoat(boat)
     if not boat then
         return false
     end
-    return boat.Name == "Beast Hunter" or (_G.SoloSeaFarm and boat.Name == _G.SoloSeaBoat)
+    if _G.SoloSeaFarm then return boat.Name == _G.SoloSeaBoat end
+    return boat.Name == "Beast Hunter"
 end
 local function BoatOwnerMatch(boat, player)
     local Owner = boat and boat:FindFirstChild("Owner")
@@ -1973,7 +2065,8 @@ local function GetOwnBoat(includeDead)
     end
     for _, boat in ipairs(boats:GetChildren()) do
         local owner = boat:FindFirstChild("Owner")
-        if owner and (owner.Value == LocalPlayer or tostring(owner.Value) == LocalPlayer.Name) then
+        if owner and (owner.Value == LocalPlayer or tostring(owner.Value) == LocalPlayer.Name)
+            and (not _G.SoloSeaFarm or boat.Name == _G.SoloSeaBoat) then
             if (includeDead or not IsBoatDead(boat)) and not _G.RJR_AbandonedBoats[boat] then
                 local seat = boat:FindFirstChild("VehicleSeat") or boat.PrimaryPart
                     or boat:FindFirstChildWhichIsA("BasePart", true)
@@ -2656,7 +2749,7 @@ function SailBoatTurn(seat, targetPos, speed, FixedY)
     local newPos = seat.Position + move
     seat.CFrame = CFrame.new(newPos.X, FixedY or seat.Position.Y, newPos.Z) * CFrame.Angles(0, yaw, 0)
 end
-local SeaAPI = {}
+local SeaAPI = { SearchRange = 4000 }
 do
 local Sea_MobStillAlive
 local SEA_EVENT_OPTIONS = {
@@ -2681,10 +2774,10 @@ local SEA_EVENT_OPTIONS_BY_MOB = {
     ["PirateGrandBrigade"] = "Pirate Grand Brigade Ship",
     ["PirateBasic"] = "Pirate Basic Ship",
 }
-local function Sea_NormalizeSelection(Value)
+local function Sea_NormalizeSelection(Value, FromDropdown)
     local Raw = {}
     if type(Value) == "table" then
-        local HasBooleanMap = false
+        local HasBooleanMap = FromDropdown == true
         for Key, Flag in pairs(Value) do
             if type(Key) == "string" and type(Flag) == "boolean" then
                 HasBooleanMap = true
@@ -2721,13 +2814,22 @@ local function Sea_NormalizeSelection(Value)
     end
     return Out
 end
-local function Sea_HasRawSelection(Value)
+local function Sea_HasRawSelection(Value, FromDropdown)
     if type(Value) == "string" then
         return Value ~= ""
     end
     if type(Value) == "table" then
+        local HasBooleanMap = FromDropdown == true
         for Key, Flag in pairs(Value) do
-            if (type(Key) == "number" and ((type(Flag) == "string" and Flag ~= "") or Flag == true))
+            if type(Key) == "string" and type(Flag) == "boolean" then
+                HasBooleanMap = true
+                break
+            end
+        end
+        for Key, Flag in pairs(Value) do
+            if HasBooleanMap then
+                if type(Key) == "string" and Flag == true then return true end
+            elseif (type(Key) == "number" and ((type(Flag) == "string" and Flag ~= "") or Flag == true))
                 or (type(Key) == "string" and (Flag == true or (type(Flag) == "string" and Flag ~= ""))) then
                 return true
             end
@@ -2738,8 +2840,8 @@ end
 local SeaSelectionInvalid = #Sea_NormalizeSelection(_G.HuntSelectEvents) == 0
     and Sea_HasRawSelection(_G.HuntSelectEvents)
 SeaAPI.SetSelection = function(Value)
-    local Clean = Sea_NormalizeSelection(Value)
-    SeaSelectionInvalid = #Clean == 0 and Sea_HasRawSelection(Value)
+    local Clean = Sea_NormalizeSelection(Value, true)
+    SeaSelectionInvalid = #Clean == 0 and Sea_HasRawSelection(Value, true)
     _G.HuntSelectEvents = Clean
 end
 local function Sea_SelectionSet()
@@ -2749,9 +2851,6 @@ local function Sea_SelectionSet()
     local RawSelection = _G.HuntSelectEvents
     local Clean = Sea_NormalizeSelection(RawSelection)
     if #Clean == 0 then
-        if _G.SoloSeaFarm then
-            return {}
-        end
         if type(RawSelection) == "string" and RawSelection ~= "" then
             return {}
         end
@@ -2775,13 +2874,18 @@ local function Sea_SelectionAllows(MobName)
     local Option = SEA_EVENT_OPTIONS_BY_MOB[MobName]
     local Set = Sea_SelectionSet()
     if Set == nil then
-        return not _G.SoloSeaFarm
+        return true
     end
     return Option ~= nil and Set[Option] == true
 end
 local function Sea_Mob(MaxDistance, Exclude, Origin)
-    MaxDistance = MaxDistance or 1500
+    MaxDistance = MaxDistance or SeaAPI.SearchRange
     local Ref = Origin or HRP
+    if not Origin and not _G.SoloSeaFarm then
+        local boat = (_G.Mode == "Capitán") and GetOwnBoat() or GetCaptainBoat()
+        local seat = boat and boat:FindFirstChild("VehicleSeat")
+        Ref = seat or Ref
+    end
     local Enemies = workspace:FindFirstChild("Enemies")
     local SeaBeasts = workspace:FindFirstChild("SeaBeasts")
     local MobList = {
@@ -2796,13 +2900,10 @@ local function Sea_Mob(MaxDistance, Exclude, Origin)
         {Name = "SeaBeast1", ConfigName = "Sea Beast", Folder = SeaBeasts, Skill = true},
     }
     local SelectedSet = Sea_SelectionSet()
-    if _G.SoloSeaFarm and not SelectedSet then
-        return nil, nil, false
-    end
     local Best, BestRoot, BestSkill, BestDist = nil, nil, false, MaxDistance
     for _, Data in ipairs(MobList) do
         local IsSelected = SelectedSet and SelectedSet[Data.ConfigName] == true
-        local AllowTarget = IsSelected or (SelectedSet == nil and not _G.SoloSeaFarm)
+        local AllowTarget = IsSelected or SelectedSet == nil
         if AllowTarget and Data.Folder then
             for _, Mob in ipairs(Data.Folder:GetChildren()) do
                 if Mob.Name == Data.Name and not (Exclude and Exclude[Mob]) then
@@ -2885,7 +2986,7 @@ local function Sea_Stand(Mob, Root)
     if Mob.Parent and Mob.Parent.Name == "SeaBeasts" then
         standPos = Vector3.new(Root.Position.X, 120, Root.Position.Z)
     else
-        standPos = Root.Position + Vector3.new(0, 40, 0)
+        standPos = Root.Position + Vector3.new(0, _G.FruitM1 and 10 or 40, 0)
     end
     return FaceTargetCF(standPos, Mob) or CFrame.new(standPos)
 end
@@ -4544,6 +4645,8 @@ local function WaitForTeammates(boat, DriverSeat, ShouldStop, FightEvents, NoReb
     local LastHopOffAt = os.clock()
     local LastCrewCount = -1
     while _G.AutoLeviathanFull do
+        if EnchantHandoff.Park("captain") then continue end
+        if _G.SoloSeaFarm then return boat, DriverSeat, false end
         if MaxWait and os.clock() - WaitStart >= MaxWait then
             SetStatus("Se agotó la espera de compañeros")
             return boat, DriverSeat, false
@@ -4623,7 +4726,7 @@ local function WaitForTeammates(boat, DriverSeat, ShouldStop, FightEvents, NoReb
                 if CountTeammatesOnBoat(boat) >= 4 then
                     break
                 end
-                local M, R, S = SeaAPI.Sea_Mob(5000, Stuck)
+                local M, R, S = SeaAPI.Sea_Mob(SeaAPI.SearchRange, Stuck)
                 if not M or not R then
                     break
                 end
@@ -4659,17 +4762,9 @@ local function WaitForTeammates(boat, DriverSeat, ShouldStop, FightEvents, NoReb
     return boat, DriverSeat, false
 end
 local function SoloFarmSeaMob(MaxDistance, Exclude)
-    if _G.SoloSeaFarm and #SeaAPI.NormalizeSelection(_G.HuntSelectEvents) == 0 then
-        return nil, nil, false
-    end
     return SeaAPI.Sea_Mob(MaxDistance, Exclude)
 end
 local function CaptainFarmPhase()
-    if _G.SoloSeaFarm and #SeaAPI.NormalizeSelection(_G.HuntSelectEvents) == 0 then
-        SetStatus(T("solo.no.targets"))
-        task.wait(2)
-        return
-    end
     local boat = GetOwnBoat()
     if not boat then
         BuyOwnBoat()
@@ -4710,6 +4805,7 @@ local function CaptainFarmPhase()
         task.spawn(function()
             while _G.AutoLeviathanFull and not FarmDone do
                 task.wait(2)
+                if _G.SoloSeaFarm then break end
                 local S = GetBribeStatus()
                 if S == nil or S ~= -1 then
                     FarmDone = true
@@ -4723,6 +4819,7 @@ local function CaptainFarmPhase()
     local Fought = {}
     local Mob, Root, Skill = nil, nil, false
     while _G.AutoLeviathanFull and not FarmDone do
+        if EnchantHandoff.Park("captain") then continue end
         if os.clock() - LastSlowCheck >= 0.4 then
             LastSlowCheck = os.clock()
             local MapX = workspace:FindFirstChild("Map")
@@ -4766,7 +4863,7 @@ local function CaptainFarmPhase()
         end
         if os.clock() - LastMobCheck >= 0.2 then
             LastMobCheck = os.clock()
-            Mob, Root, Skill = SoloFarmSeaMob(1500, Fought)
+            Mob, Root, Skill = SoloFarmSeaMob(SeaAPI.SearchRange, Fought)
         end
         if Mob and Root then
             SetStatus("Farmeo marino: peleando a pie")
@@ -4774,7 +4871,7 @@ local function CaptainFarmPhase()
                 SetStatus("No pude bajarme: sigo intentando pelear")
             end
             while _G.AutoLeviathanFull and not FarmDone do
-                local M, R, S = SoloFarmSeaMob(5000, Fought)
+                local M, R, S = SoloFarmSeaMob(SeaAPI.SearchRange, Fought)
                 if not M or not R then
                     break
                 end
@@ -4790,10 +4887,6 @@ local function CaptainFarmPhase()
             LastTeamCheck = 0
             LastMobCheck = 0
         else
-            if _G.SoloSeaFarm and #SeaAPI.NormalizeSelection(_G.HuntSelectEvents) == 0 then
-                SetStatus(T("solo.no.targets"))
-                task.wait(1)
-            else
             if not DriverSeat or not DriverSeat.Parent then
                 task.wait(0.2)
             elseif not IsSittingOn(DriverSeat) then
@@ -4807,7 +4900,6 @@ local function CaptainFarmPhase()
                         boat, DriverSeat = b3, s3
                     end
                 end
-            end
             end
         end
     end
@@ -5006,6 +5098,7 @@ local function HeartFinishPhase()
 end
 local HuntStart = nil
 local function CaptainHuntPhase()
+    if _G.SoloSeaFarm then return end
     if HuntStart == nil then
         HuntStart = os.clock()
     end
@@ -5045,7 +5138,8 @@ local function CaptainHuntPhase()
     local LastHuntCheck = 0
     local LastTeamCheck2 = 0
     local LastMobCheck = 0
-    while _G.AutoLeviathanFull and not HuntSuccess do
+    while _G.AutoLeviathanFull and not _G.SoloSeaFarm and not HuntSuccess do
+        if EnchantHandoff.Park("captain") then continue end
         if not boat or not boat.Parent or _G.RJR_AbandonedBoats[boat] then
             SetStatus("El barco desapareció durante la caza: vuelvo al bucle principal")
             return
@@ -5070,7 +5164,7 @@ local function CaptainHuntPhase()
         if os.clock() - LastTeamCheck2 >= 1 then
             LastTeamCheck2 = os.clock()
             if not _G.SoloSeaFarm and CountTeammatesOnBoat(boat) < 4 then
-                local b3, s3 = WaitForTeammates(boat, DriverSeat, nil, false)
+                local b3, s3 = WaitForTeammates(boat, DriverSeat, nil, _G.HuntFightEvents)
                 boat, DriverSeat = b3, s3
                 if not boat or not DriverSeat or not boat.Parent then
                     SetStatus("El barco desapareció mientras esperaba: dejo la caza")
@@ -5082,7 +5176,7 @@ local function CaptainHuntPhase()
         end
         if _G.HuntFightEvents and os.clock() - LastMobCheck >= 0.5 then
             LastMobCheck = os.clock()
-            local Mob, Root, Skill = SeaAPI.Sea_Mob(5000)
+            local Mob, Root, Skill = SeaAPI.Sea_Mob(SeaAPI.SearchRange)
             if Mob and Root then
                 SetStatus("De caza: farmeo " .. Mob.Name)
                 if not Unseat() then
@@ -5094,7 +5188,7 @@ local function CaptainHuntPhase()
                     if SeaAPI.Leviathan_SegmentsExist() or (MapX and MapX:FindFirstChild("LeviathanGate")) then
                         break
                     end
-                    local M, R, S = SeaAPI.Sea_Mob(5000, Stuck)
+                    local M, R, S = SeaAPI.Sea_Mob(SeaAPI.SearchRange, Stuck)
                     if not M or not R then
                         break
                     end
@@ -5172,6 +5266,7 @@ local function StartCaptain()
     CaptainRunning = true
     task.spawn(function()
         while _G.AutoLeviathanFull and _G.Mode == "Capitán" do
+            if EnchantHandoff.Park("captain") then continue end
             StatusPrefix = ""
             local ok, err = pcall(function()
                 local Map = workspace:FindFirstChild("Map")
@@ -5373,6 +5468,7 @@ local function StartFollower()
     task.spawn(function()
         local GateTweening = false
         while _G.AutoLeviathanFull and _G.Mode == "Seguidor" do
+            if EnchantHandoff.Park("follower") then continue end
             StatusPrefix = "follow"
             local ok, err = pcall(function()
                 local boat = GetCaptainBoat()
@@ -5431,7 +5527,7 @@ local function StartFollower()
                 if boat and CaptainOn then
                     local Mob, Root, Skill = nil, nil, false
                     if _G.HuntFightEvents then
-                        Mob, Root, Skill = SeaAPI.Sea_Mob(5000)
+                        Mob, Root, Skill = SeaAPI.Sea_Mob(SeaAPI.SearchRange)
                     end
                     if Mob and Root then
                         SetStatus("El capitán sigue al timón: bajo a farmear " .. Mob.Name)
@@ -5505,7 +5601,7 @@ local function StartFollower()
                     else
                         local Mob, Root, Skill = nil, nil, false
                         if _G.HuntFightEvents then
-                            Mob, Root, Skill = SeaAPI.Sea_Mob(5000)
+                            Mob, Root, Skill = SeaAPI.Sea_Mob(SeaAPI.SearchRange)
                         end
                         if Mob and Root then
                             SeaAPI.FightSeaEvent(Mob, Root, Skill, CaptainBackOnBoat)
@@ -5794,10 +5890,11 @@ RunService.Heartbeat:Connect(function()
     if tick() - LastAttackTime < 0.1 then
         return
     end
-    if _G.AutoLeviathanFull and _G.FastAttack then
+    if _G.AutoLeviathanFull and (_G.FastAttack or _G.FruitM1) then
         local _, _, hum = GetCharacterParts()
         if hum and hum.SeatPart == nil and not hum.Sit then
-            pcall(Attack_Auto)
+            if _G.FastAttack then pcall(Attack_Auto) end
+            if _G.FruitM1 then pcall(CombatAPI.FruitM1) end
         end
         LastAttackTime = tick()
     end
@@ -5853,9 +5950,6 @@ do
         local row = list and list:WaitForChild(name, 9)
         local button = row and row:WaitForChild(enableFirstButton and "FirstButton" or "SecondButton", 9)
         if button then firesignal(button.Activated) end
-    end
-    PerformanceAPI.ApplyAntiDracoAura = function()
-        pcall(function() setfflag("RemoteEventSingleInvocationSizeLimit", "2900") end)
     end
     PerformanceAPI.ApplyAutoFastMode = function()
         task.spawn(function()
@@ -5915,6 +6009,7 @@ do
         return ok
     end
     PerformanceAPI.ApplyFPSBoost = function()
+        pcall(function() setfflag("RemoteEventSingleInvocationSizeLimit", "1500") end)
         task.spawn(function()
             pcall(function()
                 local lighting = game:GetService("Lighting")
@@ -6036,6 +6131,7 @@ RestoreWallClip = function()
     pcall(ApplySailNoclip, false)
 end
 _G.RJR_ResetMapNoclipState = function()
+    if not _G.AutoLeviathanFull then EnchantHandoff.Release() end
     RestoreWallClip()
 end
 task.spawn(function()
@@ -6054,7 +6150,7 @@ local RJR_AimHookReady, RJR_AimHookMT, RJR_AimHookOld = false, nil, nil
 local RJR_MouseHookReady, RJR_MouseMT, RJR_MouseStore = false, nil, nil
 local RJR_MouseOldIndex, RJR_MouseOldNewIndex, RJR_MouseMod = nil, nil, nil
 local function RJR_AimGate()
-    return _G.AutoLeviathanFull and _G.SilentAim
+    return _G.AutoLeviathanFull and _G.SilentAim and not NavigationOwner
 end
 local function RJR_RootOf(model)
     if not model then
@@ -6067,20 +6163,9 @@ local function RJR_RootOf(model)
         or model:FindFirstChildWhichIsA("BasePart")
 end
 local function RJR_AimPoint(model, root)
-    if not model or not model.Parent then
-        return nil, nil
-    end
-    local seg = model:FindFirstChild("Leviathan Segment") or model:FindFirstChild("Hitbox")
-    if seg and seg:IsA("BasePart") then
-        return seg.Position, seg
-    end
-    if not root then
-        return nil, nil
-    end
-    if model:FindFirstChild("Engine") then
-        return Vector3.new(root.Position.X, -58, root.Position.Z), root
-    end
-    return Vector3.new(root.Position.X, math.max(root.Position.Y, 40), root.Position.Z), root
+    local part = CombatAPI.TargetPart(model, root)
+    if part then return part.Position, part end
+    return nil, nil
 end
 local function RJR_AimPointFor(inst)
     if not inst or not inst.Parent then
@@ -6101,49 +6186,12 @@ local function RJR_AimPointFor(inst)
     end
     return nil, nil
 end
-local RJR_FindAimTarget = (function()
-    local TargetPos, TargetPart, At = nil, nil, 0
-    return function()
-        local now = os.clock()
-        if now - At < 0.2 then
-            return TargetPos, TargetPart
-        end
-        At = now
-        TargetPos, TargetPart = nil, nil
-        local _, myHRP = GetCharacterParts()
-        if not myHRP then
-            return nil, nil
-        end
-        if AttackModel and AttackModel.Parent then
-            local pos, part = RJR_AimPoint(AttackModel, RJR_RootOf(AttackModel))
-            if pos then
-                TargetPos, TargetPart = pos, part
-                return pos, part
-            end
-        end
-        local myPos = myHRP.Position
-        local best, bestPart, bestDist = nil, nil, nil
-        local function Consider(pos, part)
-            if not pos then
-                return
-            end
-            local d = (pos - myPos).Magnitude
-            if bestDist == nil or d < bestDist then
-                best, bestPart, bestDist = pos, part, d
-            end
-        end
-        local lvModel, lvPart = SeaAPI.Leviathan_Find()
-        if lvModel then
-            Consider(RJR_AimPoint(lvModel, lvPart))
-        end
-        local Mob, Root = SeaAPI.Sea_Mob(1500)
-        if Mob then
-            Consider(RJR_AimPoint(Mob, Root))
-        end
-        TargetPos, TargetPart = best, bestPart
-        return best, bestPart
+local RJR_FindAimTarget = function()
+    if AttackModel and AttackModel.Parent then
+        return RJR_AimPoint(AttackModel, RJR_RootOf(AttackModel))
     end
-end)()
+    return nil, nil
+end
 local function RJR_SetAim(target)
     if not target then
         return nil
@@ -7254,6 +7302,7 @@ MainSection:AddToggle("solo.seafarm", {
     Description = T("solo.seafarm.desc"),
     Default = _G.SoloSeaFarm,
     Callback = function(State)
+        _G.SoloSeaFarm = State and true or false
         if State and _G.Mode ~= "Capitán" then
             _G.Mode = "Capitán"
             if ModeDropdown then
@@ -7261,7 +7310,6 @@ MainSection:AddToggle("solo.seafarm", {
             end
             UpdateModeLocks()
         end
-        _G.SoloSeaFarm = State
         SaveConfig()
         if State then
             _G.AutoLeviathanFull = true
@@ -7373,9 +7421,13 @@ do
     end
     local CombatSection = Tabs.Combat:AddSection(T("sec.combat"))
     SectionKeys[#SectionKeys + 1] = { element = CombatSection, key = "sec.combat" }
+    if _G.SelectWeapon == "Blox Fruit" then
+        _G.SelectWeapon = "Melee"
+        SaveConfig()
+    end
     CombatSection:AddDropdown("sel.weapon", {
         Title = T("sel.weapon"),
-        Values = { "Melee", "Sword", "Blox Fruit", "Gun" },
+        Values = { "Melee", "Sword", "Gun" },
         Default = _G.SelectWeapon,
         Multi = false,
         Callback = function(Value)
@@ -7389,7 +7441,7 @@ do
         Default = ArrayCopy(_G.SkillMelee),
         Multi = true,
         Callback = function(Value)
-            _G.SkillMelee = CheckSkillTable(Value)
+            _G.SkillMelee = CheckSkillTable(Value, true)
             SaveConfig()
         end,
     })
@@ -7399,7 +7451,7 @@ do
         Default = ArrayCopy(_G.SkillSword),
         Multi = true,
         Callback = function(Value)
-            _G.SkillSword = CheckSkillTable(Value)
+            _G.SkillSword = CheckSkillTable(Value, true)
             SaveConfig()
         end,
     })
@@ -7409,7 +7461,7 @@ do
         Default = ArrayCopy(_G.SkillFruit),
         Multi = true,
         Callback = function(Value)
-            _G.SkillFruit = CheckSkillTable(Value)
+            _G.SkillFruit = CheckSkillTable(Value, true)
             SaveConfig()
         end,
     })
@@ -7419,7 +7471,16 @@ do
         Default = ArrayCopy(_G.SkillGun),
         Multi = true,
         Callback = function(Value)
-            _G.SkillGun = CheckSkillTable(Value)
+            _G.SkillGun = CheckSkillTable(Value, true)
+            SaveConfig()
+        end,
+    })
+    CombatSection:AddToggle("fruit.m1", {
+        Title = T("fruit.m1"),
+        Description = T("fruit.m1.desc"),
+        Default = _G.FruitM1,
+        Callback = function(State)
+            _G.FruitM1 = State and true or false
             SaveConfig()
         end,
     })
@@ -7515,18 +7576,6 @@ end
 do
     local PerfSection = Tabs.Perf:AddSection(T("sec.performance"))
     SectionKeys[#SectionKeys + 1] = { element = PerfSection, key = "sec.performance" }
-    PerfSection:AddToggle("anti.draco", {
-        Title = T("anti.draco"),
-        Description = T("anti.draco.desc"),
-        Default = _G.AntiDracoAura,
-        Callback = function(State)
-            _G.AntiDracoAura = State
-            SaveConfig()
-            if State then
-                PerformanceAPI.ApplyAntiDracoAura()
-            end
-        end,
-    })
     PerfSection:AddToggle("auto.fast", {
         Title = T("auto.fast"),
         Description = T("auto.fast.desc"),
@@ -7726,9 +7775,20 @@ do
                 NavigationOwner = "manual-enchant"
                 task.spawn(function()
                     pcall(function()
-                        _tp(TP_ENCHANT_POS, function()
+                        local function cancelled()
                             return not ManualEnchantActive or ManualEnchantToken ~= token
-                        end, true)
+                        end
+                        pcall(function() LocalPlayer:RequestStreamAroundAsync(TP_ENCHANT_POS, 3) end)
+                        for attempt = 1, 3 do
+                            if cancelled() then break end
+                            local _, root = GetCharacterParts()
+                            if not root then break end
+                            if (root.Position - TP_ENCHANT_POS).Magnitude <= 8 then
+                                pcall(function() LocalPlayer:RequestStreamAroundAsync(TP_ENCHANT_POS, 3) end)
+                                break
+                            end
+                            _tp(TP_ENCHANT_POS, cancelled, true)
+                        end
                     end)
                     if ManualEnchantToken == token then
                         ManualEnchantActive = false
@@ -7780,6 +7840,7 @@ do
             pcall(function() EnchantWeaponDropdown:SetValue(selected) end)
         end
         SaveConfig()
+        if _G.RJR_EnchantViewer then pcall(_G.RJR_EnchantViewer.ReadCurrent, true) end
     end
     _G.RJR_EnchantStatusPara = Tabs.Enchant:AddParagraph({
         Title = T("enchant.status"),
@@ -7803,7 +7864,11 @@ do
         Default = _G.EnchantWeaponName ~= "" and _G.EnchantWeaponName or nil,
         Multi = false,
         Callback = function(Value)
+            local previous = _G.EnchantWeaponName
             _G.EnchantWeaponName = tostring(Value or "")
+            if previous ~= _G.EnchantWeaponName and _G.RJR_EnchantViewer then
+                pcall(_G.RJR_EnchantViewer.SelectionChanged)
+            end
             SaveConfig()
         end,
     })
@@ -7812,33 +7877,51 @@ do
         Callback = RefreshEnchantWeaponNames,
     })
     ButtonKeys[#ButtonKeys + 1] = { element = RefreshEnchantButton, key = "enchant.refresh" }
-    Tabs.Enchant:AddDropdown("enchant.wanted", {
-        Title = T("enchant.wanted"),
-        Values = { "Rot", "Burning", "Frozen", "Storm", "Reaper", "Thief" },
-        Default = _G.EnchantWanted,
-        Multi = true,
-        Callback = function(Value)
-            local selected = {}
+    do
+        if not table.find(_G.EnchantWanted, "Reaper") then
+            table.insert(_G.EnchantWanted, "Reaper")
+        end
+        local restoringReaper = false
+        local WantedDropdown = Tabs.Enchant:AddDropdown("enchant.wanted", {
+            Title = T("enchant.wanted"),
+            Values = { "Rot", "Burning", "Frozen", "Storm", "Reaper", "Thief" },
+            Default = table.clone(_G.EnchantWanted),
+            Multi = true,
+        })
+        WantedDropdown:OnChanged(function(Value)
+            if restoringReaper then return end
+            if type(Value) == "table" and Value.Reaper ~= true then
+                Value.Reaper = true
+                restoringReaper = true
+                pcall(function() WantedDropdown:SetValue(Value) end)
+                restoringReaper = false
+            end
+            local selected = { "Reaper" }
             if type(Value) == "table" then
-                for key, enabled in pairs(Value) do
-                    if type(key) == "number" then
-                        if enabled then table.insert(selected, tostring(enabled)) end
-                    elseif enabled then
-                        table.insert(selected, tostring(key))
-                    end
+                for _, name in ipairs({ "Rot", "Burning", "Frozen", "Storm", "Reaper", "Thief" }) do
+                    if name ~= "Reaper" and Value[name] == true then table.insert(selected, name) end
                 end
             end
             table.sort(selected)
             _G.EnchantWanted = selected
             SaveConfig()
-        end,
-    })
+            if _G.RJR_EnchantViewer then pcall(_G.RJR_EnchantViewer.SelectionChanged) end
+        end)
+    end
     _G.RJR_AutoEnchantOnHeartToggle = Tabs.Enchant:AddToggle("enchant.onheart", {
         Title = T("enchant.onheart"),
         Description = T("enchant.onheart.desc"),
         Default = _G.AutoEnchantOnHeart,
         Callback = function(State)
             _G.AutoEnchantOnHeart = State and true or false
+            if _G.RJR_EnchantViewer then
+                if State then
+                    _G.RJR_EnchantViewer.Dismissed = false
+                    pcall(_G.RJR_EnchantViewer.ReadCurrent, false)
+                else
+                    pcall(_G.RJR_EnchantViewer.CancelRead)
+                end
+            end
             if not _G.AutoEnchantOnHeart and NavigationOwner == "enchant" then
                 NavigationOwner = nil
             end
@@ -7853,7 +7936,6 @@ do
             SetSpawnRunning = true
             SetStatus(T("enchant.spawn.wait"))
             task.spawn(function()
-                local spawnTween = nil
                 local ok, err = xpcall(function()
                     local previousOwner = NavigationOwner
                     if previousOwner == "enchant" or previousOwner == "manual-enchant" then
@@ -7873,84 +7955,96 @@ do
                     pcall(ClearHover)
                     warn("[SetSpawn] navigation lock acquired; searching NPC")
                     SetStatus(T("enchant.spawn.search"))
-                    local tikiPosition = TikiReturnCF.Position
-                    local candidates, seen = {}, {}
-                    for _, obj in ipairs(workspace:GetDescendants()) do
-                        if obj:IsA("Model") then
-                            local internalName = obj:GetAttribute("InternalName")
-                            local internalValue = obj:FindFirstChild("InternalName", true)
-                            if internalValue and internalValue:IsA("StringValue") then
-                                internalName = internalValue.Value
-                            end
-                            local normalizedName = string.lower(obj.Name):gsub("[%s_%-]", "")
-                            local normalizedInternal = string.lower(tostring(internalName or "")):gsub("[%s_%-]", "")
-                            local exact = normalizedInternal == "spawnpoint"
-                                or normalizedName == "spawnpoint"
-                                or normalizedName == "setspawnpoint"
-                            local possible = exact
-                                or normalizedName:find("spawn", 1, true) ~= nil
-                                or normalizedName:find("homepoint", 1, true) ~= nil
-                            if possible and not seen[obj] then
-                                local part = obj:FindFirstChild("HumanoidRootPart")
-                                    or obj.PrimaryPart
-                                    or obj:FindFirstChildWhichIsA("BasePart", true)
-                                if part then
-                                    seen[obj] = true
-                                    local distance = (part.Position - tikiPosition).Magnitude
-                                    if distance <= 3000 then
-                                        table.insert(candidates, {
-                                            model = obj,
-                                            part = part,
-                                            exact = exact,
-                                            distance = distance,
-                                        })
+                    local spawnStand = CFrame.new(-16276.5098, 49.224823, 538.23468,
+                        0.890063882, 4.41327472e-08, 0.455835819,
+                        -6.19365181e-08, 1, 2.41198901e-08,
+                        -0.455835819, -4.9701125e-08, 0.890063882)
+                    local tikiPosition = spawnStand.Position
+                    local function cancelled()
+                        return _G.StopTween or NavigationOwner ~= "set-spawn"
+                    end
+                    local function loadTiki()
+                        pcall(function() LocalPlayer:RequestStreamAroundAsync(tikiPosition, 3) end)
+                    end
+                    local function findSpawn()
+                        local candidates, seen = {}, {}
+                        for _, obj in ipairs(workspace:GetDescendants()) do
+                            if obj:IsA("Model") then
+                                local internalName = obj:GetAttribute("InternalName")
+                                local internalValue = obj:FindFirstChild("InternalName", true)
+                                if internalValue and internalValue:IsA("StringValue") then
+                                    internalName = internalValue.Value
+                                end
+                                local normalizedName = string.lower(obj.Name):gsub("[%s_%-]", "")
+                                local normalizedInternal = string.lower(tostring(internalName or "")):gsub("[%s_%-]", "")
+                                local exact = normalizedInternal == "spawnpoint"
+                                    or normalizedName == "spawnpoint"
+                                    or normalizedName == "setspawnpoint"
+                                    or normalizedName == "sethomepoint"
+                                local possible = exact
+                                    or normalizedName:find("spawn", 1, true) ~= nil
+                                    or normalizedName:find("homepoint", 1, true) ~= nil
+                                if possible and not seen[obj] then
+                                    local part = obj:FindFirstChild("HumanoidRootPart")
+                                        or obj.PrimaryPart
+                                        or obj:FindFirstChildWhichIsA("BasePart", true)
+                                    if part then
+                                        seen[obj] = true
+                                        local distance = (part.Position - tikiPosition).Magnitude
+                                        if distance <= 100 then
+                                            table.insert(candidates, {
+                                                model = obj,
+                                                part = part,
+                                                exact = exact,
+                                                distance = distance,
+                                            })
+                                        end
                                     end
                                 end
                             end
                         end
+                        table.sort(candidates, function(a, b)
+                            if a.exact ~= b.exact then return a.exact end
+                            return a.distance < b.distance
+                        end)
+                        return candidates[1]
                     end
-                    table.sort(candidates, function(a, b)
-                        if a.exact ~= b.exact then return a.exact end
-                        return a.distance < b.distance
-                    end)
-                    for _, candidate in ipairs(candidates) do
-                        print("[Spawn NPC candidate]", candidate.model:GetFullName(), "distance:", math.floor(candidate.distance), "exact:", candidate.exact)
+                    SetStatus(T("enchant.spawn.move"))
+                    _tp(spawnStand, cancelled, true)
+                    if cancelled() then return end
+                    local _, root = GetCharacterParts()
+                    if not root or (root.Position - tikiPosition).Magnitude > 8 then
+                        SetStatus(T("enchant.spawn.cancelled"))
+                        return
                     end
-
-                    local target = candidates[1]
+                    loadTiki()
+                    local target
+                    local deadline = os.clock() + 5
+                    repeat
+                        if cancelled() then return end
+                        target = findSpawn()
+                        if target then break end
+                        task.wait(0.2)
+                    until os.clock() >= deadline
                     if not target then
                         SetStatus(T("enchant.spawn.notfound"))
                         return
                     end
 
                     SetStatus(T("enchant.spawn.move"))
-                    local character = LocalPlayer.Character
-                    local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                    if not hrp or not target.part.Parent then
-                        SetStatus(T("enchant.spawn.notfound"))
-                        return
+                    if cancelled() or not target.part.Parent then return end
+                    local _, nearRoot = GetCharacterParts()
+                    if not nearRoot then return end
+                    if (nearRoot.Position - target.part.Position).Magnitude > 8 then
+                        _tp(target.part.CFrame + Vector3.new(0, 3, 0), function()
+                            return cancelled() or not target.part.Parent
+                        end, true)
                     end
-                    local destination = target.part.CFrame + Vector3.new(0, 3, 0)
-                    local distance = (hrp.Position - destination.Position).Magnitude
-                    spawnTween = TweenService:Create(
-                        hrp,
-                        TweenInfo.new(math.max(distance / 300, 0.1), Enum.EasingStyle.Linear),
-                        { CFrame = destination }
-                    )
-                    warn("[SetSpawn] tween target:", target.model:GetFullName(), "distance:", math.floor(distance))
-                    spawnTween:Play()
-                    while spawnTween.PlaybackState == Enum.PlaybackState.Playing do
-                        if _G.StopTween or not target.part.Parent then
-                            pcall(function() spawnTween:Cancel() end)
-                            break
-                        end
-                        task.wait(0.1)
-                    end
-                    local arrived = not _G.StopTween
+                    local _, hrp = GetCharacterParts()
+                    local arrived = not cancelled() and hrp
                         and target.part.Parent ~= nil
-                        and (hrp.Position - target.part.Position).Magnitude <= 20
+                        and (hrp.Position - target.part.Position).Magnitude <= 8
                     if not arrived then
-                        warn("[SetSpawn] tween stopped; remaining distance:", math.floor((hrp.Position - target.part.Position).Magnitude))
                         SetStatus(T("enchant.spawn.cancelled"))
                         return
                     end
@@ -7980,9 +8074,6 @@ do
                     SetStatus(T(confirmed and "enchant.spawn.done" or "enchant.spawn.failed"))
                 end, debug.traceback)
                 if NavigationOwner == "set-spawn" then
-                    if spawnTween and spawnTween.PlaybackState == Enum.PlaybackState.Playing then
-                        pcall(function() spawnTween:Cancel() end)
-                    end
                     NavigationOwner = nil
                 end
                 SetSpawnRunning = false
@@ -8026,7 +8117,7 @@ do
         AvatarCache[userId] = found
         return found
     end
-    local function SendWebhook(content, title, onDone, mentionEveryone)
+    local function SendWebhook(content, title, onDone, mentionEveryone, colorOverride, footerDetails)
         if _G.WebhookURL == nil or _G.WebhookURL == "" then
             if onDone then onDone(false) end
             return false
@@ -8062,6 +8153,7 @@ do
                     else
                         embedColor = 0x32CD32
                     end
+                    embedColor = colorOverride or embedColor
                     local fields = {}
                     local descriptions = {}
                     for line in (content or ""):gmatch("[^\n]+") do
@@ -8102,7 +8194,7 @@ do
                             thumbnail = { url = GetAvatarImage(LocalPlayer.UserId) },
                             fields = finalFields,
                             footer = {
-                                text = SenderName .. " · " .. os.date("%Y-%m-%d %H:%M:%S"),
+                                text = (footerDetails and (footerDetails .. "\n") or "") .. SenderName .. " · " .. os.date("%Y-%m-%d %H:%M:%S"),
                                 icon_url = GetAvatarImage(LocalPlayer.UserId),
                             },
                         }}
@@ -8140,14 +8232,14 @@ do
         Content = T("webhook.off"),
     })
     ParagraphKeys[#ParagraphKeys + 1] = { element = WebhookStatusPara, title = "webhook.status" }
-    local function SendWebhookUI(content, title, mentionEveryone)
+    local function SendWebhookUI(content, title, mentionEveryone, colorOverride, footerDetails)
         local okCall, err = SendWebhook(content, title, function(ok)
             if ok then
                 WebhookStatusPara:SetDesc(T("webhook.sent") .. os.date("%H:%M:%S"))
             else
                 WebhookStatusPara:SetDesc(T("wh.sendfailed"))
             end
-        end, mentionEveryone)
+        end, mentionEveryone, colorOverride, footerDetails)
         if not okCall then
             WebhookStatusPara:SetDesc(T("wh.sendfailed") .. (err and (" (" .. tostring(err) .. ")") or ""))
         end
@@ -8338,6 +8430,87 @@ do
             SaveConfig()
         end,
     })
+    Tabs.Webhook:AddToggle("webhook.send.fruit", {
+        Title = T("webhook.send.fruit"),
+        Default = _G.WebhookSendFruit,
+        Callback = function(state)
+            _G.WebhookSendFruit = state and true or false
+            SaveConfig()
+        end,
+    })
+    do
+        local seen = setmetatable({}, {__mode = "k"})
+        local queue, catalog, retryAt, working = {}, nil, 0, false
+        local function fruitKey(name)
+            local key = tostring(name):lower():gsub("fruit", ""):gsub("[%s_%-]", "")
+            local half = #key / 2
+            if half == math.floor(half) and key:sub(1, half) == key:sub(half + 1) then
+                key = key:sub(1, half)
+            end
+            return key
+        end
+        local function rarity(name, attribute)
+            local label = tostring(attribute or ""):lower()
+            if label == "legendary" then return "Legendary", 0xFF69B4 end
+            if label == "mythical" then return "Mythical", 0xFF3030 end
+            if not catalog and os.clock() >= retryAt then
+                retryAt = os.clock() + 60
+                local comm = FruitCommF()
+                local ok, data = pcall(function() return comm and comm:InvokeServer("GetFruits") end)
+                if ok and type(data) == "table" and next(data) then catalog = data end
+            end
+            for _, entry in pairs(catalog or {}) do
+                if type(entry) == "table" and fruitKey(entry.Name) == fruitKey(name) then
+                    local tier = type(entry.Rarity) == "string" and entry.Rarity:lower() or ""
+                    local price = tonumber(entry.Price)
+                    if tier == "mythical" or (tier == "" and price and price >= 2500000) then
+                        return "Mythical", 0xFF3030
+                    elseif tier == "legendary" or (tier == "" and price and price >= 1000000 and price < 2500000) then
+                        return "Legendary", 0xFF69B4
+                    end
+                end
+            end
+        end
+        local function acquired(tool)
+            if not tool:IsA("Tool") or seen[tool] or not tool.Name:find("Fruit", 1, true) then return end
+            seen[tool] = true
+            if not _G.WebhookSendFruit or not _G.WebhookURL or _G.WebhookURL == "" then return end
+            queue[#queue + 1] = {name = tool:GetAttribute("OriginalName") or tool.Name,
+                rarity = tool:GetAttribute("Rarity")}
+            if working then return end
+            working = true
+            task.spawn(function()
+                while #queue > 0 do
+                    local item = table.remove(queue, 1)
+                    local tier, color = rarity(item.name, item.rarity)
+                    if tier and _G.WebhookSendFruit then
+                        while WebhookSendLock do task.wait(0.15) end
+                        if _G.WebhookSendFruit then
+                            SendWebhookUI(item.name .. " (" .. tier .. ")", T("webhook.send.fruit"), false, color)
+                            while WebhookSendLock do task.wait(0.15) end
+                        end
+                    end
+                end
+                working = false
+            end)
+        end
+        local function watch(container, initial)
+            if not container then return end
+            if initial then
+                for _, tool in ipairs(container:GetChildren()) do seen[tool] = true end
+            end
+            container.ChildAdded:Connect(acquired)
+            if not initial then
+                for _, tool in ipairs(container:GetChildren()) do acquired(tool) end
+            end
+        end
+        watch(LocalPlayer:FindFirstChildOfClass("Backpack"), true)
+        watch(LocalPlayer.Character, true)
+        LocalPlayer.ChildAdded:Connect(function(child)
+            if child:IsA("Backpack") then watch(child, false) end
+        end)
+        LocalPlayer.CharacterAdded:Connect(function(character) watch(character, false) end)
+    end
     local SendNowButton = Tabs.Webhook:AddButton({
         Title = T("webhook.send.now"),
         Callback = function()
@@ -8372,8 +8545,13 @@ do
     do
         local ENCHANT_TARGET = Vector3.new(-15906.6494, 483.391998, 945.215027)
         local ENCHANT_SCROLL = "Mythical Scroll"
+        local EnchantView = { Dismissed = false, Serial = 0, Rolls = 0, Status = "", HasRead = false,
+            Checked = false, Hit = false, Reading = false, NeedsRefresh = false, ReadEpoch = 0 }
+        _G.RJR_EnchantViewer = EnchantView
         local EnchantArmedHeart = nil
         local EnchantRunning = false
+        local EnchantPending = false
+        local EnchantRetryAt = 0
         local EnchantRunToken = 0
         local EnchantWebhookQueue = {}
         local EnchantWebhookWorker = false
@@ -8385,6 +8563,8 @@ do
         local EnchantLockAt = 0
         local EnchantBeatAt = 0
         local function SetEnchantStatus(text)
+            EnchantView.Status = tostring(text)
+            if EnchantView.Refresh then pcall(EnchantView.Refresh) end
             pcall(function()
                 if _G.RJR_EnchantStatusPara then
                     _G.RJR_EnchantStatusPara:SetDesc(tostring(text))
@@ -8402,10 +8582,10 @@ do
         end
         local function ReadEnchantInventory()
             local etc, progression = GetCraftData()
-            if type(etc) ~= "table" then
+            if type(etc) ~= "table" or next(etc) == nil then
                 return nil, nil, nil
             end
-            local scrolls = CraftQualityList.GetCount(progression, etc, "MythicalScroll")
+            local scrolls = CraftQualityList.Lookup(etc, "MythicalScroll") or 0
             local hearts = nil
             for key, value in pairs(etc) do
                 if type(value) == "number" then
@@ -8416,6 +8596,7 @@ do
                     end
                 end
             end
+            EnchantView.Scrolls, EnchantView.Hearts = scrolls, hearts
             return scrolls, hearts, etc
         end
         local function WantedEnchantLookup()
@@ -8430,6 +8611,8 @@ do
                     end
                 end
             end
+            wanted.reaper = true
+            wanted["curse of the reaper"] = true
             return wanted
         end
         local function DescribeEnchantResult(modifiers)
@@ -8447,6 +8630,282 @@ do
             table.sort(parts)
             return (#parts > 0 and table.concat(parts, ", ") or "未读取到附魔"), matched
         end
+        EnchantView.Dismissed = false
+
+        	do
+        local MaxLevels = {Agile=3, Beast=5, Deadly=5, Efficient=4, Elemental=5, Fortune=4, Lucky=4, Natural=5, Piercing=4, Sharp=6, Siphon=3, Vampiric=3}
+		
+        		local Colors = {
+        			Background = Color3.fromRGB(12, 12, 16),
+        			Stroke = Color3.fromRGB(40, 40, 50),
+        			Text = Color3.fromRGB(235, 235, 240),
+        			Muted = Color3.fromRGB(140, 140, 155),
+        			Curse = Color3.fromRGB(255, 90, 90),
+        			Blessing = Color3.fromRGB(110, 175, 255),
+        			Unique = Color3.fromRGB(255, 200, 80),
+        			Good = Color3.fromRGB(110, 230, 140),
+        		}
+        		local gui, title, subtitle, list, dragConn
+
+        		local function Create(className, props, parent)
+        			local instance = Instance.new(className)
+
+        			for k, v in pairs(props) do
+        				instance[k] = v
+        			end
+
+        			instance.Parent = parent
+
+        			return instance
+        		end
+
+        		local function Build()
+        			if gui and gui.Parent then
+        				return true
+        			end
+
+        			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+
+        			if not playerGui then
+        				return false
+        			end
+
+        			local old = playerGui:FindFirstChild("RJR_EnchantView")
+
+        			if old then
+        				old:Destroy()
+        			end
+
+        			if dragConn then
+        				dragConn:Disconnect()
+        			end
+
+        			gui = Create("ScreenGui", {
+        				Name = "RJR_EnchantView",
+        				ResetOnSpawn = false,
+        				ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        				Enabled = false,
+        			}, playerGui)
+
+        			local frame = Create("Frame", {
+        				AutomaticSize = Enum.AutomaticSize.Y,
+        				Size = UDim2.new(0, 210, 0, 0),
+        				Position = UDim2.new(1, -226, 0.5, -60),
+        				BackgroundColor3 = Colors.Background,
+        				BackgroundTransparency = 0.15,
+        				BorderSizePixel = 0,
+        				Active = true,
+        			}, gui)
+
+        			Create("UICorner", { CornerRadius = UDim.new(0, 8) }, frame)
+        			Create("UIStroke", { Color = Colors.Stroke, Thickness = 1, Transparency = 0.3 }, frame)
+        			Create("UIPadding", {
+        				PaddingTop = UDim.new(0, 8),
+        				PaddingBottom = UDim.new(0, 8),
+        				PaddingLeft = UDim.new(0, 10),
+        				PaddingRight = UDim.new(0, 8),
+        			}, frame)
+        			Create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 3) }, frame)
+
+        			local header = Create("Frame", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1 }, frame)
+
+        			title = Create("TextLabel", {
+        				Size = UDim2.new(1, -20, 1, 0),
+        				BackgroundTransparency = 1,
+        				Font = Enum.Font.GothamBold,
+        				TextSize = 13,
+        				TextColor3 = Colors.Text,
+        				TextXAlignment = Enum.TextXAlignment.Left,
+        				TextTruncate = Enum.TextTruncate.AtEnd,
+        				Text = "",
+        			}, header)
+
+        			local close = Create("TextButton", {
+        				AnchorPoint = Vector2.new(1, 0),
+        				Position = UDim2.new(1, 0, 0, 0),
+        				Size = UDim2.new(0, 16, 0, 16),
+        				BackgroundTransparency = 1,
+        				Font = Enum.Font.GothamBold,
+        				TextSize = 12,
+        				TextColor3 = Colors.Muted,
+        				Text = "X",
+        			}, header)
+
+        			close.MouseButton1Click:Connect(function()
+        				EnchantView.Dismissed = true
+        				gui.Enabled = false
+        			end)
+
+        			subtitle = Create("TextLabel", {
+        				LayoutOrder = 2,
+        				Size = UDim2.new(1, 0, 0, 0),
+        					AutomaticSize = Enum.AutomaticSize.Y,
+        					TextWrapped = true,
+        				BackgroundTransparency = 1,
+        				Font = Enum.Font.GothamMedium,
+        				TextSize = 11,
+        				TextColor3 = Colors.Muted,
+        				TextXAlignment = Enum.TextXAlignment.Left,
+				
+        				Text = "",
+        			}, frame)
+
+        			Create("Frame", { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = Colors.Stroke, BorderSizePixel = 0 }, frame)
+
+        			list = Create("Frame", {
+        				LayoutOrder = 4,
+        				AutomaticSize = Enum.AutomaticSize.Y,
+        				Size = UDim2.new(1, 0, 0, 0),
+        				BackgroundTransparency = 1,
+        			}, frame)
+
+        			Create("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 1) }, list)
+
+        			local dragging, dragStart, startPos
+
+        			frame.InputBegan:Connect(function(input)
+        				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        					dragging, dragStart, startPos = true, input.Position, frame.Position
+
+        					input.Changed:Connect(function()
+        						if input.UserInputState == Enum.UserInputState.End then
+        							dragging = false
+        						end
+        					end)
+        				end
+        			end)
+
+        			dragConn = InputService.InputChanged:Connect(function(input)
+        				if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        					local delta = input.Position - dragStart
+        					frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        				end
+        			end)
+
+        			return true
+        		end
+
+        		local function AddRow(order, name, tag, color, matched)
+        			local row = Create("Frame", { LayoutOrder = order, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1 }, list)
+
+        			if matched then
+        				Create("Frame", {
+        					Position = UDim2.new(0, 0, 0.5, -5),
+        					Size = UDim2.new(0, 2, 0, 10),
+        					BackgroundColor3 = Colors.Good,
+        					BorderSizePixel = 0,
+        				}, row)
+        			end
+
+        			Create("TextLabel", {
+        				Position = UDim2.new(0, 7, 0, 0),
+        				Size = UDim2.new(1, -67, 1, 0),
+        				BackgroundTransparency = 1,
+        				Font = Enum.Font.GothamMedium,
+        				TextSize = 12,
+        				TextColor3 = color,
+        				TextXAlignment = Enum.TextXAlignment.Left,
+        				TextTruncate = Enum.TextTruncate.AtEnd,
+        				Text = name,
+        			}, row)
+
+        			Create("TextLabel", {
+        				AnchorPoint = Vector2.new(1, 0),
+        				Position = UDim2.new(1, 0, 0, 0),
+        				Size = UDim2.new(0, 60, 1, 0),
+        				BackgroundTransparency = 1,
+        				Font = Enum.Font.GothamBold,
+        				TextSize = 10,
+        				TextColor3 = color,
+        				TextTransparency = 0.2,
+        				TextXAlignment = Enum.TextXAlignment.Right,
+        				Text = tag,
+        			}, row)
+        		end
+
+        		EnchantView.Update = function(weaponName, mods, note)
+        			if EnchantView.Dismissed or not Build() then
+        				return
+        			end
+
+        			title.Text = weaponName
+        			subtitle.Text = note or ""
+
+        			for _, child in ipairs(list:GetChildren()) do
+        				if child:IsA("Frame") then
+        					child:Destroy()
+        				end
+        			end
+
+        			local rules = WantedEnchantLookup()
+        			local entries = {}
+
+        			for _, mod in pairs(mods or {}) do
+        					if type(mod) ~= "table" or not mod.Name then continue end
+        					local name = tostring(mod.Name)
+        				local entry = { Name = name }
+
+        				if mod.Curse then
+        					entry.Rank, entry.Color, entry.Tag = 4, Colors.Curse, "CURSE"
+        				elseif mod.Blessing then
+        					entry.Rank, entry.Color, entry.Tag, entry.Matched = 1, Colors.Blessing, "BLESSING", rules[name:lower()]
+        				elseif mod.Unique then
+        					entry.Rank, entry.Color, entry.Tag, entry.Matched = 2, Colors.Unique, "UNIQUE", rules[name:lower()]
+        				else
+        					local level, max = tonumber(mod.Level) or 0, MaxLevels[name]
+
+        					entry.Rank = 3
+        					entry.Tag = max and (tostring(level) .. "/" .. tostring(max)) or ("Lv " .. tostring(level))
+        					entry.Color = (max and level >= max) and Colors.Good or Colors.Text
+        					entry.Matched = rules[name:lower()] == true
+        				end
+
+        				table.insert(entries, entry)
+        			end
+
+        			table.sort(entries, function(a, b)
+        				if a.Rank ~= b.Rank then
+        					return a.Rank < b.Rank
+        				end
+
+        				return a.Name < b.Name
+        			end)
+
+        			if #entries == 0 then
+        				AddRow(1, EnchantView.HasRead and "No enchants" or "Not read yet", "", Colors.Muted)
+        			end
+
+        			for i, entry in ipairs(entries) do
+        				AddRow(i, entry.Name, entry.Tag, entry.Color, entry.Matched)
+        			end
+
+        			gui.Enabled = true
+        		end
+
+        		EnchantView.Hide = function()
+        			if gui then
+        				gui.Enabled = false
+        			end
+        		end
+        	end
+
+        EnchantView.Note = function()
+            return "Mythical Scroll: " .. tostring(EnchantView.Scrolls or "?")
+                .. " | #" .. tostring(EnchantView.Rolls) .. "\n"
+                .. (EnchantView.LastOutcome and (EnchantView.LastOutcome .. "\n") or "") .. EnchantView.Status
+        end
+        EnchantView.Show = function(weaponName, modifiers)
+            EnchantView.Serial += 1
+            EnchantView.Weapon, EnchantView.Modifiers, EnchantView.HasRead = weaponName, modifiers or {}, true
+            EnchantView.Update(weaponName, EnchantView.Modifiers, EnchantView.Note())
+        end
+        EnchantView.Refresh = function()
+            local selected = tostring(_G.EnchantWeaponName or "")
+            if selected ~= EnchantView.Weapon then
+                EnchantView.Weapon, EnchantView.Modifiers, EnchantView.HasRead = selected, {}, false
+            end
+            EnchantView.Update(selected ~= "" and selected or "Auto Enchant", EnchantView.Modifiers or {}, EnchantView.Note())
+        end
         local function FindEnchantWeapon()
             local wantedName = tostring(_G.EnchantWeaponName or "")
             local wantedType = (_G.EnchantWeaponType == "Gun") and "Gun" or "Sword"
@@ -8463,6 +8922,25 @@ do
                 end
             end
             return nil
+        end
+        local function EnchantEligibilityIssue(info)
+            if type(info) ~= "table" then return nil end
+            local grade = tonumber(info.Upgrades)
+            local entry = type(info.Scrolls) == "table" and info.Scrolls[ENCHANT_SCROLL] or nil
+            local need = type(entry) == "table" and tonumber(entry[3]) or nil
+            local available = type(entry) == "table" and tonumber(entry[1]) or nil
+            if available then EnchantView.Scrolls = available end
+            if type(info.Scrolls) == "table" and (entry == nil or (available and available <= 0)) then
+                EnchantView.Scrolls = 0
+                return "没有可用神话卷轴，跳过本轮并归还主流程；等待卷轴可用"
+            end
+            if grade and grade <= 0 then
+                return "所选武器未升级，跳过自动附魔；等待武器可附魔"
+            end
+            if grade and need and grade < need then
+                return "所选武器 Grade " .. tostring(grade) .. "，神话卷轴需要 Grade ≥ "
+                    .. tostring(need) .. "；等待武器可附魔"
+            end
         end
         local function EnchantCanUseScroll(info, scrollName)
             if type(info) ~= "table" then
@@ -8503,69 +8981,306 @@ do
             end
             return commF:InvokeServer("EnchantItem", action, tool)
         end
-        local function SendEnchantWebhook(weaponName, scrollName, resultText, hit)
+        local function ReadEnchantWeaponInfo(tool)
+            local flags = require(RS.Modules.Flags)
+            local net = RS:FindFirstChild("Modules") and RS.Modules:FindFirstChild("Net")
+            local enchantRemote = net and net:FindFirstChild("RF/EnchantInvoke")
+            if not enchantRemote and net then enchantRemote = net:WaitForChild("RF/EnchantInvoke", 10) end
+            local remotes = RS:FindFirstChild("Remotes")
+            local commF = remotes and remotes:FindFirstChild("CommF_")
+            return InvokeEnchantAction(flags, enchantRemote, commF, "Check", tool)
+        end
+        local function SendEnchantWebhook(weaponName, scrollName, resultText, hit, modifiers)
             if not (_G.WebhookSendEnchantResult and _G.WebhookURL and _G.WebhookURL ~= "") then return end
-            EnchantWebhookQueue[#EnchantWebhookQueue + 1] = T("wh.enchant.weapon") .. ": " .. tostring(weaponName)
+            local main, minor = {}, {}
+            for _, modifier in pairs(modifiers or {}) do
+                if type(modifier) == "table" and modifier.Name then
+                    local name = tostring(modifier.Name)
+                    local label = name .. (modifier.Level and (" " .. tostring(modifier.Level)) or "")
+                    if modifier.Curse then
+                        main[#main + 1] = "**CURSE** " .. label
+                    elseif modifier.Blessing then
+                        main[#main + 1] = "**BLESSING** " .. label
+                    elseif modifier.Unique then
+                        main[#main + 1] = "**UNIQUE** " .. label
+                    else
+                        minor[#minor + 1] = label
+                    end
+                end
+            end
+            table.sort(main)
+            table.sort(minor)
+            local headline = #main > 0 and table.concat(main, " · ")
+                or (type(modifiers) == "table" and "—" or tostring(resultText))
+            local colors = {burning=0xFF8C00, rot=0x32CD32, storm=0x153E90,
+                frozen=0x87CEFA, reaper=0xE53935, thief=0x9B59B6}
+            local color = 0xB388FF
+            for word in tostring(resultText):lower():gmatch("%a+") do
+                if colors[word] then color = colors[word]; break end
+            end
+            EnchantWebhookQueue[#EnchantWebhookQueue + 1] = {
+                color = color,
+                details = #minor > 0 and table.concat(minor, " · ") or nil,
+                content = T("wh.enchant.weapon") .. ": " .. tostring(weaponName)
                 .. "\n" .. T("wh.enchant.scroll") .. ": " .. tostring(scrollName)
-                .. "\n" .. T("wh.enchant.result") .. ": " .. tostring(resultText)
+                .. "\n" .. T("wh.enchant.result") .. ": " .. headline
                 .. "\n" .. T("wh.enchant.hit") .. ": " .. T(hit and "wh.enchant.yes" or "wh.enchant.no")
+            }
             if EnchantWebhookWorker then return end
             EnchantWebhookWorker = true
             task.spawn(function()
                 while #EnchantWebhookQueue > 0 do
                     while WebhookSendLock do task.wait(0.15) end
                     local content = table.remove(EnchantWebhookQueue, 1)
-                    SendWebhookUI(content, T("wh.title.enchant"))
+                    SendWebhookUI(content.content, T("wh.title.enchant"), false, content.color, content.details)
                     while WebhookSendLock do task.wait(0.15) end
                     task.wait(0.15)
                 end
                 EnchantWebhookWorker = false
             end)
         end
+        local function TakeEnchantControl(token)
+            local currentChar = select(1, GetCharacterParts())
+            if EnchantHandoff.claimed and currentChar ~= EnchantHandoff.character then
+                EnchantHandoff.claimed = false
+            end
+            if not EnchantHandoff.claimed then
+                EnchantHandoff.requested = true
+                local deadline = os.clock() + 300
+                while _G.AutoEnchantOnHeart and token == EnchantRunToken and _G.AutoLeviathanFull do
+                    local role = (_G.Mode == "Capitán") and "captain" or "follower"
+                    local running
+                    if role == "captain" then running = CaptainRunning else running = FollowerRunning end
+                    if EnchantHandoff.parked[role] or not running then break end
+                    EnchantBeatAt = os.clock()
+                    SetEnchantStatus("等待主流程完成当前步骤并暂停")
+                    if os.clock() >= deadline then
+                        EnchantHandoff.Release()
+                        return false
+                    end
+                    task.wait(0.2)
+                end
+                if not _G.AutoEnchantOnHeart or token ~= EnchantRunToken then
+                    EnchantHandoff.Release()
+                    return false
+                end
+                local char, _, hum = GetCharacterParts()
+                if not char or not hum or hum.Health <= 0 then
+                    EnchantHandoff.Release()
+                    return false
+                end
+                local seat = hum and hum.SeatPart
+                local boat = seat
+                while boat and not (boat.Parent and boat.Parent.Name == "Boats") do boat = boat.Parent end
+                if not boat then
+                    if _G.Mode == "Capitán" then boat = GetOwnBoat() else boat = GetCaptainBoat() end
+                    seat = boat and boat:FindFirstChild("VehicleSeat")
+                end
+                EnchantHandoff.boat, EnchantHandoff.seat = boat, seat
+                EnchantHandoff.character = char
+                EnchantHandoff.claimed = true
+            end
+            if NavigationOwner ~= nil and NavigationOwner ~= "enchant" then
+                EnchantHandoff.Release()
+                return false
+            end
+            NavigationOwner = "enchant"
+            EnchantLockAt, EnchantBeatAt = os.clock(), os.clock()
+            if CurrentTween then pcall(function() CurrentTween:Cancel() end); CurrentTween = nil end
+            ClearHover()
+            return true
+        end
+        local function ReturnEnchantControl(token)
+            if not EnchantHandoff.claimed or EnchantHandoff.returning then return end
+            if not _G.AutoLeviathanFull or not _G.AutoEnchantOnHeart then return end
+            local char, _, hum = GetCharacterParts()
+            if char ~= EnchantHandoff.character or not hum or hum.Health <= 0 then return end
+            EnchantHandoff.returning = true
+            local savedSeat, savedBoat = EnchantHandoff.seat, EnchantHandoff.boat
+            local function destination()
+                if savedBoat and savedBoat.Parent and savedSeat and savedSeat.Parent
+                    and savedSeat:IsDescendantOf(savedBoat) then
+                    return savedSeat.CFrame + Vector3.new(0, 3, 0)
+                end
+                return BoatDealerCF
+            end
+            local arrived = false
+            for attempt = 1, 3 do
+                if token ~= EnchantRunToken or not _G.AutoEnchantOnHeart or not _G.AutoLeviathanFull then break end
+                local currentChar, root, currentHum = GetCharacterParts()
+                if currentChar ~= EnchantHandoff.character or not root or not currentHum or currentHum.Health <= 0 then break end
+                EnchantBeatAt = os.clock()
+                SetEnchantStatus("附魔本轮已完成，返回船只/买船点后恢复主流程")
+                local ok = pcall(function()
+                    _tp(destination, function()
+                        EnchantBeatAt = os.clock()
+                        return token ~= EnchantRunToken or not _G.AutoEnchantOnHeart or not _G.AutoLeviathanFull
+                    end, true)
+                end)
+                local _, afterRoot = GetCharacterParts()
+                local target = destination()
+                arrived = ok and afterRoot and target and (afterRoot.Position - target.Position).Magnitude <= 40
+                if arrived then break end
+                task.wait(0.5)
+            end
+            EnchantHandoff.returning = false
+            if token == EnchantRunToken and not arrived and _G.AutoLeviathanFull and _G.AutoEnchantOnHeart then
+                SetEnchantStatus("附魔本轮已完成，返程未确认；释放导航由主流程继续")
+            end
+        end
         local function StopAutoEnchant(statusText)
-            _G.AutoEnchantOnHeart = false
+            local token = EnchantRunToken
+            SetBusy(false)
+            if EnchantHandoff.claimed and _G.AutoEnchantOnHeart then
+                pcall(ReturnEnchantControl, token)
+            end
+            if token ~= EnchantRunToken then return end
+            EnchantPending = false
+            EnchantRetryAt = 0
             EnchantArmedHeart = nil
             EnchantBeatAt = 0
             EnchantLockAt = 0
             SaveConfig()
-            if _G.RJR_AutoEnchantOnHeartToggle then
-                pcall(function()
-                    _G.RJR_AutoEnchantOnHeartToggle:SetValue(false)
-                end)
-            end
             SetBusy(false)
             pcall(ClearHover)
             if NavigationOwner == "enchant" then
                 NavigationOwner = nil
             end
+            EnchantHandoff.Release()
             if statusText ~= nil then
                 SetEnchantStatus(statusText)
             end
         end
-        local function StopAutoEnchantOnHit()
-            StopAutoEnchant("命中所选附魔，自动附魔已停止，导航已归还主流程")
+        local function StopAutoEnchantOnHit(displayOnly)
+            EnchantView.Checked, EnchantView.Hit, EnchantView.NeedsRefresh = true, true, false
+            local resultText = DescribeEnchantResult(EnchantView.Modifiers)
+            EnchantView.LastOutcome = "已有目标附魔（" .. resultText .. "）；自动附魔暂停判定，点击刷新武器重新读取"
+            if displayOnly and not EnchantPending and NavigationOwner ~= "enchant" then
+                EnchantArmedHeart = nil
+                SetEnchantStatus(EnchantView.LastOutcome)
+                return
+            end
+            StopAutoEnchant(EnchantView.LastOutcome)
         end
         local function StopAutoEnchantOnNoScroll()
-            StopAutoEnchant("神话卷轴已用完，已返回主流程")
+            StopAutoEnchant("神话卷轴已用完，已归还主流程；等待重新达到10张卷轴及下一颗心脏")
+        end
+        local function PauseAutoEnchant(statusText)
+            EnchantPending = true
+            EnchantRetryAt = os.clock() + 30
+            EnchantBeatAt = 0
+            EnchantLockAt = 0
+            SetBusy(false)
+            pcall(ClearHover)
+            if EnchantHandoff.claimed then
+                NavigationOwner = "enchant"
+            else
+                EnchantHandoff.Release()
+                if NavigationOwner == "enchant" then NavigationOwner = nil end
+            end
+            if statusText then SetEnchantStatus(statusText) end
+        end
+        local function SkipUnavailableEnchant(reason)
+            EnchantView.EligibilityBlocked = true
+            EnchantView.EligibilityRetryAt = os.clock() + 15
+            StopAutoEnchant(reason)
+        end
+        EnchantView.CancelRead = function()
+            EnchantView.ReadEpoch += 1
+            EnchantView.Reading = false
+        end
+        EnchantView.SelectionChanged = function()
+            EnchantView.CancelRead()
+            EnchantView.Checked, EnchantView.Hit, EnchantView.NeedsRefresh = false, false, true
+            EnchantView.EligibilityBlocked, EnchantView.EligibilityRetryAt = false, 0
+            EnchantView.LastOutcome = nil
+            SetEnchantStatus("武器或目标已更改，点击刷新武器重新读取")
+        end
+        EnchantView.ReadCurrent = function(force)
+            if EnchantRunning then return end
+            if not force and EnchantView.NeedsRefresh then
+                SetEnchantStatus("点击刷新武器重新读取当前附魔")
+                return
+            end
+            if not force and EnchantView.Hit then
+                SetEnchantStatus(EnchantView.LastOutcome or "已有目标附魔，点击刷新武器重新读取")
+                return
+            end
+            EnchantView.CancelRead()
+            local epoch = EnchantView.ReadEpoch
+            EnchantView.Reading, EnchantView.Checked = true, false
+            SetEnchantStatus("正在读取所选武器的当前附魔")
+            task.spawn(function()
+                local tool = FindEnchantWeapon()
+                local ok, info = pcall(function()
+                    if not tool then error("未找到所选武器") end
+                    return ReadEnchantWeaponInfo(tool)
+                end)
+                if epoch ~= EnchantView.ReadEpoch then return end
+                EnchantView.Reading = false
+                if not ok or type(info) ~= "table" or tool ~= FindEnchantWeapon() then
+                    EnchantView.NeedsRefresh = not EnchantView.EligibilityBlocked
+                    SetEnchantStatus(EnchantView.EligibilityBlocked and "附魔条件暂不可读取，稍后重新检查"
+                        or "读取当前附魔失败，点击刷新武器重试")
+                    return
+                end
+                EnchantView.Checked, EnchantView.NeedsRefresh = true, false
+                pcall(EnchantView.Show, tool.Name, info.Modifiers)
+                local _, hit = DescribeEnchantResult(info.Modifiers)
+                EnchantView.Hit = hit
+                local upgradeIssue = EnchantEligibilityIssue(info)
+                EnchantView.EligibilityBlocked = not hit and upgradeIssue ~= nil
+                EnchantView.EligibilityRetryAt = os.clock() + 15
+                if hit then
+                    StopAutoEnchantOnHit(true)
+                elseif upgradeIssue then
+                    EnchantArmedHeart = nil
+                    SetEnchantStatus(upgradeIssue)
+                else
+                    EnchantView.LastOutcome = nil
+                    SetEnchantStatus(EnchantPending and "未命中目标，本轮附魔待继续"
+                        or "未命中目标；等待10个神话卷轴及下一颗心脏")
+                end
+            end)
         end
         local function RunEnchantAfterHeart(token)
             local function Cancelled()
                 return not _G.AutoEnchantOnHeart or token ~= EnchantRunToken
             end
             local function StopAndReturn(statusText)
-                StopAutoEnchant(statusText)
+                if token ~= EnchantRunToken then return end
+                if _G.AutoEnchantOnHeart then
+                    PauseAutoEnchant(statusText)
+                else
+                    StopAutoEnchant(statusText)
+                end
                 EnchantRunning = false
             end
 
+            local preflightTool = FindEnchantWeapon()
+            local readOK, info = pcall(function()
+                if not preflightTool then error("未找到所选武器") end
+                return ReadEnchantWeaponInfo(preflightTool)
+            end)
+            if Cancelled() then return end
+            if not readOK or type(info) ~= "table" or preflightTool ~= FindEnchantWeapon() then
+                StopAndReturn("出发前读取武器失败；保留本轮，30秒后重试")
+                return
+            end
+            local upgradeIssue = EnchantEligibilityIssue(info)
+            if upgradeIssue then
+                SkipUnavailableEnchant(upgradeIssue)
+                EnchantRunning = false
+                return
+            end
             EnchantLockAt = os.clock()
             EnchantBeatAt = os.clock()
-            NavigationOwner = "enchant"
-            if CurrentTween then
-                pcall(function() CurrentTween:Cancel() end)
-                CurrentTween = nil
+            if not TakeEnchantControl(token) then
+                StopAndReturn("主流程尚未完成暂停交接；保留本轮，30秒后重试")
+                return
             end
             if next(WantedEnchantLookup()) == nil then
-                StopAndReturn("请先选择至少一个目标附魔：自动附魔已关闭，导航已归还主流程")
+                StopAndReturn("请先选择至少一个目标附魔；保留本轮，30秒后重试")
                 return
             end
             SetEnchantStatus("心脏已结算，前往龙爪贤者")
@@ -8592,7 +9307,7 @@ do
                 return
             end
             if not arrived then
-                StopAndReturn("到不了龙爪贤者（" .. ENCHANT_MAX_TELEPORT_TRIES .. " 次）：已停止自动附魔并归还导航")
+                StopAndReturn("到不了龙爪贤者（" .. ENCHANT_MAX_TELEPORT_TRIES .. " 次）；保留本轮，30秒后重试")
                 return
             end
             local flags
@@ -8605,27 +9320,38 @@ do
             local remotes = RS:FindFirstChild("Remotes")
             local commF = remotes and remotes:FindFirstChild("CommF_")
             if not enchantRemote and not commF then
-                StopAndReturn("附魔 remote 不可用：已停止自动附魔并归还导航")
+                StopAndReturn("附魔 remote 不可用；保留本轮，30秒后重试")
                 return
             end
             local weaponWaits, checkFails, rollFails = 0, 0, 0
             while not Cancelled() do
                 EnchantBeatAt = os.clock()
                 local scrollCount = tonumber((ReadEnchantInventory()))
+                if Cancelled() then return end
                 if scrollCount == nil then
-                    scrollCount = 1
+                    StopAndReturn("读取卷轴库存失败；保留本轮，30秒后重试")
+                    return
                 end
                 if scrollCount <= 0 then
-                    StopAutoEnchantOnNoScroll()
-                    EnchantRunning = false
-                    return
+                    task.wait(0.5)
+                    local confirmed = tonumber((ReadEnchantInventory()))
+                    if Cancelled() then return end
+                    if confirmed == nil then
+                        StopAndReturn("无法确认卷轴是否耗尽；保留本轮，30秒后重试")
+                        return
+                    elseif confirmed <= 0 then
+                        StopAutoEnchantOnNoScroll()
+                        EnchantRunning = false
+                        return
+                    end
+                    scrollCount = confirmed
                 end
                 local tool = FindEnchantWeapon()
                 if not tool then
                     weaponWaits = weaponWaits + 1
                     if weaponWaits > ENCHANT_MAX_WEAPON_WAITS then
                         StopAndReturn("未找到所选武器（" .. tostring(_G.EnchantWeaponName)
-                            .. "）：已停止自动附魔并归还导航")
+                            .. "）；保留本轮，30秒后重试")
                         return
                     end
                     SetEnchantStatus("未找到所选武器，等待武器可用 ("
@@ -8635,11 +9361,12 @@ do
                     local checked, before = pcall(function()
                         return InvokeEnchantAction(flags, enchantRemote, commF, "Check", tool)
                     end)
+                    if Cancelled() then return end
                     if not checked or type(before) ~= "table" then
                         checkFails = checkFails + 1
                         if checkFails > ENCHANT_MAX_CHECK_FAILS then
                             StopAndReturn("读取武器附魔数据失败（" .. ENCHANT_MAX_CHECK_FAILS
-                                .. " 次）：已停止自动附魔并归还导航")
+                                .. " 次）；保留本轮，30秒后重试")
                             return
                         end
                         SetEnchantStatus("读取武器附魔失败，重试中 ("
@@ -8647,15 +9374,23 @@ do
                         task.wait(3)
                     else
                         checkFails = 0
+                        pcall(EnchantView.Show, tool.Name, before.Modifiers)
                         local _, beforeHit = DescribeEnchantResult(before.Modifiers)
                         if beforeHit then
                             StopAutoEnchantOnHit()
                             EnchantRunning = false
                             return
                         end
+                        local upgradeIssue = EnchantEligibilityIssue(before)
+                        if upgradeIssue then
+                            SkipUnavailableEnchant(upgradeIssue)
+                            EnchantRunning = false
+                            return
+                        end
                         local canRoll, whyNot = EnchantCanUseScroll(before, ENCHANT_SCROLL)
+                        if Cancelled() then return end
                         if not canRoll then
-                            StopAndReturn(tostring(whyNot) .. "：已停止自动附魔并归还导航")
+                            StopAndReturn(tostring(whyNot) .. "；保留本轮，30秒后重试")
                             return
                         end
                         SetEnchantStatus("正在使用神话卷轴附魔 " .. tool.Name)
@@ -8664,16 +9399,17 @@ do
                         local rolled, rollResult = pcall(function()
                             return InvokeEnchantAction(flags, enchantRemote, commF, "Enchant", tool, ENCHANT_SCROLL)
                         end)
+                        if Cancelled() then return end
                         SetBusy(false)
-                        local consumed = rolled and type(rollResult) == "table"
-                        if not consumed then
-                            for _ = 1, 8 do
-                                task.wait(0.5)
-                                local currentScrolls = tonumber((ReadEnchantInventory()))
-                                if currentScrolls and currentScrolls < beforeScrolls then
-                                    consumed = true
-                                    break
-                                end
+                        local consumed = false
+                        for _ = 1, 8 do
+                            task.wait(0.5)
+                            if Cancelled() then return end
+                            local currentScrolls = tonumber((ReadEnchantInventory()))
+                            if Cancelled() then return end
+                            if currentScrolls and currentScrolls < beforeScrolls then
+                                consumed = true
+                                break
                             end
                         end
                         local resultMods = type(rollResult) == "table" and rollResult.Modifiers or nil
@@ -8681,18 +9417,22 @@ do
                             local checkOK, afterInfo = pcall(function()
                                 return InvokeEnchantAction(flags, enchantRemote, commF, "Check", tool)
                             end)
+                            if Cancelled() then return end
                             if checkOK and type(afterInfo) == "table" then
                                 resultMods = afterInfo.Modifiers
                             end
                         end
+                        if type(resultMods) == "table" then pcall(EnchantView.Show, tool.Name, resultMods) end
                         local resultText, hit = DescribeEnchantResult(resultMods)
                         if not rolled then
                             resultText = "附魔请求返回错误: " .. tostring(rollResult) .. "; " .. resultText
                         end
                         if consumed then
+                            EnchantView.Rolls += 1
+                            pcall(EnchantView.Refresh)
                             rollFails = 0
                             EnchantBeatAt = os.clock()
-                            SendEnchantWebhook(tool.Name, ENCHANT_SCROLL, resultText, hit)
+                            SendEnchantWebhook(tool.Name, ENCHANT_SCROLL, resultText, hit, resultMods)
                             if hit then
                                 StopAutoEnchantOnHit()
                                 EnchantRunning = false
@@ -8701,7 +9441,7 @@ do
                         else
                             rollFails = rollFails + 1
                             if rollFails > ENCHANT_MAX_ROLL_FAILS then
-                                StopAndReturn("附魔连续失败（卷轴未消耗）：已停止自动附魔并归还导航")
+                                StopAndReturn("附魔连续失败（卷轴未消耗）；保留本轮，30秒后重试")
                                 return
                             end
                             if not rolled then
@@ -8719,54 +9459,83 @@ do
             end
             StopAndReturn(nil)
         end
+        local function StartEnchantRun()
+            EnchantRunning = true
+            EnchantRunToken += 1
+            EnchantLockAt = os.clock()
+            EnchantBeatAt = EnchantLockAt
+            local token = EnchantRunToken
+            task.spawn(function()
+                local ok, err = xpcall(function()
+                    RunEnchantAfterHeart(token)
+                end, function(message)
+                    return tostring(message)
+                end)
+                if token ~= EnchantRunToken then return end
+                if not ok then
+                    if _G.AutoEnchantOnHeart then
+                        PauseAutoEnchant("附魔流程出错: " .. tostring(err) .. "；保留本轮，30秒后重试")
+                    else
+                        StopAutoEnchant(nil)
+                    end
+                end
+                if not EnchantPending and NavigationOwner == "enchant" then NavigationOwner = nil end
+                pcall(ClearHover)
+                EnchantRunning = false
+            end)
+        end
         task.spawn(function()
             while true do
                 task.wait(2)
                 if not _G.AutoEnchantOnHeart then
+                    if EnchantRunning or EnchantPending then
+                        EnchantRunToken += 1
+                        StopAutoEnchant(nil)
+                        EnchantRunning = false
+                    end
                     EnchantArmedHeart = nil
+                    EnchantHandoff.Release()
+                elseif EnchantView.EligibilityBlocked and not EnchantRunning then
+                    if not EnchantView.Reading and not EnchantView.NeedsRefresh
+                        and os.clock() >= (EnchantView.EligibilityRetryAt or 0) then
+                        EnchantView.EligibilityRetryAt = os.clock() + 15
+                        EnchantView.ReadCurrent(true)
+                    end
+                elseif not EnchantView.Checked or EnchantView.Reading or EnchantView.NeedsRefresh or EnchantView.Hit then
                 elseif not EnchantRunning then
                     pcall(function()
                         local scrollCount, heartCount = ReadEnchantInventory()
                         if scrollCount == nil or heartCount == nil then return end
-                        if EnchantArmedHeart == nil then
-                            if scrollCount >= 10 then
+                        if not EnchantPending then
+                            if EnchantArmedHeart == nil then
+                                if scrollCount >= 10 then
+                                    EnchantArmedHeart = heartCount
+                                    SetEnchantStatus("已持有10个神话卷轴，等待下一颗心脏")
+                                else
+                                    SetEnchantStatus("等待神话卷轴达到10个")
+                                end
+                                return
+                            elseif heartCount > EnchantArmedHeart then
                                 EnchantArmedHeart = heartCount
-                                SetEnchantStatus("已持有10个神话卷轴，等待下一颗心脏")
+                                EnchantPending = true
+                                EnchantRetryAt = 0
+                                EnchantView.Rolls = 0
                             else
-                                SetEnchantStatus("等待神话卷轴达到10个")
+                                return
                             end
-                        elseif heartCount > EnchantArmedHeart and next(WantedEnchantLookup()) == nil then
-                            EnchantArmedHeart = heartCount
-                            SetEnchantStatus("请先选择至少一个目标附魔；等待下一颗心脏")
-                        elseif heartCount > EnchantArmedHeart then
-                            EnchantArmedHeart = heartCount
-                            if NavigationOwner ~= nil and NavigationOwner ~= "home-return" then
-                                SetEnchantStatus("导航正被占用（" .. tostring(NavigationOwner)
-                                    .. "）；本次跳过，不影响主流程")
-                            elseif not FindEnchantWeapon() then
-                                SetEnchantStatus("未找到所选武器（" .. tostring(_G.EnchantWeaponName)
-                                    .. "）；本次跳过，不影响主流程")
-                            else
-                                EnchantRunning = true
-                                NavigationOwner = "enchant"
-                                EnchantRunToken += 1
-                                local token = EnchantRunToken
-                                task.spawn(function()
-                                    local ok, err = xpcall(function()
-                                        RunEnchantAfterHeart(token)
-                                    end, function(message)
-                                        return tostring(message)
-                                    end)
-                                    if not ok then
-                                        SetEnchantStatus("附魔流程出错: " .. tostring(err))
-                                    end
-                                    if NavigationOwner == "enchant" then
-                                        NavigationOwner = nil
-                                    end
-                                    pcall(ClearHover)
-                                    EnchantRunning = false
-                                end)
-                            end
+                        end
+                        if os.clock() < EnchantRetryAt then return end
+                        if next(WantedEnchantLookup()) == nil then
+                            SetEnchantStatus("请先选择至少一个目标附魔；本轮待完成")
+                            EnchantRetryAt = os.clock() + 5
+                        elseif NavigationOwner ~= nil and NavigationOwner ~= "home-return" and NavigationOwner ~= "enchant" then
+                            SetEnchantStatus("导航正被占用（" .. tostring(NavigationOwner) .. "）；本轮待完成")
+                            EnchantRetryAt = os.clock() + 5
+                        elseif not FindEnchantWeapon() then
+                            SetEnchantStatus("未找到所选武器（" .. tostring(_G.EnchantWeaponName) .. "）；本轮待完成")
+                            EnchantRetryAt = os.clock() + 5
+                        else
+                            StartEnchantRun()
                         end
                     end)
                 end
@@ -8777,27 +9546,12 @@ do
                 task.wait(5)
                 if NavigationOwner == "enchant" then
                     local lastBeat = EnchantBeatAt
-                    if lastBeat <= 0 then
-                        lastBeat = EnchantLockAt
-                    end
+                    if lastBeat <= 0 then lastBeat = EnchantLockAt end
                     if lastBeat > 0 and os.clock() - lastBeat > ENCHANT_LOCK_TIMEOUT then
-                        SetEnchantStatus("附魔流程超时（" .. ENCHANT_LOCK_TIMEOUT
-                            .. " 秒无进展）：已强制归还导航")
-                        NavigationOwner = nil
-                        EnchantRunning = false
-                        _G.AutoEnchantOnHeart = false
-                        EnchantArmedHeart = nil
-                        EnchantBeatAt = 0
-                        EnchantLockAt = 0
                         EnchantRunToken += 1
-                        SaveConfig()
-                        if _G.RJR_AutoEnchantOnHeartToggle then
-                            pcall(function()
-                                _G.RJR_AutoEnchantOnHeartToggle:SetValue(false)
-                            end)
-                        end
-                        SetBusy(false)
-                        pcall(ClearHover)
+                        PauseAutoEnchant("附魔流程超时（" .. ENCHANT_LOCK_TIMEOUT
+                            .. " 秒无进展）；保留本轮，30秒后重试")
+                        EnchantRunning = false
                     end
                 else
                     EnchantBeatAt = 0
@@ -8805,6 +9559,7 @@ do
                 end
             end
         end)
+        if _G.AutoEnchantOnHeart then EnchantView.ReadCurrent(false) end
     end
     task.spawn(function()
         local PrevBribeReady = nil
@@ -9220,7 +9975,6 @@ task.defer(function()
     end
     if _G.DragonGunFarm then pcall(SeaAPI.StartDragonAttack) end
     if _G.RemoveFog then pcall(DoRemoveFog) end
-    if _G.AntiDracoAura then pcall(PerformanceAPI.ApplyAntiDracoAura) end
     if _G.AutoFastMode then pcall(PerformanceAPI.ApplyAutoFastMode) end
     if _G.FPSBoost then pcall(PerformanceAPI.ApplyFPSBoost) end
 end)
