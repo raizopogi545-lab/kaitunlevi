@@ -25,6 +25,7 @@ pcall(function()
     end
 end)
 
+pcall(function() if getgenv then getgenv().ForceReload = true end end)
 if _G.AutoLeviathanFull_Loaded then
     local env = (getgenv and getgenv()) or _G
     if not env.ForceReload then
