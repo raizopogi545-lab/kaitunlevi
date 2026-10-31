@@ -1,26 +1,26 @@
 pcall(function()
     if typeof(setfpscap) == "function" then
-        pcall(setfpscap, 30)
+        pcall(setfpscap, 60)
     elseif typeof(syn) == "table" and typeof(syn.setfpscap) == "function" then
-        pcall(syn.setfpscap, 30)
+        pcall(syn.setfpscap, 60)
     elseif typeof(krnl) == "table" and typeof(krnl.setfpscap) == "function" then
-        pcall(krnl.setfpscap, 30)
+        pcall(krnl.setfpscap, 60)
     elseif typeof(fluxus) == "table" and typeof(fluxus.setfpscap) == "function" then
-        pcall(fluxus.setfpscap, 30)
+        pcall(fluxus.setfpscap, 60)
     elseif typeof(clipfps) == "function" then
-        pcall(clipfps, 30)
+        pcall(clipfps, 60)
     elseif typeof(set_fps_cap) == "function" then
-        pcall(set_fps_cap, 30)
+        pcall(set_fps_cap, 60)
     else
         pcall(function()
             if settings and typeof(settings) == "function" then
                 local rs = settings():GetService("RenderSettings")
-                if rs and typeof(rs.FramerateCap) == "number" then rs.FramerateCap = 30 end
+                if rs and typeof(rs.FramerateCap) == "number" then rs.FramerateCap = 60 end
             end
         end)
         if typeof(getgenv) == "function" then
             local env = getgenv()
-            if env and typeof(env.setfpscap) == "function" then pcall(env.setfpscap, 30) end
+            if env and typeof(env.setfpscap) == "function" then pcall(env.setfpscap, 60) end
         end
     end
 end)
